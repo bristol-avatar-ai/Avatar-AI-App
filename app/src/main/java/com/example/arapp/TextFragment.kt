@@ -22,7 +22,9 @@ class TextFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View? {
         val view = inflater.inflate(R.layout.fragment_text, container, false)
-
+//        TODO(
+//            "Implement messaging here"
+//        )
         return view
     }
 

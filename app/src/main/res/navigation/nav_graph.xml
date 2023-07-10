@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/nav_graph"
-    app:startDestination="@id/menuFragment">
+    app:startDestination="@id/arFragment">
 
     <fragment
         android:id="@+id/textFragment"
@@ -11,16 +11,16 @@
         android:label="fragment_text"
         tools:layout="@layout/fragment_text" >
         <action
-            android:id="@+id/text_to_home"
-            app:destination="@id/menuFragment" />
+            android:id="@+id/action_textFragment_to_arFragment2"
+            app:destination="@id/arFragment" />
     </fragment>
     <fragment
-        android:id="@+id/menuFragment"
-        android:name="com.example.arapp.MenuFragment"
-        android:label="fragment_menu"
-        tools:layout="@layout/fragment_menu" >
+        android:id="@+id/arFragment"
+        android:name="com.example.arapp.ArFragment"
+        android:label="fragment_ar"
+        tools:layout="@layout/fragment_ar" >
         <action
-            android:id="@+id/home_to_text"
+            android:id="@+id/navigate_home_to_text"
             app:destination="@id/textFragment" />
     </fragment>
 </navigation>
