@@ -2,4 +2,13 @@
     <string name="app_name">AR App</string>
     <string name="summon_avatar_button">Summon Avatar</string>
     <string name="place_avatar_button">Place Avatar</string>
+    <string name="mic_button">Mic</string>
+    <string name="menu_option_1">Option 1</string>
+    <string name="menu_option_2">Option 2</string>
+    <string name="listening_text">Listening</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="text_input">Type here...</string>
+    <string name="sendButton">Send</string>
+    <string name="textButton">Text</string>
 </resources>
