@@ -35,14 +35,29 @@ class ArFragment : Fragment(R.layout.fragment_ar) {
     private var avatarIsLoaded: Boolean = false
     private var avatarIsPlaced: Boolean = false
 
-    @SuppressLint("ClickableViewAccessibility")
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
         val view: View = inflater.inflate(R.layout.fragment_ar, container, false)
+        initArFragment(view)
+        return view
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        sceneView.destroy()
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
+    private fun initArFragment(view: View){
         sceneView = view.findViewById<ArSceneView?>(R.id.sceneView).apply {
             lightEstimationMode = Config.LightEstimationMode.ENVIRONMENTAL_HDR
+            planeRenderer.isVisible = false
         }
         avatarButton = view.findViewById<ExtendedFloatingActionButton>(R.id.avatarButton).apply {
             setOnClickListener { avatarButtonOnClick() }
@@ -57,12 +72,7 @@ class ArFragment : Fragment(R.layout.fragment_ar) {
                 Navigation.findNavController(view).navigate(R.id.navigate_home_to_text)
             }
         }
-        return view
-    }
 
-    override fun onDestroyView() {
-        super.onDestroyView()
-        sceneView.destroy()
     }
 
     private fun avatarButtonOnClick() {
@@ -89,7 +99,7 @@ class ArFragment : Fragment(R.layout.fragment_ar) {
     private fun loadAvatar(){
         val avatar = Model(
             fileLocation = "models/robot_playground.glb",
-            placementMode = PlacementMode.INSTANT,
+            placementMode = PlacementMode.DISABLED,
             scale = 0.8f
         )
 
