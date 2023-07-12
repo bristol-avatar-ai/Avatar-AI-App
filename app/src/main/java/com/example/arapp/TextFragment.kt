@@ -22,7 +22,7 @@ class TextFragment : Fragment() {
     ): View? {
         val view = inflater.inflate(R.layout.fragment_text, container, false)
 //        TODO(
-//            "Implement messaging here"
+//            "Justin to implement messaging here"
 //        )
         return view
     }
