@@ -11,4 +11,5 @@
     <string name="text_input">Type here...</string>
     <string name="sendButton">Send</string>
     <string name="textButton">Text</string>
+    <string name="title_activity_main_compose">MainActivityCompose</string>
 </resources>
