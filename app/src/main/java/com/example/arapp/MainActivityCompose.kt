@@ -1,23 +1,32 @@
 package com.example.arapp
 
-import android.annotation.SuppressLint
-import android.graphics.Bitmap.Config
 import android.os.Bundle
-import android.view.LayoutInflater
-import android.view.View
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.unit.dp
 import com.example.arapp.ui.theme.ARAppTheme
-import io.github.sceneview.ar.ArSceneView
-import com.google.ar.core.Config.LightEstimationMode
+import com.google.ar.core.Config
+import io.github.sceneview.ar.ARScene
+import io.github.sceneview.ar.node.ArModelNode
+import io.github.sceneview.ar.node.ArNode
+import io.github.sceneview.math.Position
+import kotlinx.coroutines.launch
 
 class MainActivityCompose : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -28,36 +37,66 @@ class MainActivityCompose : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    ArView()
+                    ArScreen()
                 }
             }
         }
     }
 }
 
-@SuppressLint("InflateParams")
-@Composable
-fun ArView() {
-    var sceneView: ArSceneView
+lateinit var modelNode: ArModelNode
 
-    fun initArFragment(view: View){
-        sceneView = view.findViewById<ArSceneView>(R.id.sceneView).apply {
-            lightEstimationMode = LightEstimationMode.ENVIRONMENTAL_HDR
-            planeRenderer.isVisible = false
+@Composable
+fun ArScreen(){
+    val nodes = remember { mutableStateListOf<ArNode>() }
+    val coroutine = rememberCoroutineScope()
+    val context = LocalContext.current
+
+    Column {
+        Box(modifier = Modifier.fillMaxSize()) {
+            ARScene(
+                modifier = Modifier.fillMaxSize(),
+                nodes = nodes,
+                planeRenderer = false,
+                onCreate = { sceneView ->
+                    modelNode = ArModelNode(
+                    ).apply {
+                        coroutine.launch {
+                            loadModelGlb(
+                                context = context,
+                                glbFileLocation = "models/robot_playground.glb",
+                                scaleToUnits = 0.8f,
+                                centerOrigin = Position(y = -1.0f)
+                            )
+                            sceneView.lightEstimationMode = Config.LightEstimationMode.ENVIRONMENTAL_HDR
+                            sceneView.addChild(child = modelNode)
+                        }
+                    }
+                }
+            )
+            Box(
+                contentAlignment = Alignment.BottomCenter,
+                modifier = Modifier.align(Alignment.BottomCenter)
+            ) {
+                Button(
+                    enabled = true,
+                    onClick = {
+                        modelNode.anchor()
+                    },
+                    modifier = Modifier.padding(all = 16.dp)
+                ) {
+                    Text(text = "Place Model")
+
+                }
+            }
         }
     }
-
-    AndroidView(factory = { context ->
-        val view: View = LayoutInflater.from(context).inflate(R.layout.fragment_ar, null)
-        initArFragment(view)
-        view
-    })
 }
 
 @Preview(showBackground = true)
 @Composable
-fun ArViewPreview() {
+fun ArScreenPreview() {
     ARAppTheme {
-        ArView()
+        ArScreen()
     }
 }

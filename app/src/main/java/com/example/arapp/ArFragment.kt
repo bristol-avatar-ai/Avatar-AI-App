@@ -97,25 +97,25 @@ class ArFragment : Fragment(R.layout.fragment_ar) {
     }
 
     private fun loadAvatar(){
-        val avatar = Model(
-            fileLocation = "models/robot_playground.glb",
-            placementMode = PlacementMode.DISABLED,
-            scale = 0.8f
-        )
-
-        modelNode = ArModelNode(
-            sceneView.engine,
-            PlacementMode.INSTANT,
-        ).apply {
-            loadModelGlbAsync(
-                glbFileLocation = avatar.fileLocation,
-                centerOrigin = Position(y = -1.0f),
-                scaleToUnits = avatar.scale
-            )
-        }
-        sceneView.addChild(modelNode!!)
-        sceneView.selectedNode = modelNode
-        avatarIsLoaded = true
+//        val avatar = Model(
+//            fileLocation = "models/robot_playground.glb",
+//            placementMode = PlacementMode.DISABLED,
+//            scale = 0.8f
+//        )
+//
+//        modelNode = ArModelNode(
+//            sceneView.engine,
+//            PlacementMode.INSTANT,
+//        ).apply {
+//            loadModelGlbAsync(
+//                glbFileLocation = avatar.fileLocation,
+//                centerOrigin = Position(y = -1.0f),
+//                scaleToUnits = avatar.scale
+//            )
+//        }
+//        sceneView.addChild(modelNode!!)
+//        sceneView.selectedNode = modelNode
+//        avatarIsLoaded = true
     }
 
     private fun listenToVoice(event: MotionEvent): Boolean {
