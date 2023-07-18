@@ -1,4 +1,4 @@
-package com.example.arapp.ui.theme
+package com.example.arapp.ui
 
 import android.content.Context
 import androidx.compose.runtime.mutableStateListOf

@@ -1,4 +1,4 @@
-package com.example.arapp.ui.theme
+package com.example.arapp.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,6 +20,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.arapp.ui.theme.ARAppTheme
 import io.github.sceneview.ar.ARScene
 
 @Composable
