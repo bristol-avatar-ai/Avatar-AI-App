@@ -3,9 +3,13 @@ package com.example.arapp
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
@@ -52,45 +56,88 @@ fun ArScreen(){
     val coroutine = rememberCoroutineScope()
     val context = LocalContext.current
 
-    Column {
+    Column{
         Box(modifier = Modifier.fillMaxSize()) {
             ARScene(
                 modifier = Modifier.fillMaxSize(),
                 nodes = nodes,
                 planeRenderer = false,
                 onCreate = { sceneView ->
-                    modelNode = ArModelNode(
-                    ).apply {
-                        coroutine.launch {
-                            loadModelGlb(
-                                context = context,
-                                glbFileLocation = "models/robot_playground.glb",
-                                scaleToUnits = 0.8f,
-                                centerOrigin = Position(y = -1.0f)
-                            )
-                            sceneView.lightEstimationMode = Config.LightEstimationMode.ENVIRONMENTAL_HDR
-                            sceneView.addChild(child = modelNode)
-                        }
-                    }
+//                    modelNode = ArModelNode(
+//                    ).apply {
+//                        coroutine.launch {
+//                            loadModelGlb(
+//                                context = context,
+//                                glbFileLocation = "models/robot_playground.glb",
+//                                scaleToUnits = 0.8f,
+//                                centerOrigin = Position(y = -1.0f)
+//                            )
+//                            sceneView.lightEstimationMode = Config.LightEstimationMode.ENVIRONMENTAL_HDR
+//                            sceneView.addChild(child = modelNode)
+//                        }
+//                    }
+//                    modelNode.isVisible = false
                 }
             )
-            Box(
-                contentAlignment = Alignment.BottomCenter,
-                modifier = Modifier.align(Alignment.BottomCenter)
+            Column(
+                horizontalAlignment = Alignment.Start,
+                modifier = Modifier.fillMaxHeight(),
+                verticalArrangement = Arrangement.SpaceBetween
             ) {
-                Button(
-                    enabled = true,
-                    onClick = {
-                        modelNode.anchor()
-                    },
-                    modifier = Modifier.padding(all = 16.dp)
-                ) {
-                    Text(text = "Place Model")
-
+                Spacer(
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Column{
+//                    HideAvatarButton()
+//                    PlaceAvatarButton()
+//                    SummonAvatarButton()
                 }
+
             }
         }
     }
+}
+
+//@Composable
+//fun HideAvatarButton(){
+//    Button(
+//        onClick = {
+//            modelNode.isVisible = false
+//        },
+//        modifier = Modifier.padding(all = 16.dp)
+//    ){
+//        Text(text = "Hide Avatar")
+//    }
+//}
+//
+//@Composable
+//fun PlaceAvatarButton(){
+//    Button(
+//        onClick = {
+//            modelNode.anchor()
+//        },
+//        modifier = Modifier.padding(all = 16.dp)
+//    ) {
+//        Text(text = "Place Avatar")
+//    }
+//}
+//
+//@Composable
+//fun SummonAvatarButton() {
+//    Button(
+//        onClick = {
+//            summonAvatar()
+//        },
+//        modifier = Modifier.padding(all = 16.dp)
+//    ) {
+//        Text(text = "Summon Avatar")
+//    }
+//}
+
+fun summonAvatar(){
+    modelNode.isVisible = true
+    if(modelNode.isAnchored) modelNode.detachAnchor()
+    modelNode.position = Position(y = -1.0f)
 }
 
 @Preview(showBackground = true)

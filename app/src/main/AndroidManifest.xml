@@ -13,6 +13,11 @@
         android:theme="@style/Theme.ARApp"
         tools:targetApi="31">
         <activity
+            android:name=".MainActivityTest"
+            android:exported="false"
+            android:label="@string/title_activity_main_test"
+            android:theme="@style/Theme.ARApp" />
+        <activity
             android:name=".MainActivityCompose"
             android:exported="false"
             android:label="@string/title_activity_main_compose"
