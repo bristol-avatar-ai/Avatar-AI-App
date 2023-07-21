@@ -2,7 +2,9 @@ package com.example.arapp.ui
 
 import android.content.Context
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.lifecycle.ViewModel
+import com.example.arapp.R
 import com.example.arapp.data.avatarModel
 import com.google.ar.core.Config
 import io.github.sceneview.ar.ArSceneView
@@ -12,6 +14,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 private val _uiState = MutableStateFlow(ArUiState())
@@ -40,6 +43,10 @@ class ArViewModel : ViewModel() {
         arSceneView.addChild(modelNode)
     }
 
+    fun showAvatar() {
+        modelNode.isVisible = true
+    }
+
     fun hideAvatar() {
         modelNode.isVisible = false
     }
@@ -57,6 +64,19 @@ class ArViewModel : ViewModel() {
             it.isVisible = true
             if(it.isAnchored) it.detachAnchor()
             it.position = avatarModel.position
+        }
+    }
+
+    fun isSendOrMicIcon(): Int {
+        return if(uiState.value.isTextInput) R.drawable.baseline_send_24
+        else R.drawable.baseline_mic_24
+    }
+
+    fun textFieldOnClick() {
+        _uiState.update {currentState ->
+            currentState.copy(
+                isTextInput = true
+            )
         }
     }
 }
