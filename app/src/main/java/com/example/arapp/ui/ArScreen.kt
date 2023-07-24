@@ -1,6 +1,8 @@
 package com.example.arapp.ui
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -8,10 +10,13 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -33,7 +38,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -66,9 +70,17 @@ fun ArScreen(
                 arViewModel.addAvatarToScene(arSceneView, coroutine, context)
             }
         )
+        if(arUiState.isAvatarMenuVisible) {
+            Column(
+                Modifier.align(Alignment.BottomStart)
+            ) {
+                AvatarMenu(arViewModel, arUiState)
+                Spacer(Modifier.size(5.dp))
+            }
+        }
         Column(
             Modifier.align(Alignment.BottomCenter)
-        ){
+        ) {
             BottomBar(arViewModel, arUiState)
             Spacer(Modifier.size(5.dp))
         }
@@ -82,10 +94,6 @@ fun BottomBar(
     arViewModel: ArViewModel,
     arUiState: ArUiState
 ) {
-    val focusManager = LocalFocusManager.current
-    var value by remember {
-        mutableStateOf("")
-    }
     var textState by rememberSaveable(stateSaver = TextFieldValue.Saver) {
         mutableStateOf(TextFieldValue())
     }
@@ -103,46 +111,31 @@ fun BottomBar(
                 ),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            BarButton(
-                onClick = {},
-                icon = painterResource(R.drawable.robot_icon),
+            AvatarButton(
+                onClick = { arViewModel.avatarButtonOnClick() },
+                onLongClick = { arViewModel.avatarButtonOnHold() },
+                icon = painterResource(
+                    arViewModel.getAvatarButtonIcon()
+                ),
                 description = "Send button",
                 selected = false
             )
             UserInput(
                 textFieldValue = textState,
-                onTextChanged = { textState = it},
+                onTextChanged = { textState = it },
                 placeHolderText = { Text(text = "Ask me a question!") },
                 colors = TextFieldDefaults.textFieldColors(
                     containerColor = Color.Transparent
-                )
+                ),
+                modifier = Modifier.weight(1f)
             )
-//            TextField(
-//                value = value,
-//                onValueChange = {newText ->
-//                    value = newText
-//                },
-//                placeholder = { Text(text = "Ask me a question!")},
-//                colors = TextFieldDefaults.textFieldColors(
-//                    containerColor = Color.Transparent
-//                ),
-//                keyboardOptions = KeyboardOptions(
-//                    capitalization = KeyboardCapitalization.Sentences,
-//                    autoCorrect = true,
-//                    imeAction = ImeAction.Send
-//                ),
-//                keyboardActions = KeyboardActions(
-//                    onDone = { focusManager.clearFocus() },
-//                    onSend = { focusManager.clearFocus() }
-//                )
-//            )
             BarButton(
                 onClick = { },
                 icon = painterResource(
-                    if(arUiState.isTextInput) {
-                        R.drawable.baseline_send_24
-                    } else {
+                    if (textState.text.isEmpty()) {
                         R.drawable.baseline_mic_24
+                    } else {
+                        R.drawable.baseline_send_24
                     }
                 ),
                 description = "Microphone button",
@@ -160,6 +153,7 @@ fun UserInput(
     textFieldValue: TextFieldValue,
     placeHolderText: @Composable (() -> Unit),
     colors: TextFieldColors,
+    modifier: Modifier
 ) {
     TextField(
         value = textFieldValue,
@@ -170,10 +164,10 @@ fun UserInput(
             capitalization = KeyboardCapitalization.Sentences,
             autoCorrect = true,
             imeAction = ImeAction.Send
-        )
+        ),
+        modifier = modifier
     )
 }
-
 
 @Composable
 fun BarButton(
@@ -193,15 +187,95 @@ fun BarButton(
     IconButton(
         onClick = onClick,
         modifier = Modifier
-            .size(60.dp)
+            .size(50.dp)
             .padding(all = 5.dp)
             .then(backgroundModifier)
     ) {
         Icon(
             icon,
-            description
+            description,
+            Modifier.fillMaxSize()
         )
 
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun AvatarButton(
+    onClick: () -> Unit,
+    onLongClick: () -> Unit,
+    icon: Painter,
+    description: String,
+    selected: Boolean
+) {
+    val backgroundModifier = if (selected) {
+        Modifier.background(
+            color = MaterialTheme.colorScheme.secondary,
+            shape = RoundedCornerShape(14.dp)
+        )
+    } else {
+        Modifier
+    }
+    Box(
+        modifier = Modifier
+            .size(50.dp)
+            .padding(all = 5.dp)
+            .then(backgroundModifier)
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick
+            )
+    ) {
+        Icon(
+            painter = icon,
+            contentDescription = description,
+            modifier = Modifier
+                .align(Alignment.Center)
+                .fillMaxSize()
+        )
+
+    }
+}
+
+@Composable
+fun AvatarMenu(
+    arViewModel: ArViewModel,
+    arUiState: ArUiState
+) {
+    Column(
+        modifier = Modifier
+            .width(130.dp)
+            .background(
+                color = Color.LightGray,
+                shape = RoundedCornerShape(20.dp)
+            )
+    ) {
+        MenuButton(
+            onClick = { arViewModel.anchorOrFollowButtonOnClick() },
+            text = arViewModel.getMenuButtonText()
+        )
+        Spacer(
+            modifier = Modifier.height(60.dp)
+        )
+    }
+}
+
+@Composable
+fun MenuButton(
+    onClick: () -> Unit,
+    text: String
+) {
+    Button(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(
+                start = 5.dp,
+                end = 5.dp
+            )
+    ) {
+        Text(text = text)
     }
 }
 

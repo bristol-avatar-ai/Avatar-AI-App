@@ -2,7 +2,6 @@ package com.example.arapp.ui
 
 import android.content.Context
 import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.ui.graphics.painter.Painter
 import androidx.lifecycle.ViewModel
 import com.example.arapp.R
 import com.example.arapp.data.avatarModel
@@ -17,9 +16,54 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+enum class StateValue {
+    MENU,
+    ANCHOR,
+    VISIBLE
+}
+
 private val _uiState = MutableStateFlow(ArUiState())
 
 private lateinit var modelNode: ArModelNode
+
+
+private fun updateState(value: StateValue, state: Boolean) {
+    _uiState.update { currentState ->
+        when (value) {
+            StateValue.MENU -> currentState.copy(
+                isAvatarMenuVisible = state
+            )
+            StateValue.VISIBLE -> currentState.copy(
+                avatarIsVisible = state
+            )
+            StateValue.ANCHOR -> currentState.copy(
+                avatarIsAnchored = state
+            )
+        }
+    }
+}
+
+private fun showAvatar() {
+    modelNode.detachAnchor()
+    modelNode.isVisible = true
+    updateState(StateValue.ANCHOR, false)
+    updateState(StateValue.VISIBLE, true)
+}
+
+private fun hideAvatar() {
+    modelNode.isVisible = false
+    updateState(StateValue.VISIBLE, false)
+}
+
+private fun anchorAvatar() {
+    modelNode.anchor()
+    updateState(StateValue.ANCHOR, true)
+}
+
+private fun detachAvatar() {
+    modelNode.detachAnchor()
+    updateState(StateValue.ANCHOR, false)
+}
 
 class ArViewModel : ViewModel() {
     val uiState: StateFlow<ArUiState> = _uiState.asStateFlow()
@@ -43,37 +87,54 @@ class ArViewModel : ViewModel() {
         arSceneView.addChild(modelNode)
     }
 
-    fun showAvatar() {
-        modelNode.isVisible = true
+    fun avatarButtonOnClick() {
+        if(_uiState.value.isAvatarMenuVisible) {
+            updateState(StateValue.MENU, false)
+        } else if(_uiState.value.avatarIsVisible){
+            hideAvatar()
+        } else {
+            showAvatar()
+        }
     }
 
-    fun hideAvatar() {
-        modelNode.isVisible = false
+    fun getAvatarButtonIcon(): Int {
+        if(_uiState.value.isAvatarMenuVisible) {
+            return R.drawable.drop_down_arrow
+        } else if(_uiState.value.avatarIsVisible) {
+            return R.drawable.hide
+        }
+        return R.drawable.robot_icon
     }
 
-    fun anchorAvatar() {
-        modelNode.anchor()
+    fun avatarButtonOnHold() {
+        if(_uiState.value.isAvatarMenuVisible) {
+            updateState(StateValue.MENU, false)
+        } else updateState(StateValue.MENU, true)
     }
 
-    fun detachAvatar() {
-        modelNode.detachAnchor()
+    fun anchorOrFollowButtonOnClick() {
+        if (_uiState.value.avatarIsAnchored) {
+            detachAvatar()
+        } else if (!_uiState.value.avatarIsAnchored) {
+            anchorAvatar()
+        }
     }
 
-    fun summonAvatar() {
-        modelNode.let {
-            it.isVisible = true
-            if(it.isAnchored) it.detachAnchor()
-            it.position = avatarModel.position
+    fun getMenuButtonText(): String {
+        return if (_uiState.value.avatarIsAnchored) {
+            "Follow me!"
+        } else {
+            "Place me here!"
         }
     }
 
     fun isSendOrMicIcon(): Int {
-        return if(uiState.value.isTextInput) R.drawable.baseline_send_24
+        return if (uiState.value.isTextInput) R.drawable.baseline_send_24
         else R.drawable.baseline_mic_24
     }
 
     fun textFieldOnClick() {
-        _uiState.update {currentState ->
+        _uiState.update { currentState ->
             currentState.copy(
                 isTextInput = true
             )
