@@ -1,11 +1,11 @@
 package com.example.arapp.ui
 
 import android.content.Context
-import androidx.compose.foundation.layout.BoxWithConstraintsScope
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.ViewModel
 import com.example.arapp.R
 import com.example.arapp.data.avatarModel
@@ -78,8 +78,11 @@ private fun detachAvatar() {
 
 class ArViewModel : ViewModel() {
     val uiState: StateFlow<ArUiState> = _uiState.asStateFlow()
+    val focusRequester = FocusRequester()
     val nodes = mutableStateListOf<ArNode>()
     var touchPosition = mutableStateOf(Offset.Zero)
+    val textState = mutableStateOf(TextFieldValue())
+    var textFieldFocusState = mutableStateOf(false)
 
     fun addAvatarToScene(arSceneView: ArSceneView, coroutine: CoroutineScope, context: Context) {
         arSceneView.lightEstimationMode = Config.LightEstimationMode.ENVIRONMENTAL_HDR
@@ -99,35 +102,30 @@ class ArViewModel : ViewModel() {
     }
 
     fun avatarButtonOnClick() {
-        if (_uiState.value.isAvatarMenuVisible) {
+        if (uiState.value.isAvatarMenuVisible) {
             updateState(StateValue.MENU, false)
-        } else if (_uiState.value.avatarIsVisible) {
+        } else updateState(StateValue.MENU, true)
+    }
+
+    fun summonOrHideButtonOnClick() {
+        if (uiState.value.avatarIsVisible) {
             hideAvatar()
         } else {
             showAvatar()
         }
     }
 
-    fun getAvatarButtonIcon(): Int {
-        if (_uiState.value.isAvatarMenuVisible) {
-            return R.drawable.drop_down_arrow
-        } else if (_uiState.value.avatarIsVisible) {
-            return R.drawable.hide
-        }
-        return R.drawable.robot_icon
-    }
-
-    fun avatarButtonOnHold() {
-        if (_uiState.value.isAvatarMenuVisible) {
-            updateState(StateValue.MENU, false)
-        } else updateState(StateValue.MENU, true)
-    }
-
     fun anchorOrFollowButtonOnClick() {
-        if (_uiState.value.avatarIsAnchored) {
+        if (uiState.value.avatarIsAnchored) {
             detachAvatar()
-        } else if (!_uiState.value.avatarIsAnchored) {
+        } else if (!uiState.value.avatarIsAnchored) {
             anchorAvatar()
+        }
+    }
+
+    fun dismissActionMenu() {
+        if(uiState.value.isAvatarMenuVisible) {
+            updateState(StateValue.MENU, false)
         }
     }
 
@@ -148,16 +146,23 @@ class ArViewModel : ViewModel() {
         }
     }
 
-    fun getMenuButtonText(): String {
-        return if (_uiState.value.avatarIsAnchored) {
-            "Follow me!"
-        } else {
-            "Place me here!"
+    fun enableActionButton(buttonType: AvatarButtonType): Boolean{
+        return when(buttonType) {
+            AvatarButtonType.MODE -> {
+                (uiState.value.isAvatarMenuVisible and uiState.value.avatarIsVisible)
+            }
+            AvatarButtonType.VISIBILITY -> {
+                uiState.value.isAvatarMenuVisible
+            }
         }
     }
 
-    fun arSceneOnLongPress(press: Offset) {
-        touchPosition.value = press
+    fun getMicOrSendIcon(): Int {
+        return if(textState.value.text.isEmpty()) {
+            R.drawable.mic_icon
+        } else {
+            R.drawable.send_icon
+        }
     }
 
 //    fun generateCoordinates(
