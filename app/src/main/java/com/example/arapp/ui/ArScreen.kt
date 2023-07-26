@@ -1,23 +1,20 @@
 package com.example.arapp.ui
 
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -56,7 +53,7 @@ fun ArScreen(
     val arUiState by arViewModel.uiState.collectAsState()
     val coroutine = rememberCoroutineScope()
     val context = LocalContext.current
-
+    val touchPosition by remember { arViewModel.touchPosition }
 
     Box(
         Modifier.fillMaxHeight()
@@ -68,25 +65,37 @@ fun ArScreen(
             planeRenderer = false,
             onCreate = { arSceneView ->
                 arViewModel.addAvatarToScene(arSceneView, coroutine, context)
-            }
+            },
         )
-        if(arUiState.isAvatarMenuVisible) {
-            Column(
-                Modifier.align(Alignment.BottomStart)
-            ) {
-                AvatarMenu(arViewModel, arUiState)
-                Spacer(Modifier.size(5.dp))
-            }
-        }
+//        //Allows detection of touches on the ARScene
+//        BoxWithConstraints(
+//            Modifier
+//                .fillMaxHeight(0.95f)
+//                .fillMaxWidth(0.95f)
+//                .background(Color.Red)
+//                .align(Alignment.Center)
+//                .pointerInput(Unit) {
+//                    detectTapGestures(onLongPress = { press ->
+//                        arViewModel.arSceneOnLongPress(press)
+//                    })
+//                }
+//        ) {
+//            val constraints = this
+//            val offSet = arViewModel.generateCoordinates(constraints, touchPosition)
+//
+//        }
         Column(
             Modifier.align(Alignment.BottomCenter)
         ) {
+            Box {
+                FloatingActionMenu(arViewModel)
+            }
             BottomBar(arViewModel, arUiState)
-            Spacer(Modifier.size(5.dp))
         }
 
     }
 }
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -101,6 +110,7 @@ fun BottomBar(
     Box(
         modifier = Modifier
             .fillMaxWidth()
+            .padding(5.dp)
     ) {
         Row(
             modifier = Modifier
@@ -111,15 +121,6 @@ fun BottomBar(
                 ),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            AvatarButton(
-                onClick = { arViewModel.avatarButtonOnClick() },
-                onLongClick = { arViewModel.avatarButtonOnHold() },
-                icon = painterResource(
-                    arViewModel.getAvatarButtonIcon()
-                ),
-                description = "Send button",
-                selected = false
-            )
             UserInput(
                 textFieldValue = textState,
                 onTextChanged = { textState = it },
@@ -200,80 +201,77 @@ fun BarButton(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun AvatarButton(
-    onClick: () -> Unit,
-    onLongClick: () -> Unit,
-    icon: Painter,
-    description: String,
-    selected: Boolean
-) {
-    val backgroundModifier = if (selected) {
-        Modifier.background(
-            color = MaterialTheme.colorScheme.secondary,
-            shape = RoundedCornerShape(14.dp)
+fun FloatingActionMenu(arViewModel: ArViewModel) {
+    Column {
+        ActionButton(
+            onClick = { arViewModel.avatarButtonOnClick() },
+            color = Color.LightGray,
+            values = arViewModel.getActionButtonValues(AvatarButtonType.VISIBILITY)
         )
-    } else {
-        Modifier
-    }
-    Box(
-        modifier = Modifier
-            .size(50.dp)
-            .padding(all = 5.dp)
-            .then(backgroundModifier)
-            .combinedClickable(
-                onClick = onClick,
-                onLongClick = onLongClick
-            )
-    ) {
-        Icon(
-            painter = icon,
-            contentDescription = description,
-            modifier = Modifier
-                .align(Alignment.Center)
-                .fillMaxSize()
+        ActionButton(
+            onClick = { arViewModel.anchorOrFollowButtonOnClick() },
+            color = Color.LightGray,
+            values = arViewModel.getActionButtonValues(AvatarButtonType.MODE)
         )
-
+        ActionButton(
+            onClick = {},
+            color = Color.Gray
+        )
     }
 }
 
 @Composable
-fun AvatarMenu(
-    arViewModel: ArViewModel,
-    arUiState: ArUiState
+fun ActionButton(
+    onClick: () -> Unit,
+    enabled: Boolean = true,
+    color: Color,
+    selected: Boolean = false,
+    contentDescription: String = "",
+    values: Pair<Int, String> = Pair(R.drawable.robot_face, "")
 ) {
-    Column(
-        modifier = Modifier
-            .width(130.dp)
-            .background(
-                color = Color.LightGray,
-                shape = RoundedCornerShape(20.dp)
+    val buttonColor = if (selected) {
+        Color.DarkGray
+    } else {
+        color
+    }
+    if (enabled) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            FloatingActionButton(
+                onClick = onClick,
+                modifier = Modifier
+                    .padding(5.dp)
+                    .size(56.dp),
+                shape = CircleShape,
+                containerColor = buttonColor
+            ) {
+                Icon(
+                    painter = painterResource(id = values.first),
+                    contentDescription = "",
+                    Modifier
+                        .fillMaxSize()
+                        .padding(8.dp)
+                )
+            }
+            Text(
+                values.second,
+                Modifier.padding(start = 8.dp)
             )
-    ) {
-        MenuButton(
-            onClick = { arViewModel.anchorOrFollowButtonOnClick() },
-            text = arViewModel.getMenuButtonText()
-        )
-        Spacer(
-            modifier = Modifier.height(60.dp)
-        )
+        }
     }
 }
 
 @Composable
 fun MenuButton(
     onClick: () -> Unit,
-    text: String
+    text: String,
 ) {
     Button(
         onClick = onClick,
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(
-                start = 5.dp,
-                end = 5.dp
-            )
+            .fillMaxWidth(),
     ) {
         Text(text = text)
     }

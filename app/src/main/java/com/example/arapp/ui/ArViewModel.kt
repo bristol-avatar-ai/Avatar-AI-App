@@ -1,7 +1,11 @@
 package com.example.arapp.ui
 
 import android.content.Context
+import androidx.compose.foundation.layout.BoxWithConstraintsScope
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.unit.IntOffset
 import androidx.lifecycle.ViewModel
 import com.example.arapp.R
 import com.example.arapp.data.avatarModel
@@ -22,6 +26,11 @@ enum class StateValue {
     VISIBLE
 }
 
+enum class AvatarButtonType {
+    VISIBILITY,
+    MODE
+}
+
 private val _uiState = MutableStateFlow(ArUiState())
 
 private lateinit var modelNode: ArModelNode
@@ -33,9 +42,11 @@ private fun updateState(value: StateValue, state: Boolean) {
             StateValue.MENU -> currentState.copy(
                 isAvatarMenuVisible = state
             )
+
             StateValue.VISIBLE -> currentState.copy(
                 avatarIsVisible = state
             )
+
             StateValue.ANCHOR -> currentState.copy(
                 avatarIsAnchored = state
             )
@@ -67,8 +78,8 @@ private fun detachAvatar() {
 
 class ArViewModel : ViewModel() {
     val uiState: StateFlow<ArUiState> = _uiState.asStateFlow()
-
     val nodes = mutableStateListOf<ArNode>()
+    var touchPosition = mutableStateOf(Offset.Zero)
 
     fun addAvatarToScene(arSceneView: ArSceneView, coroutine: CoroutineScope, context: Context) {
         arSceneView.lightEstimationMode = Config.LightEstimationMode.ENVIRONMENTAL_HDR
@@ -88,9 +99,9 @@ class ArViewModel : ViewModel() {
     }
 
     fun avatarButtonOnClick() {
-        if(_uiState.value.isAvatarMenuVisible) {
+        if (_uiState.value.isAvatarMenuVisible) {
             updateState(StateValue.MENU, false)
-        } else if(_uiState.value.avatarIsVisible){
+        } else if (_uiState.value.avatarIsVisible) {
             hideAvatar()
         } else {
             showAvatar()
@@ -98,16 +109,16 @@ class ArViewModel : ViewModel() {
     }
 
     fun getAvatarButtonIcon(): Int {
-        if(_uiState.value.isAvatarMenuVisible) {
+        if (_uiState.value.isAvatarMenuVisible) {
             return R.drawable.drop_down_arrow
-        } else if(_uiState.value.avatarIsVisible) {
+        } else if (_uiState.value.avatarIsVisible) {
             return R.drawable.hide
         }
         return R.drawable.robot_icon
     }
 
     fun avatarButtonOnHold() {
-        if(_uiState.value.isAvatarMenuVisible) {
+        if (_uiState.value.isAvatarMenuVisible) {
             updateState(StateValue.MENU, false)
         } else updateState(StateValue.MENU, true)
     }
@@ -120,6 +131,23 @@ class ArViewModel : ViewModel() {
         }
     }
 
+    fun getActionButtonValues(buttonType: AvatarButtonType):
+    Pair<Int, String>{
+        return when(buttonType) {
+            AvatarButtonType.VISIBILITY -> {
+                if(uiState.value.avatarIsVisible) {
+                    Pair(R.drawable.hide, "Dismiss Avatar")
+                } else Pair(R.drawable.robot_icon, "Summon Avatar")
+            }
+
+            AvatarButtonType.MODE -> {
+                if(uiState.value.avatarIsAnchored) {
+                    Pair(R.drawable.unlock_icon, "Release Avatar")
+                } else Pair(R.drawable.lock_icon, "Place Avatar Here")
+            }
+        }
+    }
+
     fun getMenuButtonText(): String {
         return if (_uiState.value.avatarIsAnchored) {
             "Follow me!"
@@ -128,16 +156,22 @@ class ArViewModel : ViewModel() {
         }
     }
 
-    fun isSendOrMicIcon(): Int {
-        return if (uiState.value.isTextInput) R.drawable.baseline_send_24
-        else R.drawable.baseline_mic_24
+    fun arSceneOnLongPress(press: Offset) {
+        touchPosition.value = press
     }
 
-    fun textFieldOnClick() {
-        _uiState.update { currentState ->
-            currentState.copy(
-                isTextInput = true
-            )
-        }
-    }
+//    fun generateCoordinates(
+//        constraints: BoxWithConstraintsScope,
+//        tap: Offset
+//    ): IntOffset {
+//        val x = tap.x
+//        val y = tap.y
+//        val width = constraints.constraints.maxWidth
+//        val height = constraints.constraints.maxHeight
+//
+//        val topHalf = y < height / 2
+//        val leftHalf = x < width / 2
+//
+//        return IntOffset(tap.x.toInt(), tap.y.toInt())
+//    }
 }
