@@ -23,7 +23,8 @@ import kotlinx.coroutines.launch
 enum class StateValue {
     MENU,
     ANCHOR,
-    VISIBLE
+    VISIBLE,
+    MIC
 }
 
 enum class AvatarButtonType {
@@ -42,13 +43,14 @@ private fun updateState(value: StateValue, state: Boolean) {
             StateValue.MENU -> currentState.copy(
                 isAvatarMenuVisible = state
             )
-
             StateValue.VISIBLE -> currentState.copy(
                 avatarIsVisible = state
             )
-
             StateValue.ANCHOR -> currentState.copy(
                 avatarIsAnchored = state
+            )
+            StateValue.MIC -> currentState.copy(
+                isMicButtonShown = state
             )
         }
     }
@@ -158,9 +160,11 @@ class ArViewModel : ViewModel() {
     }
 
     fun getMicOrSendIcon(): Int {
-        return if(textState.value.text.isEmpty()) {
+        return if(textState.value.text.isEmpty() || !textFieldFocusState.value) {
+            updateState(StateValue.MIC, true)
             R.drawable.mic_icon
         } else {
+            updateState(StateValue.MIC, false)
             R.drawable.send_icon
         }
     }

@@ -1,6 +1,5 @@
 package com.example.arapp.ui
 
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -28,8 +27,6 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldColors
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -40,7 +37,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
@@ -103,11 +99,27 @@ fun ArScreen(
 //            val constraints = this
 //            val offSet = arViewModel.generateCoordinates(constraints, touchPosition)
         }
+
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.TopCenter)
+                    .background(Color.LightGray)
+            ) {
+                Text(text = "")
+            }
+
         Column(
             Modifier.align(Alignment.BottomCenter)
         ) {
-            Box {
-                FloatingActionMenu(arViewModel)
+            Row(
+                Modifier
+                    .fillMaxWidth()
+            ) {
+                Spacer(Modifier.weight(1f))
+                Box {
+                    FloatingActionMenu(arViewModel)
+                }
             }
             BottomBar(arViewModel, arUiState)
         }
@@ -125,7 +137,7 @@ fun BottomBar(
         arViewModel.textState
     }
 
-    var textFieldFocusState by remember { arViewModel.textFieldFocusState}
+    var textFieldFocusState by remember { arViewModel.textFieldFocusState }
 
     Box(
         modifier = Modifier
@@ -234,7 +246,7 @@ fun MicAndSendButton(
 
 @Composable
 fun FloatingActionMenu(arViewModel: ArViewModel) {
-    Column {
+    Column{
         ActionButton(
             onClick = { arViewModel.anchorOrFollowButtonOnClick() },
             color = Color.LightGray,
@@ -275,6 +287,11 @@ fun ActionButton(
         Row(
             verticalAlignment = Alignment.CenterVertically
         ) {
+            Spacer(Modifier.weight(1f))
+            Text(
+                values.second,
+                Modifier.padding(start = 8.dp)
+            )
             FloatingActionButton(
                 onClick = onClick,
                 modifier = Modifier
@@ -293,11 +310,14 @@ fun ActionButton(
                     tint = iconTint
                 )
             }
-            Text(
-                values.second,
-                Modifier.padding(start = 8.dp)
-            )
         }
+    }
+}
+
+@Composable
+fun TextResponse() {
+    Box {
+
     }
 }
 
@@ -307,6 +327,14 @@ fun ActionButton(
 fun ArScreenPreview() {
     ARAppTheme {
         ArScreen()
+    }
+}
+
+@Preview(showBackground = false)
+@Composable
+fun TextResponsePreview() {
+    ARAppTheme {
+        TextResponse()
     }
 }
 
