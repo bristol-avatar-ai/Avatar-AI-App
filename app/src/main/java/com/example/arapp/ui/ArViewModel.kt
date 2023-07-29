@@ -24,7 +24,8 @@ enum class StateValue {
     MENU,
     ANCHOR,
     VISIBLE,
-    MIC
+    MIC,
+    RESPONSE
 }
 
 enum class AvatarButtonType {
@@ -51,6 +52,9 @@ private fun updateState(value: StateValue, state: Boolean) {
             )
             StateValue.MIC -> currentState.copy(
                 isMicButtonShown = state
+            )
+            StateValue.RESPONSE -> currentState.copy(
+                isTextResponse = state
             )
         }
     }
@@ -167,6 +171,26 @@ class ArViewModel : ViewModel() {
             updateState(StateValue.MIC, false)
             R.drawable.send_icon
         }
+    }
+
+    fun micAndSendButtonOnClick() {
+        if(!uiState.value.isMicButtonShown) {
+            onSend()
+        }
+    }
+
+    fun onSend() {
+        _uiState.update { currentState ->
+            currentState.copy(
+                responseString = textState.value.text
+            )
+        }
+        textState.value = TextFieldValue()
+        updateState(StateValue.RESPONSE, true)
+    }
+
+    fun dismissTextResponse() {
+        updateState(StateValue.RESPONSE, false)
     }
 
 //    fun generateCoordinates(

@@ -5,5 +5,8 @@ data class ArUiState(
     val avatarIsVisible: Boolean = false,
     val avatarIsAnchored: Boolean = false,
     val isTextInput: Boolean = false,
-    val isMicButtonShown: Boolean = true
+    val isMicButtonShown: Boolean = true,
+    val isListening: Boolean = false,
+    val isTextResponse: Boolean = false,
+    val responseString: String = ""
 )

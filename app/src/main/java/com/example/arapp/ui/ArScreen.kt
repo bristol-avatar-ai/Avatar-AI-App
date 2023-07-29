@@ -1,6 +1,8 @@
 package com.example.arapp.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -17,6 +19,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
@@ -43,10 +46,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -99,30 +105,65 @@ fun ArScreen(
 //            val constraints = this
 //            val offSet = arViewModel.generateCoordinates(constraints, touchPosition)
         }
-
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .align(Alignment.TopCenter)
-                    .background(Color.LightGray)
-            ) {
-                Text(text = "")
-            }
-
         Column(
             Modifier.align(Alignment.BottomCenter)
         ) {
             Row(
                 Modifier
                     .fillMaxWidth()
+                    .align(Alignment.End)
             ) {
-                Spacer(Modifier.weight(1f))
-                Box {
+                Box(
+                    Modifier
+                        .align(Alignment.Bottom)
+                        .fillMaxWidth(
+                            if (arUiState.isAvatarMenuVisible) {
+                                0.5f
+                            } else 0.8f
+                        )
+                ) {
+                    if(arUiState.isTextResponse) {
+                        TextResponse(
+                            arUiState = arUiState,
+                            onClick = { arViewModel.dismissTextResponse() }
+                        )
+                    }
+                }
+                Box(
+                    Modifier
+                        .align(Alignment.Bottom)
+                ) {
                     FloatingActionMenu(arViewModel)
                 }
             }
             BottomBar(arViewModel, arUiState)
         }
+    }
+}
+
+@Composable
+fun TextResponse(
+    arUiState: ArUiState,
+    onClick: () -> Unit
+) {
+    Column(
+        Modifier
+            .padding(5.dp)
+            .background(
+                color = colorResource( R . color . text_response),
+                RoundedCornerShape(20.dp)
+            )
+            .border(1.dp, Color.Gray, RoundedCornerShape(20.dp))
+            .clickable {
+                onClick()
+            }
+    ) {
+        Text(
+            text = arUiState.responseString,
+            textAlign = TextAlign.Start,
+            modifier = Modifier.padding(5.dp),
+
+            )
     }
 }
 
@@ -160,6 +201,7 @@ fun BottomBar(
             UserInput(
                 textFieldValue = textState,
                 onTextChanged = { textState = it },
+                onSend = { arViewModel.onSend() },
                 placeHolderText = { Text(text = "Ask me a question!") },
                 colors = TextFieldDefaults.textFieldColors(
                     containerColor = Color.Transparent,
@@ -173,7 +215,7 @@ fun BottomBar(
                 focusState = textFieldFocusState
             )
             MicAndSendButton(
-                onClick = { },
+                onClick = { arViewModel.micAndSendButtonOnClick() },
                 icon = painterResource(arViewModel.getMicOrSendIcon())
             )
         }
@@ -186,6 +228,7 @@ fun BottomBar(
 fun UserInput(
     onTextChanged: (TextFieldValue) -> Unit,
     textFieldValue: TextFieldValue,
+    onSend: () -> Unit,
     placeHolderText: @Composable (() -> Unit),
     colors: TextFieldColors,
     modifier: Modifier,
@@ -202,6 +245,9 @@ fun UserInput(
             capitalization = KeyboardCapitalization.Sentences,
             autoCorrect = true,
             imeAction = ImeAction.Send
+        ),
+        keyboardActions = KeyboardActions(
+            onSend = { onSend() }
         ),
         modifier = modifier.onFocusChanged { state ->
             if (previousFocusState != state.isFocused) {
@@ -314,12 +360,6 @@ fun ActionButton(
     }
 }
 
-@Composable
-fun TextResponse() {
-    Box {
-
-    }
-}
 
 
 @Preview(showBackground = false)
@@ -327,14 +367,6 @@ fun TextResponse() {
 fun ArScreenPreview() {
     ARAppTheme {
         ArScreen()
-    }
-}
-
-@Preview(showBackground = false)
-@Composable
-fun TextResponsePreview() {
-    ARAppTheme {
-        TextResponse()
     }
 }
 
