@@ -7,11 +7,5 @@
     <string name="menu_option_1">Option 1</string>
     <string name="menu_option_2">Option 2</string>
     <string name="listening_text">Listening</string>
-    <!-- TODO: Remove or change this placeholder text -->
-    <string name="hello_blank_fragment">Hello blank fragment</string>
-    <string name="text_input">Type here...</string>
-    <string name="sendButton">Send</string>
-    <string name="textButton">Text</string>
-    <string name="title_activity_main_compose">MainActivityCompose</string>
-    <string name="title_activity_main_test">MainActivityTest</string>
+    <string name="temp_response">this is a text response. this is a text response. this is a text response. this is a text response. this is a text response. this is a text response.</string>
 </resources>
