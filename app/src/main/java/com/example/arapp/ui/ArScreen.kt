@@ -1,5 +1,7 @@
 package com.example.arapp.ui
 
+import android.util.Log
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -24,7 +26,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldColors
@@ -48,7 +49,6 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.TextFieldValue
@@ -65,7 +65,8 @@ fun ArScreen(
     arViewModel: ArViewModel = viewModel()
 ) {
     val arUiState by arViewModel.uiState.collectAsState()
-    val coroutine = rememberCoroutineScope()
+    //Ar screen scope
+    val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val touchPosition by remember { arViewModel.touchPosition }
     val focusRequester = remember { arViewModel.focusRequester }
@@ -73,71 +74,89 @@ fun ArScreen(
     Box(
         Modifier.fillMaxHeight()
     ) {
-        ARScene(
-            modifier = Modifier
-                .fillMaxSize(),
-            nodes = remember { arViewModel.nodes },
-            planeRenderer = false,
-            onCreate = { arSceneView ->
-                arViewModel.addAvatarToScene(arSceneView, coroutine, context)
-            },
-        )
-        //Allows detection of touches on the ARScene
-        BoxWithConstraints(
-            Modifier
-                .fillMaxHeight(0.95f)
-                .fillMaxWidth(0.95f)
-                .align(Alignment.Center)
-                .pointerInput(Unit) {
-                    detectTapGestures(
-                        onTap = {
-                            arViewModel.dismissActionMenu()
-                            focusRequester.requestFocus()
-                        }
+        if (arUiState.isLoading) {
+            LoadingScreen()
+        } else {
+            ARScene(
+                modifier = Modifier
+                    .fillMaxSize(),
+                nodes = remember { arViewModel.nodes },
+                planeRenderer = false,
+                onCreate = { arSceneView ->
+                    arViewModel.addAvatarToScene(arSceneView, scope, context)
+                },
+            )
+            //Allows detection of touches on the ARScene
+            BoxWithConstraints(
+                Modifier
+                    .fillMaxHeight(0.95f)
+                    .fillMaxWidth(0.95f)
+                    .align(Alignment.Center)
+                    .pointerInput(Unit) {
+                        detectTapGestures(
+                            onTap = {
+                                arViewModel.dismissActionMenu()
+                                focusRequester.requestFocus()
+                            }
 //                        onLongPress = { press ->
 //                            arViewModel.arSceneOnLongPress(press)
 //                        }
-                    )
-                }
-                .focusRequester(focusRequester)
-                .focusable()
-        ) {
-//            val constraints = this
-//            val offSet = arViewModel.generateCoordinates(constraints, touchPosition)
-        }
-        Column(
-            Modifier.align(Alignment.BottomCenter)
-        ) {
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .align(Alignment.End)
-            ) {
-                Box(
-                    Modifier
-                        .align(Alignment.Bottom)
-                        .fillMaxWidth(
-                            if (arUiState.isAvatarMenuVisible) {
-                                0.5f
-                            } else 0.8f
-                        )
-                ) {
-                    if(arUiState.isTextResponse) {
-                        TextResponse(
-                            arUiState = arUiState,
-                            onClick = { arViewModel.dismissTextResponse() }
                         )
                     }
-                }
-                Box(
-                    Modifier
-                        .align(Alignment.Bottom)
-                ) {
-                    FloatingActionMenu(arViewModel)
-                }
+                    .focusRequester(focusRequester)
+                    .focusable()
+            ) {
+//            val constraints = this
+//            val offSet = arViewModel.generateCoordinates(constraints, touchPosition)
             }
-            BottomBar(arViewModel, arUiState)
+            Column(
+                Modifier.align(Alignment.BottomCenter)
+            ) {
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .align(Alignment.End)
+                ) {
+                    Box(
+                        Modifier
+                            .align(Alignment.Bottom)
+                            .fillMaxWidth(
+                                if (arUiState.isAvatarMenuVisible) {
+                                    0.5f
+                                } else 0.8f
+                            )
+                    ) {
+                        if (arUiState.responsePresent) {
+                            TextResponse(
+                                arUiState = arUiState,
+                                onClick = { arViewModel.dismissTextResponse() }
+                            )
+                        }
+                    }
+                    Box(
+                        Modifier
+                            .align(Alignment.Bottom)
+                    ) {
+                        FloatingActionMenu(arViewModel)
+                    }
+                }
+                BottomBar(arViewModel, arUiState)
+            }
         }
+    }
+}
+
+@Composable
+fun LoadingScreen() {
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(Color.White)
+    ) {
+        Text(
+            text = "Loading",
+            modifier = Modifier.align(Alignment.Center)
+        )
     }
 }
 
@@ -150,7 +169,7 @@ fun TextResponse(
         Modifier
             .padding(5.dp)
             .background(
-                color = colorResource( R . color . text_response),
+                color = colorResource(R.color.text_response),
                 RoundedCornerShape(20.dp)
             )
             .border(1.dp, Color.Gray, RoundedCornerShape(20.dp))
@@ -159,7 +178,7 @@ fun TextResponse(
             }
     ) {
         Text(
-            text = arUiState.responseString,
+            text = arUiState.responseValue,
             textAlign = TextAlign.Start,
             modifier = Modifier.padding(5.dp),
 
@@ -215,7 +234,8 @@ fun BottomBar(
                 focusState = textFieldFocusState
             )
             MicAndSendButton(
-                onClick = { arViewModel.micAndSendButtonOnClick() },
+                onPress = {arViewModel.sendButtonOnPress()},
+                onRelease = {arViewModel.sendButtonOnRelease()},
                 icon = painterResource(arViewModel.getMicOrSendIcon())
             )
         }
@@ -258,27 +278,44 @@ fun UserInput(
     )
 }
 
+
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun MicAndSendButton(
-    onClick: () -> Unit,
+    onPress: () -> Unit,
+    onRelease: () -> Unit,
     icon: Painter,
     description: String = "",
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
+    val pressed = remember { mutableStateOf(false) }
 
     val buttonColor by rememberUpdatedState(
-        if (interactionSource.collectIsPressedAsState().value) Color.DarkGray else Color.Transparent
+        if (pressed.value) Color.DarkGray else Color.Transparent
     )
+
     val iconTint by rememberUpdatedState(
-        if (interactionSource.collectIsPressedAsState().value) Color.White else Color.Black
+        if( pressed.value) Color.White else Color.Black
     )
-    IconButton(
-        onClick = onClick,
+
+    Box(
         modifier = Modifier
             .size(50.dp)
             .padding(all = 8.dp)
-            .background(color = buttonColor, shape = CircleShape),
-        interactionSource = interactionSource
+            .background(color = buttonColor, shape = CircleShape)
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onPress = {
+                        try {
+                            onPress()
+                            pressed.value = true
+                            awaitRelease()
+                        } finally {
+                            onRelease()
+                            pressed.value = false
+                        }
+                    }
+                )
+            }
     ) {
         Icon(
             icon,
@@ -292,7 +329,7 @@ fun MicAndSendButton(
 
 @Composable
 fun FloatingActionMenu(arViewModel: ArViewModel) {
-    Column{
+    Column {
         ActionButton(
             onClick = { arViewModel.anchorOrFollowButtonOnClick() },
             color = Color.LightGray,
@@ -359,7 +396,6 @@ fun ActionButton(
         }
     }
 }
-
 
 
 @Preview(showBackground = false)
