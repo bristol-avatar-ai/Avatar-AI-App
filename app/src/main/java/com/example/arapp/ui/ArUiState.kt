@@ -1,20 +1,16 @@
 package com.example.arapp.ui
 
+import com.example.arapp.R
 import com.example.arapp.const.Language
 
 
 data class ArUiState(
-    //Avatar
-    val avatarIsVisible: Boolean = false,
-    val avatarIsAnchored: Boolean = false,
-
     //UI
     val isLoading: Boolean = true,
-    val isAvatarMenuVisible: Boolean = false,
     val inputMode: Int = speech,
+    val textFieldStringResId: Int = R.string.send_message_hint,
 
     //Recording
-    val isRecordingEnabled: Boolean = false,
     val recordingState: Int = ready,
     val responsePresent: Boolean = false,
     val responseValue: String = "",
@@ -23,7 +19,11 @@ data class ArUiState(
     val isTextToSpeechReady: Boolean = false,
 
     //Language
-    val language: Language = Language.English
+    val language: Language = Language.English,
+
+    //Alert message
+    val alertIsShown: Boolean = false,
+    val alertResId: Int = R.string.empty_string
 
 ) {
     companion object {

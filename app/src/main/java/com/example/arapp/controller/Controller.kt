@@ -2,11 +2,9 @@ package com.example.arapp.controller
 
 import android.content.Context
 import android.speech.tts.TextToSpeech
-import com.example.arapp.MainActivity
 import com.example.arapp.audio.AudioRecorder
-import com.example.arapp.const.Language
 import com.example.arapp.model.ChatService
-import com.example.arapp.ui.ArViewModel
+import com.example.arapp.ui.MainViewModel
 import kotlinx.coroutines.CoroutineScope
 import java.io.File
 
@@ -18,7 +16,7 @@ private const val RECORDING_FILE_TYPE = "ogg"
  * and variables in the ChatBox Fragment.
  */
 class Controller(
-    listener: ArViewModel,
+    listener: MainViewModel,
     context: Context,
     scope: CoroutineScope
 ) {
