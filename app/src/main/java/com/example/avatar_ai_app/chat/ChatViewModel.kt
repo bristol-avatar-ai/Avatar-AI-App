@@ -12,6 +12,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.avatar_ai_app.R
 import com.example.avatar_ai_app.audio.AudioRecorder
 import com.example.avatar_ai_app.network.TranscriptionApi
+import com.example.avatar_ai_app.ui.MainViewModel
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -33,6 +34,9 @@ class ChatViewModel(context: Context, private var language: Language) : ViewMode
 
     private val _status = MutableLiveData(Status.INIT)
     val status: LiveData<Status> get() = _status
+
+    private val _error = MutableLiveData<MainViewModel.ErrorType>()
+    val error: LiveData<MainViewModel.ErrorType> get() = _error
 
     private var textToSpeechReady = false
 
