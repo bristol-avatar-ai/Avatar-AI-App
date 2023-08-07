@@ -27,7 +27,7 @@ private const val TAG = "ArViewModel"
 private const val RECORDING_WAIT = 200L
 
 class MainViewModel(private val chatViewModel: ChatViewModel,
-private val lifecycleOwner: LifecycleOwner) : ViewModel() {
+lifecycleOwner: LifecycleOwner) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ArUiState())
     private val _isCameraEnabled = MutableStateFlow(false)
@@ -101,6 +101,12 @@ private val lifecycleOwner: LifecycleOwner) : ViewModel() {
             }
             //clear the text field
             textState.value = TextFieldValue()
+        }
+
+        chatViewModel.error.observe(lifecycleOwner) {
+            if(it.name.isNotEmpty()) {
+                generateAlert(it)
+            }
         }
     }
 
@@ -243,11 +249,7 @@ private val lifecycleOwner: LifecycleOwner) : ViewModel() {
             ErrorType.GENERIC -> Pair(R.string.error_title, R.string.error_message)
             ErrorType.NETWORK -> Pair(R.string.error_title, R.string.network_error_message)
             ErrorType.RECORDING -> Pair(R.string.error_title, R.string.recording_error_message)
-            ErrorType.RECORDING_LENGTH -> Pair(
-                R.string.error_title,
-                R.string.recording_length_error_message
-            )
-
+            ErrorType.RECORDING_LENGTH -> Pair(R.string.error_title, R.string.recording_length_error_message)
             ErrorType.SPEECH -> Pair(R.string.error_title, R.string.speech_error_message)
         }
         _alertContent.value = alertContent
@@ -285,8 +287,10 @@ private val lifecycleOwner: LifecycleOwner) : ViewModel() {
 //    }
 }
 
-class MainViewModelFactory(private val chatViewModel: ChatViewModel, private val lifecycleOwner: LifecycleOwner) :
-    ViewModelProvider.Factory {
+class MainViewModelFactory(
+    private val chatViewModel: ChatViewModel,
+    private val lifecycleOwner: LifecycleOwner
+    ): ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(MainViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")

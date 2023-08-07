@@ -12,6 +12,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.avatar_ai_app.R
 import com.example.avatar_ai_app.audio.AudioRecorder
 import com.example.avatar_ai_app.network.TranscriptionApi
+import com.example.avatar_ai_app.ui.MainViewModel
+import com.example.avatar_ai_cloud_storage.database.Exhibition
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -27,12 +29,23 @@ class ChatViewModel(context: Context, private var language: Language) : ViewMode
 
     enum class Status { INIT, READY, RECORDING, PROCESSING }
 
+    enum class Request { NAVIGATION, RECOGNITION }
+
     // Save the recordings filepath to the cache directory.
     private val recordingFile: File =
         File.createTempFile(RECORDING_NAME, RECORDING_FILE_TYPE, context.cacheDir)
 
     private val _status = MutableLiveData(Status.INIT)
     val status: LiveData<Status> get() = _status
+
+    private val _request = MutableLiveData<Request>()
+    val request: LiveData<Request> get() = _request
+
+    private val _destinationID = MutableLiveData<String>()
+    val destinationID: LiveData<String> get() = _destinationID
+
+    private val _error = MutableLiveData<MainViewModel.ErrorType>()
+    val error: LiveData<MainViewModel.ErrorType> get() = _error
 
     private var textToSpeechReady = false
 
@@ -65,6 +78,10 @@ class ChatViewModel(context: Context, private var language: Language) : ViewMode
         textToSpeech.shutdown()
     }
 
+    fun describeExhibition(exhibitionName: String) {
+
+    }
+
     /*
     * Adds a new message to the chat history.
     * Newest messages are stored first.
@@ -76,6 +93,10 @@ class ChatViewModel(context: Context, private var language: Language) : ViewMode
         currentMessages.add(0, message)
         // Set the updated list back to the MutableLiveData using postValue
         _messages.postValue(currentMessages)
+    }
+
+    fun setExhibitionList(exhibitionList: List<Exhibition>) {
+
     }
 
     /*
