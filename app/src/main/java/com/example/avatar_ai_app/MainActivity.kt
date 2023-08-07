@@ -16,6 +16,8 @@ import androidx.lifecycle.ViewModelProvider
 import com.example.avatar_ai_app.chat.ChatViewModel
 import com.example.avatar_ai_app.chat.ChatViewModelFactory
 import com.example.avatar_ai_app.chat.Language
+import com.example.avatar_ai_app.data.DatabaseViewModel
+import com.example.avatar_ai_app.data.DatabaseViewModelFactory
 import com.example.avatar_ai_app.ui.ArScreen
 import com.example.avatar_ai_app.ui.AvatarViewModel
 import com.example.avatar_ai_app.ui.MainViewModel
@@ -31,6 +33,7 @@ class MainActivity : ComponentActivity() {
 
     // Delegate to viewModels to retain its value through
     // configuration changes.
+    private lateinit var databaseViewModel: DatabaseViewModel
     private lateinit var chatViewModel: ChatViewModel
     private lateinit var mainViewModel: MainViewModel
     private val avatarViewModel: AvatarViewModel by viewModels()
@@ -38,10 +41,16 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        databaseViewModel = ViewModelProvider(
+            this,
+            DatabaseViewModelFactory(this)
+        )[DatabaseViewModel::class.java]
+
         chatViewModel = ViewModelProvider(
             this,
             ChatViewModelFactory(this, Language.English)
         )[ChatViewModel::class.java]
+        //TODO: Remember to update the ChatViewModel's exhibition list
 
         mainViewModel =
             ViewModelProvider(
