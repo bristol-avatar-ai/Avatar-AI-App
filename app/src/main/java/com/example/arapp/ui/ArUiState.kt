@@ -1,7 +1,7 @@
 package com.example.arapp.ui
 
 import com.example.arapp.R
-import com.example.arapp.const.Language
+import com.example.arapp.chat.Language
 
 
 data class ArUiState(

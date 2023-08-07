@@ -1,4 +1,4 @@
-package com.example.arapp.model
+package com.example.arapp.chat
 
 class ChatService {
     

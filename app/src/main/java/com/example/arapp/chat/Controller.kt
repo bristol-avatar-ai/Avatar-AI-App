@@ -1,9 +1,8 @@
-package com.example.arapp.controller
+package com.example.arapp.chat
 
 import android.content.Context
 import android.speech.tts.TextToSpeech
 import com.example.arapp.audio.AudioRecorder
-import com.example.arapp.model.ChatService
 import com.example.arapp.ui.MainViewModel
 import kotlinx.coroutines.CoroutineScope
 import java.io.File

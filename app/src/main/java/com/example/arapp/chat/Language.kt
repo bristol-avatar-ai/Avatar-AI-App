@@ -1,4 +1,4 @@
-package com.example.arapp.const
+package com.example.arapp.chat
 
 /**
  * This enum class contains the language setting strings

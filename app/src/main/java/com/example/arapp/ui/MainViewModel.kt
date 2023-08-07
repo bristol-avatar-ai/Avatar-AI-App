@@ -15,7 +15,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.arapp.R
 import com.example.arapp.audio.AudioRecorder
-import com.example.arapp.controller.Controller
+import com.example.arapp.chat.Controller
 import com.example.arapp.network.TranscriptionApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
