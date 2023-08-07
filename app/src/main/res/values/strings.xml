@@ -1,5 +1,5 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <string name="app_name">AR App</string>
+    <string name="app_name">Avatar AI App</string>
     <string name="summon_avatar_button">Summon Avatar</string>
     <string name="place_avatar_button">Place Avatar</string>
     <string name="avatar_button">Summon Avatar</string>

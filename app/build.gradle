@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace 'com.example.arapp'
+    namespace 'com.example.avatar_ai_app'
     compileSdk 34
 
     defaultConfig {
-        applicationId "com.example.arapp"
+        applicationId "com.example.avatar_ai_app"
         minSdk 33
         targetSdk 34
         versionCode 1
