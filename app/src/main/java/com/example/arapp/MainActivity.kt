@@ -46,7 +46,7 @@ class MainActivity : ComponentActivity() {
         mainViewModel =
             ViewModelProvider(
                 this,
-                MainViewModelFactory(chatViewModel)
+                MainViewModelFactory(chatViewModel, this)
             )[MainViewModel::class.java]
 
         setContent {
@@ -87,12 +87,6 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        mainViewModel.controller.release()
-        mainViewModel.resetControllerState()
     }
 }
 

@@ -1,25 +1,19 @@
 package com.example.arapp.ui
 
 import android.Manifest
-import android.content.Context
-import android.speech.tts.TextToSpeech
-import android.util.Log
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.arapp.R
-import com.example.arapp.audio.AudioRecorder
 import com.example.arapp.chat.ChatViewModel
-import com.example.arapp.chat.Controller
-import com.example.arapp.chat.Language
-import com.example.arapp.network.TranscriptionApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -28,14 +22,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.util.Locale
 
 private const val TAG = "ArViewModel"
 private const val RECORDING_WAIT = 200L
 
-class MainViewModel(private val chatViewModel: ChatViewModel) : ViewModel(),
-    TextToSpeech.OnInitListener,
-    AudioRecorder.RecordingCompletionListener {
+class MainViewModel(private val chatViewModel: ChatViewModel,
+private val lifecycleOwner: LifecycleOwner) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ArUiState())
     private val _isCameraEnabled = MutableStateFlow(false)
@@ -62,9 +54,6 @@ class MainViewModel(private val chatViewModel: ChatViewModel) : ViewModel(),
     val textState = mutableStateOf(TextFieldValue())
     var textFieldFocusState = mutableStateOf(false)
 
-    // Controller containing all non-UI components.
-    lateinit var controller: Controller
-
     enum class ErrorType {
         GENERIC,
         NETWORK,
@@ -73,24 +62,46 @@ class MainViewModel(private val chatViewModel: ChatViewModel) : ViewModel(),
         SPEECH
     }
 
-    /*
-    * Initialises the controller
-    */
-    fun initController(context: Context) {
-        controller = Controller(this, context, viewModelScope)
-    }
+    init {
+        chatViewModel.status.observe(lifecycleOwner) {
+            when(it){
+                ChatViewModel.Status.INIT -> {
 
-    /*
-    * This function sets the TextToSpeech language and handles any errors.
-    */
-    override fun onInit(status: Int) {
-        if (status == TextToSpeech.SUCCESS) {
-            setTextToSpeechLanguage()
-        } else {
-            Log.e(TAG, "Failed to initialise TextToSpeech\n$status")
-            generateAlert(ErrorType.SPEECH)
+                }
+                ChatViewModel.Status.READY -> {
+                    setTextToSpeechReady(true)
+                    updateLoadingState(false)
+                    setRecordingState(ArUiState.ready)
+                    updateTextFieldStringResId(R.string.send_message_hint)
+                }
+                ChatViewModel.Status.RECORDING -> {
+                    setRecordingState(ArUiState.recording)
+                    updateTextFieldStringResId(R.string.recording_message)
+                }
+                ChatViewModel.Status.PROCESSING -> {
+                    setRecordingState(ArUiState.processing)
+                    updateTextFieldStringResId(R.string.processing_message)
+                }
+                else -> {}
+            }
         }
-        updateLoadingState(false)
+
+        chatViewModel.messages.observe(lifecycleOwner) {
+            //TODO
+            var messages: String? = null
+            if(!it.isNullOrEmpty()){
+                messages = it[0].string
+            }
+            _uiState.update { currentState ->
+                currentState.copy(
+                    responsePresent = messages != null,
+                    responseValue = messages ?: ""
+                )
+
+            }
+            //clear the text field
+            textState.value = TextFieldValue()
+        }
     }
 
     /*
@@ -122,53 +133,6 @@ class MainViewModel(private val chatViewModel: ChatViewModel) : ViewModel(),
     }
 
     /*
-    * This function sets the TextToSpeech language and handles any errors.
-    */
-    private fun setTextToSpeechLanguage() {
-        val result = controller.textToSpeech.setLanguage(Locale.UK)
-        if (result == TextToSpeech.LANG_MISSING_DATA
-            || result == TextToSpeech.LANG_NOT_SUPPORTED
-        ) {
-            Log.e(TAG, "Failed to set TextToSpeech language\n$result")
-            generateAlert(ErrorType.SPEECH)
-        } else {
-            setTextToSpeechReady(true)
-        }
-    }
-
-    /*
-    * onRecordingCompleted is called when the AudioRecorder stops recording.
-    * The action button is disables and the hint is modified. A reply is
-    * generated before the control and hint are reset.
-     */
-    override fun onRecordingCompleted() {
-        setRecordingState(ArUiState.processing)
-        updateTextFieldStringResId(R.string.processing_message)
-        viewModelScope.launch {
-            replyToSpeech()
-            setRecordingState(ArUiState.ready)
-            updateTextFieldStringResId(R.string.send_message_hint)
-        }
-    }
-
-    /*
-    * This function transcribes the recordingFile into text, deletes the
-    * file, and then generates a reply.
-     */
-    private suspend fun replyToSpeech() {
-        val message = TranscriptionApi.transcribe(controller.recordingFile)
-        if (controller.recordingFile.exists()) {
-            controller.recordingFile.delete()
-        }
-        if (message != null) {
-            generateReply(message)
-        } else {
-            generateAlert(ErrorType.NETWORK)
-            Log.e(TAG, "Wifi error")
-        }
-    }
-
-    /*
     * Returns a mic or send icon for the send button depending on the focus state
     */
     fun getMicOrSendIcon(): Int {
@@ -188,38 +152,9 @@ class MainViewModel(private val chatViewModel: ChatViewModel) : ViewModel(),
     }
 
     fun onSend() {
-        generateReply(textState.value.text)
+        chatViewModel.newUserMessage(textState.value.text)
     }
 
-    /*
-    * Gets a response to the input message with ChatService. Generates an audio
-    * reply and plays it if TextToSpeech has been initialised correctly.
-    * Coroutines are used to prevent blocking the main thread.
-     */
-    private fun generateReply(message: String) {
-        viewModelScope.launch {
-            // Generate reply with ChatService.
-            val reply = controller.chatService.getResponse(message)
-            outputMessage(reply)
-        }
-    }
-
-    private fun outputMessage(message: String) {
-        _uiState.update { currentState ->
-            currentState.copy(
-                responsePresent = true,
-                responseValue = message
-            )
-        }
-        //clear the text field
-        textState.value = TextFieldValue()
-        if (uiState.value.isTextToSpeechReady) {
-            controller.textToSpeech.speak(
-                message,
-                TextToSpeech.QUEUE_FLUSH, null, null
-            )
-        }
-    }
 
     fun dismissTextResponse() {
         _uiState.update { currentState ->
@@ -272,16 +207,14 @@ class MainViewModel(private val chatViewModel: ChatViewModel) : ViewModel(),
     fun sendButtonOnPress() {
         when (uiState.value.inputMode) {
             ArUiState.text -> {
-                generateReply(textState.value.text)
+                chatViewModel.newUserMessage(textState.value.text)
             }
 
             ArUiState.speech -> {
                 startTime = System.currentTimeMillis()
                 recordingJob = viewModelScope.launch(Dispatchers.IO) {
-                    setRecordingState(ArUiState.recording)
-                    updateTextFieldStringResId(R.string.recording_message)
                     delay(RECORDING_WAIT)
-                    controller.audioRecorder.start()
+                    chatViewModel.startRecording()
                 }
             }
         }
@@ -292,24 +225,12 @@ class MainViewModel(private val chatViewModel: ChatViewModel) : ViewModel(),
             ArUiState.speech -> {
                 if (System.currentTimeMillis() - startTime < RECORDING_WAIT) {
                     recordingJob?.cancel()
-                    setRecordingState(ArUiState.ready)
-                    updateTextFieldStringResId(R.string.send_message_hint)
                     generateAlert(ErrorType.RECORDING_LENGTH)
                 } else {
-                    controller.audioRecorder.stop()
+                    chatViewModel.stopRecording()
                     // Reminder, controller stop is asynchronous, code after this should go in the call-back function.
                 }
             }
-        }
-    }
-
-    fun resetControllerState() {
-        _uiState.update { currentState ->
-            currentState.copy(
-                inputMode = ArUiState.speech,
-                recordingState = ArUiState.ready,
-                isTextToSpeechReady = false,
-            )
         }
     }
 
@@ -364,12 +285,12 @@ class MainViewModel(private val chatViewModel: ChatViewModel) : ViewModel(),
 //    }
 }
 
-class MainViewModelFactory(private val chatViewModel: ChatViewModel) :
+class MainViewModelFactory(private val chatViewModel: ChatViewModel, private val lifecycleOwner: LifecycleOwner) :
     ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(MainViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return MainViewModel(chatViewModel) as T
+            return MainViewModel(chatViewModel, lifecycleOwner) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

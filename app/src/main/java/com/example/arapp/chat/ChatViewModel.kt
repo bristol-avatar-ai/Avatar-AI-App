@@ -159,10 +159,10 @@ class ChatViewModel(context: Context, private var language: Language) : ViewMode
     * text input and changes the hint.
      */
     // TODO: Recording help message
-    private fun startRecording() {
+    fun startRecording() {
         try {
             audioRecorder.start()
-            _status.value = Status.RECORDING
+            _status.postValue(Status.RECORDING)
         } catch (_: Exception) {
             replyWithMessage(R.string.recording_error_message)
             // TODO: Error message
@@ -183,7 +183,7 @@ class ChatViewModel(context: Context, private var language: Language) : ViewMode
     * file, and then generates a reply.
      */
     override fun onRecordingCompleted() {
-        _status.value = Status.PROCESSING
+        _status.postValue(Status.PROCESSING)
         viewModelScope.launch {
             val message = TranscriptionApi.transcribe(recordingFile)
             if (recordingFile.exists()) {
@@ -195,7 +195,7 @@ class ChatViewModel(context: Context, private var language: Language) : ViewMode
                 replyWithMessage(R.string.network_error_message)
                 // TODO: Error message
             }
-
+            _status.postValue(Status.READY)
         }
     }
 
