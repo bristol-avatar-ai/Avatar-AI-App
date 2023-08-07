@@ -16,7 +16,6 @@ import androidx.lifecycle.viewModelScope
 import com.example.arapp.R
 import com.example.arapp.audio.AudioRecorder
 import com.example.arapp.controller.Controller
-import com.example.arapp.network.TranscriptionAPIServiceException
 import com.example.arapp.network.TranscriptionApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -105,7 +104,7 @@ class MainViewModel : ViewModel(),
     * Updates the permission states stored in the live data variables
     */
     fun updatePermissionStatus(permission: String, isGranted: Boolean) {
-        when(permission) {
+        when (permission) {
             Manifest.permission.CAMERA -> _isCameraEnabled.value = isGranted
             Manifest.permission.RECORD_AUDIO -> _isRecordingEnabled.value = isGranted
         }
@@ -154,15 +153,15 @@ class MainViewModel : ViewModel(),
     * file, and then generates a reply.
      */
     private suspend fun replyToSpeech() {
-        try {
-            val message = TranscriptionApi.transcribe(controller.recordingFile)
+        val message = TranscriptionApi.transcribe(controller.recordingFile)
+        if (controller.recordingFile.exists()) {
             controller.recordingFile.delete()
+        }
+        if (message != null) {
             generateReply(message)
-        } catch (e: TranscriptionAPIServiceException.NoInternetException) {
+        } else {
             generateAlert(ErrorType.NETWORK)
             Log.e(TAG, "Wifi error")
-        } catch (e: Exception) {
-            generateAlert(ErrorType.GENERIC)
         }
     }
 
