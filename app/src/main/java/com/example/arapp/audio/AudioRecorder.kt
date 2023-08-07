@@ -4,6 +4,7 @@ import android.content.Context
 import android.media.MediaRecorder
 import android.util.Log
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -80,7 +81,7 @@ class AudioRecorder(
             }
             startTime = System.currentTimeMillis()
             // Automatically stop recording after MAXIMUM_RECORDING_TIME.
-            autoStopJob = scope.launch {
+            autoStopJob = scope.launch(Dispatchers.IO) {
                 delay(MAXIMUM_RECORDING_TIME)
                 stop()
             }
@@ -96,7 +97,7 @@ class AudioRecorder(
         autoStopJob?.cancel()
 
         // Stop recording with a minimum delay.
-        scope.launch {
+        scope.launch(Dispatchers.IO) {
             delay(getStopDelay(startTime))
             mediaRecorder?.apply {
                 stop()
