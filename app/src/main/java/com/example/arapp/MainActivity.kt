@@ -12,9 +12,14 @@ import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.ViewModelProvider
+import com.example.arapp.chat.ChatViewModel
+import com.example.arapp.chat.ChatViewModelFactory
+import com.example.arapp.chat.Language
 import com.example.arapp.ui.ArScreen
-import com.example.arapp.ui.MainViewModel
 import com.example.arapp.ui.AvatarViewModel
+import com.example.arapp.ui.MainViewModel
+import com.example.arapp.ui.MainViewModelFactory
 import com.example.arapp.ui.components.CameraPermissionRequestProvider
 import com.example.arapp.ui.components.PermissionDialog
 import com.example.arapp.ui.components.RecordAudioPermissionRequestProvider
@@ -26,12 +31,23 @@ class MainActivity : ComponentActivity() {
 
     // Delegate to viewModels to retain its value through
     // configuration changes.
-    private val mainViewModel: MainViewModel by viewModels()
+    private lateinit var chatViewModel: ChatViewModel
+    private lateinit var mainViewModel: MainViewModel
     private val avatarViewModel: AvatarViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        mainViewModel.initController(this)
+
+        chatViewModel = ViewModelProvider(
+            this,
+            ChatViewModelFactory(this, Language.English)
+        )[ChatViewModel::class.java]
+
+        mainViewModel =
+            ViewModelProvider(
+                this,
+                MainViewModelFactory(chatViewModel)
+            )[MainViewModel::class.java]
 
         setContent {
             ARAppTheme {

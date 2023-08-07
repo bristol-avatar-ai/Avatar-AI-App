@@ -12,10 +12,13 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.arapp.R
 import com.example.arapp.audio.AudioRecorder
+import com.example.arapp.chat.ChatViewModel
 import com.example.arapp.chat.Controller
+import com.example.arapp.chat.Language
 import com.example.arapp.network.TranscriptionApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -30,7 +33,7 @@ import java.util.Locale
 private const val TAG = "ArViewModel"
 private const val RECORDING_WAIT = 200L
 
-class MainViewModel : ViewModel(),
+class MainViewModel(private val chatViewModel: ChatViewModel) : ViewModel(),
     TextToSpeech.OnInitListener,
     AudioRecorder.RecordingCompletionListener {
 
@@ -359,4 +362,15 @@ class MainViewModel : ViewModel(),
 //
 //        return IntOffset(tap.x.toInt(), tap.y.toInt())
 //    }
+}
+
+class MainViewModelFactory(private val chatViewModel: ChatViewModel) :
+    ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(MainViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return MainViewModel(chatViewModel) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
+    }
 }
