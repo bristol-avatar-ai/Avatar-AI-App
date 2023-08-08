@@ -19,12 +19,15 @@ android {
         vectorDrawables {
             useSupportLibrary true
         }
+
+        // Add API as a Manifest Placeholder
+        manifestPlaceholders["cloud_anchors_api_key"] =  project.property("CLOUD_ANCHORS_API_KEY").toString()
     }
     viewBinding {
         enabled = true
     }
     buildTypes {
-        all {
+        configureEach {
             // IBM Watson Speech to Text Credentials
             buildConfigField("String", "SPEECH_TO_TEXT_BASE_URL", SPEECH_TO_TEXT_BASE_URL)
             buildConfigField("String", "SPEECH_TO_TEXT_API_KEY", SPEECH_TO_TEXT_API_KEY)

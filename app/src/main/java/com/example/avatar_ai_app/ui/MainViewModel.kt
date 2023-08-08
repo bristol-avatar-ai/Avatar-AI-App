@@ -14,6 +14,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.avatar_ai_app.R
 import com.example.avatar_ai_app.chat.ChatViewModel
+import com.example.avatar_ai_app.chat.ChatViewModelInterface
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -65,20 +66,20 @@ lifecycleOwner: LifecycleOwner) : ViewModel() {
     init {
         chatViewModel.status.observe(lifecycleOwner) {
             when(it){
-                ChatViewModel.Status.INIT -> {
+                ChatViewModelInterface.Status.INIT -> {
 
                 }
-                ChatViewModel.Status.READY -> {
+                ChatViewModelInterface.Status.READY -> {
                     setTextToSpeechReady(true)
                     updateLoadingState(false)
                     setRecordingState(ArUiState.ready)
                     updateTextFieldStringResId(R.string.send_message_hint)
                 }
-                ChatViewModel.Status.RECORDING -> {
+                ChatViewModelInterface.Status.RECORDING -> {
                     setRecordingState(ArUiState.recording)
                     updateTextFieldStringResId(R.string.recording_message)
                 }
-                ChatViewModel.Status.PROCESSING -> {
+                ChatViewModelInterface.Status.PROCESSING -> {
                     setRecordingState(ArUiState.processing)
                     updateTextFieldStringResId(R.string.processing_message)
                 }
