@@ -1,7 +1,7 @@
 package com.example.avatar_ai_app.ui
 
 import com.example.avatar_ai_app.R
-import com.example.avatar_ai_app.chat.Language
+import com.example.avatar_ai_app.language.Language
 
 
 data class UiState(

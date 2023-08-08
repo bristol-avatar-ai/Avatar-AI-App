@@ -1,4 +1,4 @@
-package com.example.avatar_ai_app.chat
+package com.example.avatar_ai_app.language
 
 import java.util.Locale
 

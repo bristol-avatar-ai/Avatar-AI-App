@@ -15,7 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.ViewModelProvider
 import com.example.avatar_ai_app.chat.ChatViewModel
 import com.example.avatar_ai_app.chat.ChatViewModelFactory
-import com.example.avatar_ai_app.chat.Language
+import com.example.avatar_ai_app.language.Language
 import com.example.avatar_ai_app.data.DatabaseViewModel
 import com.example.avatar_ai_app.data.DatabaseViewModelFactory
 import com.example.avatar_ai_app.ui.ArScreen

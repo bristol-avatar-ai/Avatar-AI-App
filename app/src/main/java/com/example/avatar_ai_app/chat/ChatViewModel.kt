@@ -10,6 +10,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.avatar_ai_app.audio.AudioRecorder
 import com.example.avatar_ai_app.chat.ChatViewModelInterface.Status
+import com.example.avatar_ai_app.language.Language
 import com.example.avatar_ai_app.network.TranscriptionApi
 import com.example.avatar_ai_app.ui.MainViewModel
 import com.example.avatar_ai_cloud_storage.database.Exhibition

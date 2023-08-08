@@ -3,6 +3,7 @@ package com.example.avatar_ai_app.chat
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import com.example.avatar_ai_app.language.Language
 
 /**
  * [ChatViewModelFactory] os a custom ViewModelFactory used to create instances of [ChatViewModel].
