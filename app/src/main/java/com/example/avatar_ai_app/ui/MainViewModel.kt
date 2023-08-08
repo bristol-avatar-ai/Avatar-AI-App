@@ -15,6 +15,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.avatar_ai_app.R
 import com.example.avatar_ai_app.chat.ChatViewModel
 import com.example.avatar_ai_app.chat.ChatViewModelInterface
+import com.example.avatar_ai_app.chat.Language
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -30,14 +31,14 @@ private const val RECORDING_WAIT = 200L
 class MainViewModel(private val chatViewModel: ChatViewModel,
 lifecycleOwner: LifecycleOwner) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(ArUiState())
+    private val _uiState = MutableStateFlow(UiState())
     private val _isCameraEnabled = MutableStateFlow(false)
     private val _isRecordingEnabled = MutableStateFlow(false)
     private val _alertContent = MutableLiveData<Pair<Int, Int>>()
     private var startTime = System.currentTimeMillis()
     private var recordingJob: Job? = null
 
-    val uiState: StateFlow<ArUiState> = _uiState.asStateFlow()
+    val uiState: StateFlow<UiState> = _uiState.asStateFlow()
 
     val isCameraEnabled: StateFlow<Boolean>
         get() = _isCameraEnabled
@@ -67,20 +68,21 @@ lifecycleOwner: LifecycleOwner) : ViewModel() {
         chatViewModel.status.observe(lifecycleOwner) {
             when(it){
                 ChatViewModelInterface.Status.INIT -> {
-
+                    setTextToSpeechReady(false)
+                    updateLoadingState(false)
                 }
                 ChatViewModelInterface.Status.READY -> {
                     setTextToSpeechReady(true)
-                    updateLoadingState(false)
-                    setRecordingState(ArUiState.ready)
+                    updateLoadingState(true)
+                    setRecordingState(UiState.ready)
                     updateTextFieldStringResId(R.string.send_message_hint)
                 }
                 ChatViewModelInterface.Status.RECORDING -> {
-                    setRecordingState(ArUiState.recording)
+                    setRecordingState(UiState.recording)
                     updateTextFieldStringResId(R.string.recording_message)
                 }
                 ChatViewModelInterface.Status.PROCESSING -> {
-                    setRecordingState(ArUiState.processing)
+                    setRecordingState(UiState.processing)
                     updateTextFieldStringResId(R.string.processing_message)
                 }
                 else -> {}
@@ -158,10 +160,6 @@ lifecycleOwner: LifecycleOwner) : ViewModel() {
         }
     }
 
-    fun onSend() {
-        chatViewModel.newUserMessage(textState.value.text)
-    }
-
 
     fun dismissTextResponse() {
         _uiState.update { currentState ->
@@ -190,7 +188,7 @@ lifecycleOwner: LifecycleOwner) : ViewModel() {
     private fun updateLoadingState(loading: Boolean) {
         _uiState.update { currentState ->
             currentState.copy(
-                isLoading = loading
+                isLoaded = loading
             )
         }
     }
@@ -201,11 +199,11 @@ lifecycleOwner: LifecycleOwner) : ViewModel() {
         _uiState.update { currentState ->
             when (textFieldFocusState.value) {
                 true -> currentState.copy(
-                    inputMode = ArUiState.text
+                    inputMode = UiState.text
                 )
 
                 false -> currentState.copy(
-                    inputMode = ArUiState.speech
+                    inputMode = UiState.speech
                 )
             }
         }
@@ -213,11 +211,11 @@ lifecycleOwner: LifecycleOwner) : ViewModel() {
 
     fun sendButtonOnPress() {
         when (uiState.value.inputMode) {
-            ArUiState.text -> {
+            UiState.text -> {
                 chatViewModel.newUserMessage(textState.value.text)
             }
 
-            ArUiState.speech -> {
+            UiState.speech -> {
                 startTime = System.currentTimeMillis()
                 recordingJob = viewModelScope.launch(Dispatchers.IO) {
                     delay(RECORDING_WAIT)
@@ -229,7 +227,7 @@ lifecycleOwner: LifecycleOwner) : ViewModel() {
 
     fun sendButtonOnRelease() {
         when (uiState.value.inputMode) {
-            ArUiState.speech -> {
+            UiState.speech -> {
                 if (System.currentTimeMillis() - startTime < RECORDING_WAIT) {
                     recordingJob?.cancel()
                     generateAlert(ErrorType.RECORDING_LENGTH)
@@ -270,6 +268,15 @@ lifecycleOwner: LifecycleOwner) : ViewModel() {
                 alertIsShown = false
             )
         }
+    }
+
+    fun onLanguageSelectionResult(language: Language) {
+        _uiState.update { currentState ->
+            currentState.copy(
+                language = language
+            )
+        }
+        chatViewModel.setLanguage(language)
     }
 
 //    fun generateCoordinates(
