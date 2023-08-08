@@ -13,14 +13,11 @@ interface ChatViewModelInterface {
     // ViewModel status types.
     enum class Status { INIT, READY, RECORDING, PROCESSING }
 
-    // User request types.
-    enum class Request { NAVIGATION, RECOGNITION }
-
     // ViewModel status.
     val status: LiveData<Status>
 
     // Current user request type.
-    val request: LiveData<Request>
+    val request: LiveData<ChatService.Request>
 
     // Requested navigation destination Id.
     val destinationID: LiveData<String>
