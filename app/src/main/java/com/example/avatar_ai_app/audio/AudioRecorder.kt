@@ -9,7 +9,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.File
-import java.lang.Exception
 import kotlin.math.max
 
 private const val TAG = "AudioRecorder"
@@ -24,7 +23,7 @@ private const val MAXIMUM_RECORDING_TIME = 30000L
 
 // The minimum required delay (in milliseconds) between start and stop
 // calls.
-private const val MINIMUM_STOP_DELAY = 300L
+private const val MINIMUM_STOP_DELAY = 200L
 
 /**
  * The AudioRecorder manages an instance of MediaRecorder to record audio
@@ -55,13 +54,35 @@ class AudioRecorder(
     private var isRecordingCompleted = false
 
     /*
-    * This function initialises, configures, prepares, and starts the
-    * instance of MediaRecorder. A Job is scheduled to stop the recording
-    * after MAXIMUM_RECORDING_TIME. The returned Boolean indicates if
-    * the MediaRecorder was prepared (and started) successfully.
+    * This function prepares and starts an instance of MediaRecorder. A Job
+    * is scheduled to stop the recording after MAXIMUM_RECORDING_TIME. The
+    * returned Boolean indicates if the MediaRecorder was prepared (and started)
+    * successfully.
      */
     fun start() {
         isRecordingCompleted = false
+        prepareMediaRecorder()
+
+        try {
+            mediaRecorder!!.start()
+            startTime = System.currentTimeMillis()
+        } catch (e: Exception) {
+            Log.e(TAG, "start: failed to start MediaRecorder", e)
+            throw e
+        }
+
+        // Automatically stop recording after MAXIMUM_RECORDING_TIME.
+        autoStopJob = scope.launch(Dispatchers.IO) {
+            delay(MAXIMUM_RECORDING_TIME)
+            mediaRecorder?.stop()
+        }
+    }
+
+    /*
+    * This function initialises, configures and prepares an
+    * instance of MediaRecorder.
+     */
+    private fun prepareMediaRecorder() {
         mediaRecorder = MediaRecorder(context).apply {
             setAudioSource(MediaRecorder.AudioSource.MIC)
             setOutputFormat(OUTPUT_FORMAT)
@@ -70,20 +91,8 @@ class AudioRecorder(
             try {
                 prepare()
             } catch (e: Exception) {
-                Log.e(TAG, "start: failed to prepare MediaRecorder", e)
+                Log.e(TAG, "prepareMediaRecorder: failed to prepare MediaRecorder", e)
                 throw e
-            }
-            try {
-                start()
-            } catch (e: Exception) {
-                Log.e(TAG, "start: failed to start MediaRecorder", e)
-                throw e
-            }
-            startTime = System.currentTimeMillis()
-            // Automatically stop recording after MAXIMUM_RECORDING_TIME.
-            autoStopJob = scope.launch(Dispatchers.IO) {
-                delay(MAXIMUM_RECORDING_TIME)
-                stop()
             }
         }
     }
@@ -104,13 +113,7 @@ class AudioRecorder(
                 release()
             }
             mediaRecorder = null
-
-            // Callback to inform that the recording has completed.
-            if (!isRecordingCompleted) {
-                // This check prevents multiple callbacks.
-                isRecordingCompleted = true
-                recordingCompletionListener.onRecordingCompleted()
-            }
+            callCallback()
         }
     }
 
@@ -126,7 +129,18 @@ class AudioRecorder(
     }
 
     /*
-    * This function ensure that the MediaRecorder has been
+    * This function calls the callback function to signal recording completion.
+     */
+    private fun callCallback() {
+        if (!isRecordingCompleted) {
+            // This check prevents multiple callbacks.
+            isRecordingCompleted = true
+            recordingCompletionListener.onRecordingCompleted()
+        }
+    }
+
+    /*
+    * This function ensures that the MediaRecorder has been
     * released correctly.
      */
     fun release() {
