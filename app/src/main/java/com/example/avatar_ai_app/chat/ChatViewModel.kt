@@ -202,7 +202,7 @@ class ChatViewModel(context: Context, private var language: Language) : ViewMode
         }
     }
 
-    override fun describeExhibition(exhibitionName: String) {
+    override fun newResponse(response: String) {
 
     }
 
