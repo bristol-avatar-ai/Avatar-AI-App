@@ -21,11 +21,11 @@
     <string name="recording_message" tools:ignore="TypographyEllipsis">Recording...</string>
     <string name="processing_message" tools:ignore="TypographyEllipsis">Processing...</string>
 
-    //Strings for error alerts
+    <!--Error Messages-->
     <string name="error_title">Error</string>
-    <string name="speech_error_message">Sorry, I couldn\'t load my speech module. Please check your network connection and try again!</string>
-    <string name="recording_error_message">Sorry, I can\'t hear you right now. Please check your microphone settings, or use the keyboard instead!</string>
+    <string name="speech_error_message">Failed to load speech module. Please check your network connection and try again!</string>
+    <string name="recording_error_message">Failed to initialise recording. Please check your microphone settings and try again!</string>
     <string name="error_message">Sorry, something went wrong!</string>
-    <string name="network_error_message">Sorry, I can\'t understand speech at the moment. Please check your WiFi connection, or use the keyboard instead!</string>
+    <string name="network_error_message">Sorry, something went wrong. Please check your network connection and try again!</string>
     <string name="recording_length_error_message">To record, please hold down the microphone button and speak</string>
 </resources>
