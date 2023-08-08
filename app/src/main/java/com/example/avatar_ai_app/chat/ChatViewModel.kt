@@ -8,13 +8,12 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.avatar_ai_app.R
 import com.example.avatar_ai_app.audio.AudioRecorder
-import com.example.avatar_ai_app.chat.ChatViewModelInterface.Request
 import com.example.avatar_ai_app.chat.ChatViewModelInterface.Status
 import com.example.avatar_ai_app.network.TranscriptionApi
 import com.example.avatar_ai_app.ui.MainViewModel
 import com.example.avatar_ai_cloud_storage.database.Exhibition
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -38,12 +37,6 @@ class ChatViewModel(context: Context, private var language: Language) : ViewMode
     private val _status = MutableLiveData(Status.INIT)
     override val status: LiveData<Status> get() = _status
 
-    private val _request = MutableLiveData<Request>()
-    override val request: LiveData<Request> get() = _request
-
-    private val _destinationID = MutableLiveData<String>()
-    override val destinationID: LiveData<String> get() = _destinationID
-
     private val _error = MutableLiveData<MainViewModel.ErrorType>()
     override val error: LiveData<MainViewModel.ErrorType> get() = _error
 
@@ -51,13 +44,17 @@ class ChatViewModel(context: Context, private var language: Language) : ViewMode
     private val _messages = MutableLiveData<MutableList<ChatMessage>>(mutableListOf())
     override val messages: LiveData<MutableList<ChatMessage>> get() = _messages
 
-    private var textToSpeechReady = false
-
     // Initialise ChatService for message responses.
     private val chatService = ChatService()
 
+    override val request = chatService.request
+
+    override val destinationID = chatService.destinationID
+
     // Initialise TextToSpeech class for audio responses.
     private val textToSpeech: TextToSpeech = TextToSpeech(context, this)
+
+    private var textToSpeechReady = false
 
     // Initialise AudioRecorder class for recording audio input.
     private val audioRecorder: AudioRecorder =
@@ -113,7 +110,7 @@ class ChatViewModel(context: Context, private var language: Language) : ViewMode
     }
 
     override fun setExhibitionList(exhibitionList: List<Exhibition>) {
-
+        chatService.exhibitionList = exhibitionList
     }
 
     /*
@@ -140,11 +137,11 @@ class ChatViewModel(context: Context, private var language: Language) : ViewMode
      */
     override fun newUserMessage(message: String) {
         addMessage(ChatMessage(message, ChatMessage.USER))
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             // Generate reply with ChatService.
-            val reply = chatService.getResponse(message)
-            readMessage(reply)
-            addMessage(ChatMessage(reply, ChatMessage.AI))
+            val response = chatService.getResponse(message)
+            readMessage(response)
+            addMessage(ChatMessage(response, ChatMessage.AI))
         }
     }
 
@@ -203,7 +200,10 @@ class ChatViewModel(context: Context, private var language: Language) : ViewMode
     }
 
     override fun newResponse(response: String) {
-
+        viewModelScope.launch(Dispatchers.IO) {
+            readMessage(response)
+            addMessage(ChatMessage(response, ChatMessage.AI))
+        }
     }
 
     /*
