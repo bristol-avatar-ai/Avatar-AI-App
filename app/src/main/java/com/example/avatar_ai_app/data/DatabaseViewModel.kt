@@ -27,7 +27,9 @@ class DatabaseViewModel(context: Context) : ViewModel(), DatabaseViewModelInterf
     }
 
     override fun reload(context: Context) {
+        _isReady.postValue(false)
         AppDatabase.close()
+        database = null
         viewModelScope.launch(Dispatchers.IO) {
             database = AppDatabase.getDatabase(context)
             _isReady.postValue(database != null)
