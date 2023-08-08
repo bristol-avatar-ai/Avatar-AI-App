@@ -38,6 +38,10 @@ class DatabaseViewModel(context: Context) : ViewModel(), DatabaseViewModelInterf
         return exhibitionDao?.getExhibitions() ?: emptyList()
     }
 
+    override fun getExhibition(name: String): Exhibition? {
+        return exhibitionDao?.getExhibition(name)
+    }
+
     override fun getGraph(): HashMap<String, MutableList<Pair<String, Int>>> {
         val graph = HashMap<String, MutableList<Pair<String, Int>>>()
         anchorDao?.getAnchors()?.forEach {

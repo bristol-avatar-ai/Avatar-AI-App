@@ -46,8 +46,8 @@ interface ChatViewModelInterface {
     // Stops recording a user message.
     fun stopRecording()
 
-    // Describes the given exhibition by chat and audio.
-    fun describeExhibition(exhibitionName: String)
+    // Uses the given string as a new chat response.
+    fun newResponse(response: String)
 
     // Clears the chat history.
     fun clearChatHistory()

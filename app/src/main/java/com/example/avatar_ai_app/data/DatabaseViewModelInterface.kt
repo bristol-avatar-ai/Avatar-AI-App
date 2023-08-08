@@ -20,6 +20,9 @@ interface DatabaseViewModelInterface {
     // Gets the current exhibition list.
     fun getExhibitions(): List<Exhibition>
 
+    // Returns the exhibition with the given name or null if it does not exit.
+    fun getExhibition(name: String): Exhibition?
+
     // Gets the current Cloud Anchor graph.
     fun getGraph(): HashMap<String, MutableList<Pair<String, Int>>>
 }
