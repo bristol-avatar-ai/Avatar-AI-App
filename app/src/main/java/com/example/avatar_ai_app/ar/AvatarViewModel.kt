@@ -1,10 +1,11 @@
-package com.example.avatar_ai_app.ui
+package com.example.avatar_ai_app.ar
 
 import android.content.Context
 import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.ViewModel
 import com.example.avatar_ai_app.R
 import com.example.avatar_ai_app.data.avatarModel
+import com.example.avatar_ai_app.ui.AvatarState
 import com.google.ar.core.Config
 import io.github.sceneview.ar.ArSceneView
 import io.github.sceneview.ar.node.ArModelNode

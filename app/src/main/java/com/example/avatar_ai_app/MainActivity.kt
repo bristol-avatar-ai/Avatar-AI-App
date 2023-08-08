@@ -19,7 +19,7 @@ import com.example.avatar_ai_app.chat.Language
 import com.example.avatar_ai_app.data.DatabaseViewModel
 import com.example.avatar_ai_app.data.DatabaseViewModelFactory
 import com.example.avatar_ai_app.ui.ArScreen
-import com.example.avatar_ai_app.ui.AvatarViewModel
+import com.example.avatar_ai_app.ar.AvatarViewModel
 import com.example.avatar_ai_app.ui.MainViewModel
 import com.example.avatar_ai_app.ui.MainViewModelFactory
 import com.example.avatar_ai_app.ui.components.CameraPermissionRequestProvider
@@ -87,9 +87,7 @@ class MainActivity : ComponentActivity() {
                                     permission
                                 ),
                                 onDismiss = mainViewModel::dismissDialog,
-                                onEnableClick = {
-                                    mainViewModel.dismissDialog()
-                                },
+                                onEnableClick = mainViewModel::dismissDialog,
                                 onGoToAppSettingsClick = ::openAppSettings
                             )
                         }

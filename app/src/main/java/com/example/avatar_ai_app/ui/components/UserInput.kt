@@ -21,12 +21,10 @@ import androidx.compose.ui.text.input.TextFieldValue
 fun UserInput(
     onTextChanged: (TextFieldValue) -> Unit,
     textFieldValue: TextFieldValue,
-    onSend: () -> Unit,
     placeHolderText: @Composable (() -> Unit),
     colors: TextFieldColors,
     modifier: Modifier,
     onTextFieldFocused: (Boolean) -> Unit,
-    focusState: Boolean,
     onFocusChanged: () -> Unit
 ) {
     var previousFocusState by remember { mutableStateOf(false) }
@@ -38,10 +36,7 @@ fun UserInput(
         keyboardOptions = KeyboardOptions(
             capitalization = KeyboardCapitalization.Sentences,
             autoCorrect = true,
-            imeAction = ImeAction.Send
-        ),
-        keyboardActions = KeyboardActions(
-            onSend = { onSend() }
+            imeAction = ImeAction.Default
         ),
         modifier = modifier.onFocusChanged { state ->
             if (previousFocusState != state.isFocused) {

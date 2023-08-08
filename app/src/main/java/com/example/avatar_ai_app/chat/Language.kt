@@ -7,5 +7,6 @@ import java.util.Locale
  * for each ChatBox component.
  */
 enum class Language(val locale: Locale, val string: String) {
-    English(Locale.UK, "English")
+    English(Locale.UK, "English"),
+    French(Locale.FRENCH, "French")
 }

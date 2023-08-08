@@ -4,9 +4,9 @@ import com.example.avatar_ai_app.R
 import com.example.avatar_ai_app.chat.Language
 
 
-data class ArUiState(
+data class UiState(
     //UI
-    val isLoading: Boolean = true,
+    val isLoaded: Boolean = false,
     val inputMode: Int = speech,
     val textFieldStringResId: Int = R.string.send_message_hint,
 
