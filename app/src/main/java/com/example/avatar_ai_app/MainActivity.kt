@@ -31,9 +31,9 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
 private const val TAG = "MainActivity"
 
-/**
- * This allows other viewModels to take an instance of [MainActivity]
- * as an argument which is guaranteed to contain a [onError] function.
+/*
+* This listener should be passed into the ViewModels and
+* contains a function for showing error dialog boxes.
  */
 interface ErrorListener {
     fun onError(errorType: ErrorType)
@@ -41,31 +41,10 @@ interface ErrorListener {
 
 class MainActivity : ComponentActivity(), ErrorListener {
 
-    // Delegate to viewModels to retain its value through
-    // configuration changes.
     private lateinit var databaseViewModel: DatabaseViewModel
     private lateinit var chatViewModel: ChatViewModel
     private lateinit var mainViewModel: MainViewModel
     private lateinit var arViewModel: ArViewModel
-
-    /**
-     * This is called by the ViewModel classes whenever there is an error.
-     */
-    override fun onError(errorType: ErrorType) {
-        val errorMessage = when (errorType) {
-            ErrorType.GENERIC -> getString(R.string.error_message)
-            ErrorType.NETWORK -> getString(R.string.network_error_message)
-            ErrorType.RECORDING -> getString(R.string.recording_error_message)
-            ErrorType.RECORDING_LENGTH -> getString(R.string.recording_length_error_message)
-            ErrorType.SPEECH -> getString(R.string.speech_error_message)
-        }
-        MaterialAlertDialogBuilder(this)
-            .setTitle(getString(R.string.error_title))
-            .setMessage(errorMessage)
-            .setCancelable(false)
-            .setPositiveButton("OK") { _, _ -> }
-            .show()
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -129,6 +108,27 @@ class MainActivity : ComponentActivity(), ErrorListener {
             }
         }
     }
+
+    /*
+    * This ErrorListener callback function displays an error dialog box.
+     */
+    override fun onError(errorType: ErrorType) {
+        MaterialAlertDialogBuilder(this)
+            .setTitle(getString(R.string.error_title))
+            .setMessage(
+                when (errorType) {
+                    ErrorType.GENERIC -> getString(R.string.error_message)
+                    ErrorType.NETWORK -> getString(R.string.network_error_message)
+                    ErrorType.RECORDING -> getString(R.string.recording_error_message)
+                    ErrorType.RECORDING_LENGTH -> getString(R.string.recording_length_error_message)
+                    ErrorType.SPEECH -> getString(R.string.speech_error_message)
+                }
+            )
+            .setCancelable(false)
+            .setPositiveButton(getString(R.string.error_ok_button)) { _, _ -> }
+            .show()
+    }
+
 }
 
 fun Activity.openAppSettings() {
