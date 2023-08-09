@@ -139,10 +139,7 @@ fun ArScreen(
                     }
                     .focusRequester(focusRequester)
                     .focusable()
-            ) {
-//            val constraints = this
-//            val offSet = arViewModel.generateCoordinates(constraints, touchPosition)
-            }
+            ) {}
             if(!isCameraEnabled) {
                 Box (Modifier.align(Alignment.Center)) {
                     EnableCameraButton(
