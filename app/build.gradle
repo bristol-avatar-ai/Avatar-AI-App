@@ -96,6 +96,9 @@ dependencies {
     // Retrofit with Moshi Converter
     implementation 'com.squareup.retrofit2:converter-moshi:2.9.0'
 
+    // Google ML Kit Translation
+    implementation 'com.google.mlkit:translate:17.0.1'
+
     testImplementation 'junit:junit:4.13.2'
 
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'

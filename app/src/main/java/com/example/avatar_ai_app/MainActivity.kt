@@ -15,7 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.ViewModelProvider
 import com.example.avatar_ai_app.chat.ChatViewModel
 import com.example.avatar_ai_app.chat.ChatViewModelFactory
-import com.example.avatar_ai_app.chat.Language
+import com.example.avatar_ai_app.language.Language
 import com.example.avatar_ai_app.data.DatabaseViewModel
 import com.example.avatar_ai_app.data.DatabaseViewModelFactory
 import com.example.avatar_ai_app.ui.ArScreen
@@ -48,7 +48,7 @@ class MainActivity : ComponentActivity() {
 
         chatViewModel = ViewModelProvider(
             this,
-            ChatViewModelFactory(this, Language.English)
+            ChatViewModelFactory(this, Language.ENGLISH)
         )[ChatViewModel::class.java]
         //TODO: Remember to update the ChatViewModel's exhibition list
 

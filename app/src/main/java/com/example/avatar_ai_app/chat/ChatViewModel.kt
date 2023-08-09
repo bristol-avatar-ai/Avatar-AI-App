@@ -10,6 +10,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.avatar_ai_app.audio.AudioRecorder
 import com.example.avatar_ai_app.chat.ChatViewModelInterface.Status
+import com.example.avatar_ai_app.language.ChatTranslator
+import com.example.avatar_ai_app.language.Language
 import com.example.avatar_ai_app.network.TranscriptionApi
 import com.example.avatar_ai_app.ui.MainViewModel
 import com.example.avatar_ai_cloud_storage.database.Exhibition
@@ -18,8 +20,10 @@ import kotlinx.coroutines.launch
 import java.io.File
 
 private const val TAG = "ChatViewModel"
+
 private const val RECORDING_NAME = "recording"
 private const val RECORDING_FILE_TYPE = "ogg"
+private const val TOTAL_INIT_COUNT = 2
 
 /**
  * ViewModel containing the chat history and methods to modify it.
@@ -28,7 +32,8 @@ private const val RECORDING_FILE_TYPE = "ogg"
 class ChatViewModel(context: Context, private var language: Language) : ViewModel(),
     ChatViewModelInterface,
     OnInitListener,
-    AudioRecorder.RecordingCompletionListener {
+    AudioRecorder.RecordingCompletionListener,
+    ChatTranslator.InitListener{
 
     // Save the recordings filepath to the cache directory.
     private val recordingFile: File =
@@ -60,16 +65,34 @@ class ChatViewModel(context: Context, private var language: Language) : ViewMode
     private val audioRecorder: AudioRecorder =
         AudioRecorder(context, recordingFile, viewModelScope, this)
 
+    private val chatTranslator = ChatTranslator(language.mlKitLanguage, this)
+
+    private var initCount = 0
+
     /*
     * Override onCleared() to release initialised resources
     * when the ViewModel is destroyed.
      */
     override fun onCleared() {
         super.onCleared()
+        _messages.value?.clear()
         chatService.reset()
         audioRecorder.release()
         textToSpeech.stop()
         textToSpeech.shutdown()
+        chatTranslator.close()
+        initCount = 0
+    }
+
+    private fun componentInitialised() {
+        initCount++
+        if(initCount >= TOTAL_INIT_COUNT) {
+            _status.postValue(Status.READY)
+        }
+    }
+
+    override fun onTranslatorInit(success: Boolean) {
+        componentInitialised()
     }
 
     /*
@@ -100,13 +123,15 @@ class ChatViewModel(context: Context, private var language: Language) : ViewMode
         } else {
             true
         }
-        _status.value = Status.READY
+        componentInitialised()
     }
 
     override fun setLanguage(language: Language) {
         this.language = language
         _status.value = Status.INIT
+        initCount = 0
         setTextToSpeechLanguage()
+        chatTranslator.setLanguage(language.mlKitLanguage)
     }
 
     override fun setExhibitionList(exhibitionList: List<Exhibition>) {
@@ -136,12 +161,34 @@ class ChatViewModel(context: Context, private var language: Language) : ViewMode
     * Coroutines are used to prevent blocking the main thread.
      */
     override fun newUserMessage(message: String) {
-        addMessage(ChatMessage(message, ChatMessage.USER))
+        if(language == Language.ENGLISH) {
+            addMessage(ChatMessage(message, ChatMessage.USER))
+            viewModelScope.launch(Dispatchers.IO) {
+                // Generate reply with ChatService.
+                val response = chatService.getResponse(message)
+                readMessage(response)
+                addMessage(ChatMessage(response, ChatMessage.AI))
+            }
+        } else {
+            newNonEnglishMessage(message)
+        }
+    }
+
+    private fun newNonEnglishMessage(message: String) {
         viewModelScope.launch(Dispatchers.IO) {
-            // Generate reply with ChatService.
-            val response = chatService.getResponse(message)
-            readMessage(response)
-            addMessage(ChatMessage(response, ChatMessage.AI))
+            val englishMessage = chatTranslator.translateMessage(message)
+            if(englishMessage == null) {
+                _error.postValue(MainViewModel.ErrorType.NETWORK)
+            } else {
+                val englishResponse = chatService.getResponse(englishMessage)
+                val response = chatTranslator.translateResponse(englishResponse)
+                if(response == null) {
+                    _error.postValue(MainViewModel.ErrorType.NETWORK)
+                } else {
+                    readMessage(response)
+                    addMessage(ChatMessage(response, ChatMessage.AI))
+                }
+            }
         }
     }
 
@@ -186,7 +233,7 @@ class ChatViewModel(context: Context, private var language: Language) : ViewMode
     override fun onRecordingCompleted() {
         _status.postValue(Status.PROCESSING)
         viewModelScope.launch {
-            val message = TranscriptionApi.transcribe(recordingFile)
+            val message = TranscriptionApi.transcribe(recordingFile, language.ibmModel)
             if (recordingFile.exists()) {
                 recordingFile.delete()
             }

@@ -1,7 +1,7 @@
 package com.example.avatar_ai_app.ui
 
 import com.example.avatar_ai_app.R
-import com.example.avatar_ai_app.chat.Language
+import com.example.avatar_ai_app.language.Language
 
 
 data class UiState(
@@ -19,7 +19,7 @@ data class UiState(
     val isTextToSpeechReady: Boolean = false,
 
     //Language
-    val language: Language = Language.English,
+    val language: Language = Language.ENGLISH,
 
     //Alert message
     val alertIsShown: Boolean = false,

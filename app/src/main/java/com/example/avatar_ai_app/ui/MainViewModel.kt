@@ -15,7 +15,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.avatar_ai_app.R
 import com.example.avatar_ai_app.chat.ChatViewModel
 import com.example.avatar_ai_app.chat.ChatViewModelInterface
-import com.example.avatar_ai_app.chat.Language
+import com.example.avatar_ai_app.language.Language
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay

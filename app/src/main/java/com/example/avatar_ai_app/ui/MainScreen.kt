@@ -49,7 +49,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.avatar_ai_app.R
 import com.example.avatar_ai_app.ar.AvatarViewModel
-import com.example.avatar_ai_app.chat.Language
+import com.example.avatar_ai_app.language.Language
 import com.example.avatar_ai_app.ui.components.ActionButton
 import com.example.avatar_ai_app.ui.components.ActionMenuItem
 import com.example.avatar_ai_app.ui.components.AlertScreen
