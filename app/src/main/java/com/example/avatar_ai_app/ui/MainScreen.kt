@@ -149,7 +149,10 @@ fun ArScreen(
                     )
                 }
             }
-            LanguageSelectionMenu(mainViewModel)
+            TopBar(
+                onClick = {},
+            )
+            //LanguageSelectionMenu(mainViewModel)
             Column(
                 Modifier.align(Alignment.BottomCenter)
             ) {

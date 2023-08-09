@@ -1,46 +1,50 @@
 package com.example.avatar_ai_app.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import com.example.avatar_ai_app.R
+import com.example.avatar_ai_app.ui.components.BottomShadow
 import com.example.avatar_ai_app.ui.components.MenuButton
 import com.example.avatar_ai_app.ui.theme.ARAppTheme
 
 @Composable
 fun TopBar(
-    languageButtonOnClick: () -> Unit,
-    avatarButtonOnClick: () -> Unit
+    onClick: () -> Unit,
 ) {
-    val topBarColor = Color.DarkGray
+    ARAppTheme {
+        val topBarColor = MaterialTheme.colorScheme.surface
+        Column {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .wrapContentSize(Alignment.TopCenter)
+                    .background(color = topBarColor)
 
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .wrapContentSize(Alignment.TopCenter)
-            .background(color = topBarColor)
-    ) {
-        MenuButton(
-            onClick = avatarButtonOnClick,
-            color = topBarColor,
-            iconId = R.drawable.robot_face
-        )
-        Spacer(modifier = Modifier
-            .fillMaxWidth()
-            .weight(1f)
-        )
-        MenuButton(
-            onClick = languageButtonOnClick,
-            color = topBarColor,
-            iconId = R.drawable.language_icon
-        )
+            ) {
+                Spacer(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                )
+                MenuButton(
+                    onClick = { onClick() },
+                    iconId = R.drawable.menu_icon
+                )
+            }
+            BottomShadow(alpha = 0.15f)
+        }
     }
 }
 
@@ -49,8 +53,7 @@ fun TopBar(
 fun TopBarPreview() {
     ARAppTheme {
         TopBar(
-            avatarButtonOnClick = {},
-            languageButtonOnClick = {}
+            onClick = {},
         )
     }
 }
