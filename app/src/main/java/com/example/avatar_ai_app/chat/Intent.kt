@@ -10,6 +10,7 @@ enum class Intent(val triggerPhrases: List<String>) {
             "greetings",
             "good morning",
             "good afternoon",
+            "good day",
             "good evening",
             "yo",
             "hiya",
@@ -44,6 +45,7 @@ enum class Intent(val triggerPhrases: List<String>) {
         listOf(
             "where",
             "get to",
+            "go to",
             "to reach",
             "to find",
             "directions",

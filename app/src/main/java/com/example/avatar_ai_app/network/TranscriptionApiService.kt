@@ -101,7 +101,7 @@ object TranscriptionApi {
     /*
     * This function transcribes an audio file (.ogg) into a String via Watson Speech to Text.
      */
-    suspend fun transcribe(file: File): String? {
+    suspend fun transcribe(file: File, languageModel: String): String? {
         if (!isValidFile(file)) {
             return null
         }
@@ -111,7 +111,7 @@ object TranscriptionApi {
         val requestBody: RequestBody =
             file.asRequestBody(AUDIO_FILE_TYPE.toMediaTypeOrNull())
 
-        return requestTranscription(authHeader, requestBody)
+        return requestTranscription(authHeader, requestBody, languageModel)
     }
 
     /*
@@ -132,13 +132,13 @@ object TranscriptionApi {
     * Text service and processes the response.
      */
     private suspend fun requestTranscription(
-        authHeader: String, requestBody: RequestBody
+        authHeader: String, requestBody: RequestBody, languageModel: String
     ): String? {
         return try {
             withTimeout(TIMEOUT_DURATION) {
                 retrofitService
                     // Execute POST request.
-                    .getTranscription(authHeader, "en-GB_Telephony", requestBody)
+                    .getTranscription(authHeader, languageModel, requestBody)
                     .results
                     // Filter out transcripts below the minimal confidence threshold.
                     .filter { it.alternatives[0].confidence.toFloat() > CONFIDENCE_THRESHOLD }

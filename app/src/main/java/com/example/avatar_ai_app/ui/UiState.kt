@@ -19,7 +19,7 @@ data class UiState(
     val isTextToSpeechReady: Boolean = false,
 
     //Language
-    val language: Language = Language.English,
+    val language: Language = Language.ENGLISH,
 
     //Alert message
     val alertIsShown: Boolean = false,

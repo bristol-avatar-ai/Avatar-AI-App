@@ -48,7 +48,7 @@ class MainActivity : ComponentActivity() {
 
         chatViewModel = ViewModelProvider(
             this,
-            ChatViewModelFactory(this, Language.English)
+            ChatViewModelFactory(this, Language.ENGLISH)
         )[ChatViewModel::class.java]
         //TODO: Remember to update the ChatViewModel's exhibition list
 
