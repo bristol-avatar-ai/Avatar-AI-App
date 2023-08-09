@@ -7,8 +7,6 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -34,7 +32,6 @@ lifecycleOwner: LifecycleOwner) : ViewModel() {
     private val _uiState = MutableStateFlow(UiState())
     private val _isCameraEnabled = MutableStateFlow(false)
     private val _isRecordingEnabled = MutableStateFlow(false)
-    private val _alertContent = MutableLiveData<Pair<Int, Int>>()
     private var startTime = System.currentTimeMillis()
     private var recordingJob: Job? = null
 
@@ -46,23 +43,12 @@ lifecycleOwner: LifecycleOwner) : ViewModel() {
     val isRecordingEnabled: StateFlow<Boolean>
         get() = _isRecordingEnabled
 
-    val alertContent: LiveData<Pair<Int, Int>>
-        get() = _alertContent
-
     //Queue for storing permission strings
     val visiblePermissionDialogQueue = mutableStateListOf<String>()
     val focusRequester = FocusRequester()
     var touchPosition = mutableStateOf(Offset.Zero)
     val textState = mutableStateOf(TextFieldValue())
     var textFieldFocusState = mutableStateOf(false)
-
-    enum class ErrorType {
-        GENERIC,
-        NETWORK,
-        RECORDING,
-        RECORDING_LENGTH,
-        SPEECH
-    }
 
     init {
         chatViewModel.status.observe(lifecycleOwner) {
@@ -224,43 +210,12 @@ lifecycleOwner: LifecycleOwner) : ViewModel() {
             UiState.speech -> {
                 if (System.currentTimeMillis() - startTime < RECORDING_WAIT) {
                     recordingJob?.cancel()
-                    generateAlert(ErrorType.RECORDING_LENGTH)
+                    //TODO - update text field with message about holding down record button
                 } else {
                     chatViewModel.stopRecording()
                     // Reminder, controller stop is asynchronous, code after this should go in the call-back function.
                 }
             }
-        }
-    }
-
-    /*
-    * Updates the alertContent variable and sets the alertIsShown state to true.
-    * This displays an alert with the appropriate dialog
-    */
-    private fun generateAlert(error: ErrorType) {
-        val alertContent = when (error) {
-            ErrorType.GENERIC -> Pair(R.string.error_title, R.string.error_message)
-            ErrorType.NETWORK -> Pair(R.string.error_title, R.string.network_error_message)
-            ErrorType.RECORDING -> Pair(R.string.error_title, R.string.recording_error_message)
-            ErrorType.RECORDING_LENGTH -> Pair(R.string.error_title, R.string.recording_length_error_message)
-            ErrorType.SPEECH -> Pair(R.string.error_title, R.string.speech_error_message)
-        }
-        _alertContent.value = alertContent
-        _uiState.update { currentState ->
-            currentState.copy(
-                alertIsShown = true
-            )
-        }
-    }
-
-    /*
-    * Dismisses the alert dialog box
-    */
-    fun alertOnDismiss() {
-        _uiState.update { currentState ->
-            currentState.copy(
-                alertIsShown = false
-            )
         }
     }
 

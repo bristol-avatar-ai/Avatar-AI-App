@@ -14,7 +14,7 @@ import com.example.avatar_ai_app.chat.ChatViewModelInterface.Status
 import com.example.avatar_ai_app.language.ChatTranslator
 import com.example.avatar_ai_app.language.Language
 import com.example.avatar_ai_app.network.TranscriptionApi
-import com.example.avatar_ai_app.ui.MainViewModel
+import com.example.avatar_ai_app.shared.ErrorType
 import com.example.avatar_ai_cloud_storage.database.Exhibition
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -106,7 +106,7 @@ class ChatViewModel(
             setTextToSpeechLanguage()
         } else {
             Log.e(TAG, "Failed to initialise TextToSpeech")
-            errorListener.onError(MainViewModel.ErrorType.NETWORK)
+            errorListener.onError(ErrorType.NETWORK)
         }
     }
 
@@ -120,7 +120,7 @@ class ChatViewModel(
             || result == TextToSpeech.LANG_NOT_SUPPORTED
         ) {
             Log.e(TAG, "Failed to set TextToSpeech language")
-            errorListener.onError(MainViewModel.ErrorType.SPEECH)
+            errorListener.onError(ErrorType.SPEECH)
             false
         } else {
             true
@@ -180,12 +180,12 @@ class ChatViewModel(
         viewModelScope.launch(Dispatchers.IO) {
             val englishMessage = chatTranslator.translateMessage(message)
             if (englishMessage == null) {
-                errorListener.onError(MainViewModel.ErrorType.NETWORK)
+                errorListener.onError(ErrorType.NETWORK)
             } else {
                 val englishResponse = chatService.getResponse(englishMessage)
                 val response = chatTranslator.translateResponse(englishResponse)
                 if (response == null) {
-                    errorListener.onError(MainViewModel.ErrorType.NETWORK)
+                    errorListener.onError(ErrorType.NETWORK)
                 } else {
                     readMessage(response)
                     addMessage(ChatMessage(response, ChatMessage.AI))
@@ -215,7 +215,7 @@ class ChatViewModel(
             audioRecorder.start()
             _status.postValue(Status.RECORDING)
         } catch (_: Exception) {
-            errorListener.onError(MainViewModel.ErrorType.RECORDING)
+            errorListener.onError(ErrorType.RECORDING)
         }
     }
 
@@ -242,7 +242,7 @@ class ChatViewModel(
             if (message != null) {
                 newUserMessage(message)
             } else {
-                errorListener.onError(MainViewModel.ErrorType.NETWORK)
+                errorListener.onError(ErrorType.NETWORK)
             }
             _status.postValue(Status.READY)
         }

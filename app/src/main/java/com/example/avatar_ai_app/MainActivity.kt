@@ -11,23 +11,22 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
-import androidx.core.content.ContentProviderCompat.requireContext
 import androidx.lifecycle.ViewModelProvider
-import com.example.avatar_ai_app.chat.ChatViewModel
-import com.example.avatar_ai_app.chat.ChatViewModelFactory
-import com.example.avatar_ai_app.language.Language
-import com.example.avatar_ai_app.data.DatabaseViewModel
-import com.example.avatar_ai_app.data.DatabaseViewModelFactory
-import com.example.avatar_ai_app.ui.ArScreen
 import com.example.avatar_ai_app.ar.ArViewModel
 import com.example.avatar_ai_app.ar.ArViewModelFactory
+import com.example.avatar_ai_app.chat.ChatViewModel
+import com.example.avatar_ai_app.chat.ChatViewModelFactory
+import com.example.avatar_ai_app.data.DatabaseViewModel
+import com.example.avatar_ai_app.data.DatabaseViewModelFactory
+import com.example.avatar_ai_app.language.Language
+import com.example.avatar_ai_app.shared.ErrorType
+import com.example.avatar_ai_app.ui.ArScreen
 import com.example.avatar_ai_app.ui.MainViewModel
 import com.example.avatar_ai_app.ui.MainViewModelFactory
 import com.example.avatar_ai_app.ui.components.CameraPermissionRequestProvider
 import com.example.avatar_ai_app.ui.components.PermissionDialog
 import com.example.avatar_ai_app.ui.components.RecordAudioPermissionRequestProvider
 import com.example.avatar_ai_app.ui.theme.ARAppTheme
-import com.example.avatar_ai_cloud_storage.network.CloudStorageApi.uploadDatabase
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
 private const val TAG = "MainActivity"
@@ -37,7 +36,7 @@ private const val TAG = "MainActivity"
  * as an argument which is guaranteed to contain a [onError] function.
  */
 interface ErrorListener {
-    fun onError(type: MainViewModel.ErrorType)
+    fun onError(errorType: ErrorType)
 }
 
 class MainActivity : ComponentActivity(), ErrorListener {
@@ -52,17 +51,14 @@ class MainActivity : ComponentActivity(), ErrorListener {
     /**
      * This is called by the ViewModel classes whenever there is an error.
      */
-    override fun onError(type: MainViewModel.ErrorType) {
-        val errorMessage = when (type) {
-            MainViewModel.ErrorType.GENERIC -> getString(R.string.error_message)
-            MainViewModel.ErrorType.NETWORK -> getString(R.string.network_error_message)
-            MainViewModel.ErrorType.RECORDING -> getString(R.string.recording_error_message)
-            MainViewModel.ErrorType.RECORDING_LENGTH -> getString(R.string.recording_length_error_message)
-            MainViewModel.ErrorType.SPEECH -> getString(R.string.speech_error_message)
+    override fun onError(errorType: ErrorType) {
+        val errorMessage = when (errorType) {
+            ErrorType.GENERIC -> getString(R.string.error_message)
+            ErrorType.NETWORK -> getString(R.string.network_error_message)
+            ErrorType.RECORDING -> getString(R.string.recording_error_message)
+            ErrorType.RECORDING_LENGTH -> getString(R.string.recording_length_error_message)
+            ErrorType.SPEECH -> getString(R.string.speech_error_message)
         }
-        /**
-         * This shows the error.
-         */
         MaterialAlertDialogBuilder(this)
             .setTitle(getString(R.string.error_title))
             .setMessage(errorMessage)
