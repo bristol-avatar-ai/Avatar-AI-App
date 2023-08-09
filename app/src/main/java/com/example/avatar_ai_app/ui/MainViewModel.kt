@@ -105,12 +105,6 @@ lifecycleOwner: LifecycleOwner) : ViewModel() {
             //clear the text field
             textState.value = TextFieldValue()
         }
-
-        chatViewModel.error.observe(lifecycleOwner) {
-            if(it.name.isNotEmpty()) {
-                generateAlert(it)
-            }
-        }
     }
 
     /*

@@ -8,6 +8,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.avatar_ai_app.ErrorListener
 import com.example.avatar_ai_app.audio.AudioRecorder
 import com.example.avatar_ai_app.chat.ChatViewModelInterface.Status
 import com.example.avatar_ai_app.language.ChatTranslator
@@ -29,11 +30,15 @@ private const val TOTAL_INIT_COUNT = 2
  * ViewModel containing the chat history and methods to modify it.
  */
 
-class ChatViewModel(context: Context, private var language: Language) : ViewModel(),
+class ChatViewModel(
+    context: Context,
+    private var language: Language,
+    private val errorListener: ErrorListener
+) : ViewModel(),
     ChatViewModelInterface,
     OnInitListener,
     AudioRecorder.RecordingCompletionListener,
-    ChatTranslator.InitListener{
+    ChatTranslator.InitListener {
 
     // Save the recordings filepath to the cache directory.
     private val recordingFile: File =
@@ -41,9 +46,6 @@ class ChatViewModel(context: Context, private var language: Language) : ViewMode
 
     private val _status = MutableLiveData(Status.INIT)
     override val status: LiveData<Status> get() = _status
-
-    private val _error = MutableLiveData<MainViewModel.ErrorType>()
-    override val error: LiveData<MainViewModel.ErrorType> get() = _error
 
     // Store message history as MutableLiveData backing property.
     private val _messages = MutableLiveData<MutableList<ChatMessage>>(mutableListOf())
@@ -86,7 +88,7 @@ class ChatViewModel(context: Context, private var language: Language) : ViewMode
 
     private fun componentInitialised() {
         initCount++
-        if(initCount >= TOTAL_INIT_COUNT) {
+        if (initCount >= TOTAL_INIT_COUNT) {
             _status.postValue(Status.READY)
         }
     }
@@ -104,7 +106,7 @@ class ChatViewModel(context: Context, private var language: Language) : ViewMode
             setTextToSpeechLanguage()
         } else {
             Log.e(TAG, "Failed to initialise TextToSpeech")
-            _error.postValue(MainViewModel.ErrorType.NETWORK)
+            errorListener.onError(MainViewModel.ErrorType.NETWORK)
         }
     }
 
@@ -118,7 +120,7 @@ class ChatViewModel(context: Context, private var language: Language) : ViewMode
             || result == TextToSpeech.LANG_NOT_SUPPORTED
         ) {
             Log.e(TAG, "Failed to set TextToSpeech language")
-            _error.postValue(MainViewModel.ErrorType.SPEECH)
+            errorListener.onError(MainViewModel.ErrorType.SPEECH)
             false
         } else {
             true
@@ -161,7 +163,7 @@ class ChatViewModel(context: Context, private var language: Language) : ViewMode
     * Coroutines are used to prevent blocking the main thread.
      */
     override fun newUserMessage(message: String) {
-        if(language == Language.ENGLISH) {
+        if (language == Language.ENGLISH) {
             addMessage(ChatMessage(message, ChatMessage.USER))
             viewModelScope.launch(Dispatchers.IO) {
                 // Generate reply with ChatService.
@@ -177,13 +179,13 @@ class ChatViewModel(context: Context, private var language: Language) : ViewMode
     private fun newNonEnglishMessage(message: String) {
         viewModelScope.launch(Dispatchers.IO) {
             val englishMessage = chatTranslator.translateMessage(message)
-            if(englishMessage == null) {
-                _error.postValue(MainViewModel.ErrorType.NETWORK)
+            if (englishMessage == null) {
+                errorListener.onError(MainViewModel.ErrorType.NETWORK)
             } else {
                 val englishResponse = chatService.getResponse(englishMessage)
                 val response = chatTranslator.translateResponse(englishResponse)
-                if(response == null) {
-                    _error.postValue(MainViewModel.ErrorType.NETWORK)
+                if (response == null) {
+                    errorListener.onError(MainViewModel.ErrorType.NETWORK)
                 } else {
                     readMessage(response)
                     addMessage(ChatMessage(response, ChatMessage.AI))
@@ -213,7 +215,7 @@ class ChatViewModel(context: Context, private var language: Language) : ViewMode
             audioRecorder.start()
             _status.postValue(Status.RECORDING)
         } catch (_: Exception) {
-            _error.postValue(MainViewModel.ErrorType.RECORDING)
+            errorListener.onError(MainViewModel.ErrorType.RECORDING)
         }
     }
 
@@ -240,7 +242,7 @@ class ChatViewModel(context: Context, private var language: Language) : ViewMode
             if (message != null) {
                 newUserMessage(message)
             } else {
-                _error.postValue(MainViewModel.ErrorType.NETWORK)
+                errorListener.onError(MainViewModel.ErrorType.NETWORK)
             }
             _status.postValue(Status.READY)
         }

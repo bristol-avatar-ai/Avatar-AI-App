@@ -11,6 +11,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
+import androidx.core.content.ContentProviderCompat.requireContext
 import androidx.lifecycle.ViewModelProvider
 import com.example.avatar_ai_app.chat.ChatViewModel
 import com.example.avatar_ai_app.chat.ChatViewModelFactory
@@ -26,10 +27,20 @@ import com.example.avatar_ai_app.ui.components.CameraPermissionRequestProvider
 import com.example.avatar_ai_app.ui.components.PermissionDialog
 import com.example.avatar_ai_app.ui.components.RecordAudioPermissionRequestProvider
 import com.example.avatar_ai_app.ui.theme.ARAppTheme
+import com.example.avatar_ai_cloud_storage.network.CloudStorageApi.uploadDatabase
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
 private const val TAG = "MainActivity"
 
-class MainActivity : ComponentActivity() {
+/**
+ * This allows other viewModels to take an instance of [MainActivity]
+ * as an argument which is guaranteed to contain a [onError] function.
+ */
+interface ErrorListener {
+    fun onError(type: MainViewModel.ErrorType)
+}
+
+class MainActivity : ComponentActivity(), ErrorListener {
 
     // Delegate to viewModels to retain its value through
     // configuration changes.
@@ -37,6 +48,28 @@ class MainActivity : ComponentActivity() {
     private lateinit var chatViewModel: ChatViewModel
     private lateinit var mainViewModel: MainViewModel
     private lateinit var arViewModel: ArViewModel
+
+    /**
+     * This is called by the ViewModel classes whenever there is an error.
+     */
+    override fun onError(type: MainViewModel.ErrorType) {
+        val errorMessage = when (type) {
+            MainViewModel.ErrorType.GENERIC -> getString(R.string.error_message)
+            MainViewModel.ErrorType.NETWORK -> getString(R.string.network_error_message)
+            MainViewModel.ErrorType.RECORDING -> getString(R.string.recording_error_message)
+            MainViewModel.ErrorType.RECORDING_LENGTH -> getString(R.string.recording_length_error_message)
+            MainViewModel.ErrorType.SPEECH -> getString(R.string.speech_error_message)
+        }
+        /**
+         * This shows the error.
+         */
+        MaterialAlertDialogBuilder(this)
+            .setTitle(getString(R.string.error_title))
+            .setMessage(errorMessage)
+            .setCancelable(false)
+            .setPositiveButton("OK") { _, _ -> }
+            .show()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -48,7 +81,7 @@ class MainActivity : ComponentActivity() {
 
         chatViewModel = ViewModelProvider(
             this,
-            ChatViewModelFactory(this, Language.ENGLISH)
+            ChatViewModelFactory(this, Language.ENGLISH, this)
         )[ChatViewModel::class.java]
         //TODO: Remember to update the ChatViewModel's exhibition list
 
