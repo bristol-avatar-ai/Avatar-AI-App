@@ -48,7 +48,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.avatar_ai_app.R
-import com.example.avatar_ai_app.ar.AvatarViewModel
+import com.example.avatar_ai_app.ar.ArViewModel
 import com.example.avatar_ai_app.language.Language
 import com.example.avatar_ai_app.ui.components.ActionButton
 import com.example.avatar_ai_app.ui.components.ActionMenuItem
@@ -64,10 +64,10 @@ import io.github.sceneview.ar.ARScene
 @Composable
 fun ArScreen(
     mainViewModel: MainViewModel = viewModel(),
-    avatarViewModel: AvatarViewModel = viewModel()
+    arViewModel: ArViewModel = viewModel()
 ) {
     val uiState by mainViewModel.uiState.collectAsState()
-    val avatarState by avatarViewModel.uiState.collectAsState()
+    val arState by arViewModel.uiState.collectAsState()
 
     //Ar screen scope
     val scope = rememberCoroutineScope()
@@ -118,10 +118,10 @@ fun ArScreen(
                 ARScene(
                     modifier = Modifier
                         .fillMaxSize(),
-                    nodes = remember { avatarViewModel.nodes },
+                    nodes = remember { arViewModel.nodes },
                     planeRenderer = false,
                     onCreate = { arSceneView ->
-                        avatarViewModel.addAvatarToScene(arSceneView, scope, context)
+                        arViewModel.addAvatarToScene(arSceneView)
                     },
                 )
             }
@@ -144,7 +144,7 @@ fun ArScreen(
                     .pointerInput(Unit) {
                         detectTapGestures(
                             onTap = {
-                                avatarViewModel.dismissActionMenu()
+                                arViewModel.dismissActionMenu()
                                 focusRequester.requestFocus()
                             }
                         )
@@ -177,7 +177,7 @@ fun ArScreen(
                         Modifier
                             .align(Alignment.Bottom)
                             .fillMaxWidth(
-                                if (avatarState.isAvatarMenuVisible) {
+                                if (arState.isAvatarMenuVisible) {
                                     0.5f
                                 } else 0.8f
                             )
@@ -190,7 +190,7 @@ fun ArScreen(
                         }
                     }
                     Box(Modifier.align(Alignment.Bottom)) {
-                        FloatingActionMenu(avatarViewModel, isCameraEnabled)
+                        FloatingActionMenu(arViewModel, isCameraEnabled)
                     }
                 }
                 BottomBar(mainViewModel, uiState, isRecordingEnabled)
@@ -308,24 +308,24 @@ fun BottomBar(
 
 @Composable
 fun FloatingActionMenu(
-    avatarViewModel: AvatarViewModel,
+    arViewModel: ArViewModel,
     isCameraEnabled: Boolean,
 ) {
     Column {
         ActionMenuItem(
-            onClick = { avatarViewModel.anchorOrFollowButtonOnClick() },
+            onClick = { arViewModel.anchorOrFollowButtonOnClick() },
             color = Color.LightGray,
-            values = avatarViewModel.getActionButtonValues(AvatarViewModel.AvatarButtonType.MODE),
-            enabled = avatarViewModel.enableActionButton(AvatarViewModel.AvatarButtonType.MODE)
+            values = arViewModel.getActionButtonValues(ArViewModel.AvatarButtonType.MODE),
+            enabled = arViewModel.enableActionButton(ArViewModel.AvatarButtonType.MODE)
         )
         ActionMenuItem(
-            onClick = { avatarViewModel.summonOrHideButtonOnClick() },
+            onClick = { arViewModel.summonOrHideButtonOnClick() },
             color = Color.LightGray,
-            values = avatarViewModel.getActionButtonValues(AvatarViewModel.AvatarButtonType.VISIBILITY),
-            enabled = avatarViewModel.enableActionButton(AvatarViewModel.AvatarButtonType.VISIBILITY)
+            values = arViewModel.getActionButtonValues(ArViewModel.AvatarButtonType.VISIBILITY),
+            enabled = arViewModel.enableActionButton(ArViewModel.AvatarButtonType.VISIBILITY)
         )
         ActionMenuItem(
-            onClick = { avatarViewModel.avatarButtonOnClick() },
+            onClick = { arViewModel.avatarButtonOnClick() },
             color = Color.Gray,
             enabled = isCameraEnabled
         )
