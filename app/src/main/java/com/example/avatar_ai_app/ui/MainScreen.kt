@@ -31,7 +31,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -52,7 +51,6 @@ import com.example.avatar_ai_app.ar.ArViewModel
 import com.example.avatar_ai_app.language.Language
 import com.example.avatar_ai_app.ui.components.ActionButton
 import com.example.avatar_ai_app.ui.components.ActionMenuItem
-import com.example.avatar_ai_app.ui.components.AlertScreen
 import com.example.avatar_ai_app.ui.components.ChatResponse
 import com.example.avatar_ai_app.ui.components.EnableCameraButton
 import com.example.avatar_ai_app.ui.components.LoadingScreen
@@ -70,7 +68,6 @@ fun ArScreen(
     val arState by arViewModel.uiState.collectAsState()
 
     //Ar screen scope
-    val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val touchPosition by remember { mainViewModel.touchPosition }
     val focusRequester = remember { mainViewModel.focusRequester }
@@ -124,16 +121,6 @@ fun ArScreen(
                         arViewModel.addAvatarToScene(arSceneView)
                     },
                 )
-            }
-            if (uiState.alertIsShown) {
-                val alertRefIds = mainViewModel.alertContent.value
-                if (alertRefIds != null) {
-                    AlertScreen(
-                        dismiss = { mainViewModel.alertOnDismiss() },
-                        title = stringResource(id = alertRefIds.first),
-                        bodyText = stringResource(id = alertRefIds.second)
-                    )
-                }
             }
             //Allows detection of touches on the ARScene
             BoxWithConstraints(

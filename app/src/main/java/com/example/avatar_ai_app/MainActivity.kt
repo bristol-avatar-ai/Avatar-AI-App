@@ -12,27 +12,35 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.ViewModelProvider
-import com.example.avatar_ai_app.chat.ChatViewModel
-import com.example.avatar_ai_app.chat.ChatViewModelFactory
-import com.example.avatar_ai_app.language.Language
-import com.example.avatar_ai_app.data.DatabaseViewModel
-import com.example.avatar_ai_app.data.DatabaseViewModelFactory
-import com.example.avatar_ai_app.ui.ArScreen
 import com.example.avatar_ai_app.ar.ArViewModel
 import com.example.avatar_ai_app.ar.ArViewModelFactory
+import com.example.avatar_ai_app.chat.ChatViewModel
+import com.example.avatar_ai_app.chat.ChatViewModelFactory
+import com.example.avatar_ai_app.data.DatabaseViewModel
+import com.example.avatar_ai_app.data.DatabaseViewModelFactory
+import com.example.avatar_ai_app.language.Language
+import com.example.avatar_ai_app.shared.ErrorType
+import com.example.avatar_ai_app.ui.ArScreen
 import com.example.avatar_ai_app.ui.MainViewModel
 import com.example.avatar_ai_app.ui.MainViewModelFactory
 import com.example.avatar_ai_app.ui.components.CameraPermissionRequestProvider
 import com.example.avatar_ai_app.ui.components.PermissionDialog
 import com.example.avatar_ai_app.ui.components.RecordAudioPermissionRequestProvider
 import com.example.avatar_ai_app.ui.theme.ARAppTheme
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
 private const val TAG = "MainActivity"
 
-class MainActivity : ComponentActivity() {
+/*
+* This listener should be passed into the ViewModels and
+* contains a function for showing error dialog boxes.
+ */
+interface ErrorListener {
+    fun onError(errorType: ErrorType)
+}
 
-    // Delegate to viewModels to retain its value through
-    // configuration changes.
+class MainActivity : ComponentActivity(), ErrorListener {
+
     private lateinit var databaseViewModel: DatabaseViewModel
     private lateinit var chatViewModel: ChatViewModel
     private lateinit var mainViewModel: MainViewModel
@@ -48,7 +56,7 @@ class MainActivity : ComponentActivity() {
 
         chatViewModel = ViewModelProvider(
             this,
-            ChatViewModelFactory(this, Language.ENGLISH)
+            ChatViewModelFactory(this, Language.ENGLISH, this)
         )[ChatViewModel::class.java]
         //TODO: Remember to update the ChatViewModel's exhibition list
 
@@ -100,6 +108,27 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    /*
+    * This ErrorListener callback function displays an error dialog box.
+     */
+    override fun onError(errorType: ErrorType) {
+        MaterialAlertDialogBuilder(this)
+            .setTitle(getString(R.string.error_title))
+            .setMessage(
+                when (errorType) {
+                    ErrorType.GENERIC -> getString(R.string.error_message)
+                    ErrorType.NETWORK -> getString(R.string.network_error_message)
+                    ErrorType.RECORDING -> getString(R.string.recording_error_message)
+                    ErrorType.RECORDING_LENGTH -> getString(R.string.recording_length_error_message)
+                    ErrorType.SPEECH -> getString(R.string.speech_error_message)
+                }
+            )
+            .setCancelable(false)
+            .setPositiveButton(getString(R.string.error_ok_button)) { _, _ -> }
+            .show()
+    }
+
 }
 
 fun Activity.openAppSettings() {
