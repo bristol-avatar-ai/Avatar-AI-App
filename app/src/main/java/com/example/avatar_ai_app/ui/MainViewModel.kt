@@ -107,7 +107,7 @@ lifecycleOwner: LifecycleOwner) : ViewModel() {
         }
 
         chatViewModel.error.observe(lifecycleOwner) {
-            if(it.name.isNotEmpty()) {
+            if(it != null && it.name.isNotEmpty()) {
                 generateAlert(it)
             }
         }

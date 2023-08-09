@@ -42,8 +42,8 @@ class ChatViewModel(context: Context, private var language: Language) : ViewMode
     private val _status = MutableLiveData(Status.INIT)
     override val status: LiveData<Status> get() = _status
 
-    private val _error = MutableLiveData<MainViewModel.ErrorType>()
-    override val error: LiveData<MainViewModel.ErrorType> get() = _error
+    private val _error = MutableLiveData<MainViewModel.ErrorType?>()
+    override val error: LiveData<MainViewModel.ErrorType?> get() = _error
 
     // Store message history as MutableLiveData backing property.
     private val _messages = MutableLiveData<MutableList<ChatMessage>>(mutableListOf())
@@ -104,8 +104,13 @@ class ChatViewModel(context: Context, private var language: Language) : ViewMode
             setTextToSpeechLanguage()
         } else {
             Log.e(TAG, "Failed to initialise TextToSpeech")
-            _error.postValue(MainViewModel.ErrorType.NETWORK)
+            showError(MainViewModel.ErrorType.NETWORK)
         }
+    }
+
+    private fun showError(error:MainViewModel.ErrorType) {
+        _error.postValue(error)
+        _error.postValue(null)
     }
 
     /*
@@ -118,7 +123,7 @@ class ChatViewModel(context: Context, private var language: Language) : ViewMode
             || result == TextToSpeech.LANG_NOT_SUPPORTED
         ) {
             Log.e(TAG, "Failed to set TextToSpeech language")
-            _error.postValue(MainViewModel.ErrorType.SPEECH)
+            showError(MainViewModel.ErrorType.SPEECH)
             false
         } else {
             true
@@ -178,12 +183,12 @@ class ChatViewModel(context: Context, private var language: Language) : ViewMode
         viewModelScope.launch(Dispatchers.IO) {
             val englishMessage = chatTranslator.translateMessage(message)
             if(englishMessage == null) {
-                _error.postValue(MainViewModel.ErrorType.NETWORK)
+                showError(MainViewModel.ErrorType.NETWORK)
             } else {
                 val englishResponse = chatService.getResponse(englishMessage)
                 val response = chatTranslator.translateResponse(englishResponse)
                 if(response == null) {
-                    _error.postValue(MainViewModel.ErrorType.NETWORK)
+                    showError(MainViewModel.ErrorType.NETWORK)
                 } else {
                     readMessage(response)
                     addMessage(ChatMessage(response, ChatMessage.AI))
@@ -213,7 +218,7 @@ class ChatViewModel(context: Context, private var language: Language) : ViewMode
             audioRecorder.start()
             _status.postValue(Status.RECORDING)
         } catch (_: Exception) {
-            _error.postValue(MainViewModel.ErrorType.RECORDING)
+            showError(MainViewModel.ErrorType.RECORDING)
         }
     }
 
@@ -240,7 +245,7 @@ class ChatViewModel(context: Context, private var language: Language) : ViewMode
             if (message != null) {
                 newUserMessage(message)
             } else {
-                _error.postValue(MainViewModel.ErrorType.NETWORK)
+                showError(MainViewModel.ErrorType.NETWORK)
             }
             _status.postValue(Status.READY)
         }

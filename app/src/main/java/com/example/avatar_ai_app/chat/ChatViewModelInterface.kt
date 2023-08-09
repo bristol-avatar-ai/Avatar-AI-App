@@ -24,7 +24,7 @@ interface ChatViewModelInterface {
     val destinationID: LiveData<String>
 
     // Informs MainViewModel of error messages.
-    val error: LiveData<MainViewModel.ErrorType>
+    val error: LiveData<MainViewModel.ErrorType?>
 
     // Chat history - newest messages are stored first.
     val messages: LiveData<MutableList<ChatMessage>>
