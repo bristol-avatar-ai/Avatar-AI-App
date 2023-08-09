@@ -8,7 +8,6 @@ import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
@@ -19,7 +18,8 @@ import com.example.avatar_ai_app.language.Language
 import com.example.avatar_ai_app.data.DatabaseViewModel
 import com.example.avatar_ai_app.data.DatabaseViewModelFactory
 import com.example.avatar_ai_app.ui.ArScreen
-import com.example.avatar_ai_app.ar.AvatarViewModel
+import com.example.avatar_ai_app.ar.ArViewModel
+import com.example.avatar_ai_app.ar.ArViewModelFactory
 import com.example.avatar_ai_app.ui.MainViewModel
 import com.example.avatar_ai_app.ui.MainViewModelFactory
 import com.example.avatar_ai_app.ui.components.CameraPermissionRequestProvider
@@ -36,7 +36,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var databaseViewModel: DatabaseViewModel
     private lateinit var chatViewModel: ChatViewModel
     private lateinit var mainViewModel: MainViewModel
-    private val avatarViewModel: AvatarViewModel by viewModels()
+    private lateinit var arViewModel: ArViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -52,6 +52,11 @@ class MainActivity : ComponentActivity() {
         )[ChatViewModel::class.java]
         //TODO: Remember to update the ChatViewModel's exhibition list
 
+        arViewModel = ViewModelProvider(
+            this,
+            ArViewModelFactory(this.application)
+        )[ArViewModel::class.java]
+
         mainViewModel =
             ViewModelProvider(
                 this,
@@ -66,7 +71,7 @@ class MainActivity : ComponentActivity() {
                 ) {
                     ArScreen(
                         mainViewModel,
-                        avatarViewModel
+                        arViewModel
                     )
                     dialogQueue
                         .reversed()
