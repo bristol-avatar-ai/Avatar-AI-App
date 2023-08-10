@@ -15,12 +15,11 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
@@ -29,7 +28,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -42,37 +40,28 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.avatar_ai_app.R
 import com.example.avatar_ai_app.ar.ArViewModel
-import com.example.avatar_ai_app.language.Language
-import com.example.avatar_ai_app.ui.components.ActionButton
-import com.example.avatar_ai_app.ui.components.ActionMenuItem
-import com.example.avatar_ai_app.ui.components.ChatResponse
 import com.example.avatar_ai_app.ui.components.EnableCameraButton
 import com.example.avatar_ai_app.ui.components.LoadingScreen
 import com.example.avatar_ai_app.ui.components.SendAndMicButton
 import com.example.avatar_ai_app.ui.components.UserInput
-import com.example.avatar_ai_app.ui.theme.ARAppTheme
 import io.github.sceneview.ar.ARScene
 
 @Composable
-fun ArScreen(
+fun TestScreen(
     mainViewModel: MainViewModel = viewModel(),
-    arViewModel: ArViewModel = viewModel()
+    arViewModel: ArViewModel = viewModel(),
 ) {
     val uiState by mainViewModel.uiState.collectAsState()
     val arState by arViewModel.uiState.collectAsState()
-
-    //Ar screen scope
     val context = LocalContext.current
     val touchPosition by remember { mainViewModel.touchPosition }
     val focusRequester = remember { mainViewModel.focusRequester }
 
-    SideEffect{
+    SideEffect {
         val cameraPermissionStatus = ContextCompat.checkSelfPermission(
             context,
             Manifest.permission.CAMERA
@@ -84,7 +73,10 @@ fun ArScreen(
         ) == PackageManager.PERMISSION_GRANTED
 
         mainViewModel.updatePermissionStatus(Manifest.permission.CAMERA, cameraPermissionStatus)
-        mainViewModel.updatePermissionStatus(Manifest.permission.RECORD_AUDIO, recordingPermissionStatus)
+        mainViewModel.updatePermissionStatus(
+            Manifest.permission.RECORD_AUDIO,
+            recordingPermissionStatus
+        )
     }
 
     val isCameraEnabled by mainViewModel.isCameraEnabled.collectAsState()
@@ -107,26 +99,35 @@ fun ArScreen(
             LoadingScreen()
         } else {
             LaunchedEffect(isCameraEnabled) {
-                if(!isCameraEnabled) {
+                if (!isCameraEnabled) {
                     cameraPermissionResultLauncher.launch(Manifest.permission.CAMERA)
                 }
             }
-            Column(modifier = Modifier.fillMaxSize()) {
-
+            //If camera is enabled load the ArScene, otherwise load the camera enable button
+            when (isCameraEnabled) {
+                true -> {
+                    ARScene(
+                        modifier = Modifier
+                            .fillMaxSize(),
+                        nodes = remember { arViewModel.nodes },
+                        planeRenderer = false,
+                        onCreate = { arSceneView ->
+                            arViewModel.initialiseArScene(arSceneView)
+                            arViewModel.addModelToScene(arSceneView, ArViewModel.ModelType.AVATAR)
+                        },
+                    )
+                }
+                false -> {
+                    Box(Modifier.align(Alignment.Center)) {
+                        EnableCameraButton(
+                            onClick = {
+                                cameraPermissionResultLauncher.launch(Manifest.permission.CAMERA)
+                            }
+                        )
+                    }
+                }
             }
-            if(isCameraEnabled) {
-                ARScene(
-                    modifier = Modifier
-                        .fillMaxSize(),
-                    nodes = remember { arViewModel.nodes },
-                    planeRenderer = false,
-                    onCreate = { arSceneView ->
-                        arViewModel.initialiseArScene(arSceneView)
-                        arViewModel.addModelToScene(arSceneView, ArViewModel.ModelType.AVATAR)
-                    },
-                )
-            }
-            //Allows detection of touches on the ARScene
+            //Adds an invisible box to detect touches on the ArScreen and request focus
             BoxWithConstraints(
                 Modifier
                     .fillMaxHeight(0.95f)
@@ -143,96 +144,33 @@ fun ArScreen(
                     .focusRequester(focusRequester)
                     .focusable()
             ) {}
-            if(!isCameraEnabled) {
-                Box (Modifier.align(Alignment.Center)) {
-                    EnableCameraButton(
-                        onClick = {
-                            cameraPermissionResultLauncher.launch(Manifest.permission.CAMERA)
-                        }
-                    )
-                }
-            }
-            TopBar(
-                onClick = {},
-            )
-            //LanguageSelectionMenu(mainViewModel)
+            //Adjust the position of the BottomBar depending on the keyboard state
             Column(
-                Modifier.align(Alignment.BottomCenter)
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .navigationBarsPadding()
+                    .imePadding()
             ) {
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .align(Alignment.End)
-                ) {
-                    Box(
-                        Modifier
-                            .align(Alignment.Bottom)
-                            .fillMaxWidth(
-                                if (arState.isAvatarMenuVisible) {
-                                    0.5f
-                                } else 0.8f
-                            )
-                    ) {
-                        if (uiState.responsePresent) {
-                            ChatResponse(
-                                responseText = uiState.responseValue,
-                                onClick = { mainViewModel.dismissTextResponse() }
-                            )
-                        }
-                    }
-                    Box(Modifier.align(Alignment.Bottom)) {
-                        FloatingActionMenu(arViewModel, isCameraEnabled)
-                    }
-                }
-                OldBottomBar(mainViewModel, uiState, isRecordingEnabled)
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalStdlibApi::class)
-@Composable
-fun LanguageSelectionMenu(
-    mainViewModel: MainViewModel
-) {
-    val expanded = remember { mutableStateOf(false) }
-    val languages = Language.entries
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .wrapContentSize(Alignment.TopEnd)
-    ) {
-        ActionButton(
-            onClick = {
-                expanded.value = !expanded.value
-            },
-            color = Color.LightGray,
-            iconId = R.drawable.language_icon
-        )
-        DropdownMenu(
-            expanded = expanded.value,
-            onDismissRequest = {
-                expanded.value = false
-            }
-        ) {
-            languages.forEach { language: Language ->
-                DropdownMenuItem(
-                    text = { Text(text = language.string) },
-                    onClick = { mainViewModel.onLanguageSelectionResult(language) }
-
+                TopBar( onClick = {} )
+                Spacer(Modifier.weight(1f))
+                BottomBar(
+                    mainViewModel = mainViewModel,
+                    uiState = uiState,
+                    isRecordingEnabled = isRecordingEnabled
                 )
             }
         }
     }
 }
 
+//TODO make this composable independent from viewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun OldBottomBar(
+fun BottomBar(
     mainViewModel: MainViewModel,
     uiState: UiState,
-    isRecordingEnabled: Boolean
+    isRecordingEnabled: Boolean,
 ) {
     var textState by rememberSaveable(stateSaver = TextFieldValue.Saver) {
         mainViewModel.textState
@@ -294,41 +232,6 @@ fun OldBottomBar(
                 recordingPermissionsEnabled = isRecordingEnabled
             )
         }
-    }
-}
-
-@Composable
-fun FloatingActionMenu(
-    arViewModel: ArViewModel,
-    isCameraEnabled: Boolean,
-) {
-    Column {
-        ActionMenuItem(
-            onClick = { arViewModel.anchorOrFollowButtonOnClick() },
-            color = Color.LightGray,
-            values = arViewModel.getActionButtonValues(ArViewModel.AvatarButtonType.MODE),
-            enabled = arViewModel.enableActionButton(ArViewModel.AvatarButtonType.MODE)
-        )
-        ActionMenuItem(
-            onClick = { arViewModel.summonOrHideButtonOnClick() },
-            color = Color.LightGray,
-            values = arViewModel.getActionButtonValues(ArViewModel.AvatarButtonType.VISIBILITY),
-            enabled = arViewModel.enableActionButton(ArViewModel.AvatarButtonType.VISIBILITY)
-        )
-        ActionMenuItem(
-            onClick = { arViewModel.avatarButtonOnClick() },
-            color = Color.Gray,
-            enabled = isCameraEnabled
-        )
-    }
-}
-
-
-@Preview(showBackground = false)
-@Composable
-fun ArScreenPreview() {
-    ARAppTheme {
-        ArScreen()
     }
 }
 

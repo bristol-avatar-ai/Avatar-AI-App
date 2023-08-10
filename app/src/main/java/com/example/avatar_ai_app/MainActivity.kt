@@ -3,16 +3,15 @@ package com.example.avatar_ai_app
 import android.Manifest
 import android.app.Activity
 import android.content.Intent
-import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
+import androidx.core.view.WindowCompat
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import com.example.avatar_ai_app.ar.ArViewModel
@@ -24,9 +23,9 @@ import com.example.avatar_ai_app.data.DatabaseViewModelFactory
 import com.example.avatar_ai_app.imagerecognition.ImageRecognitionViewModel
 import com.example.avatar_ai_app.language.Language
 import com.example.avatar_ai_app.shared.ErrorType
-import com.example.avatar_ai_app.ui.ArScreen
 import com.example.avatar_ai_app.ui.MainViewModel
 import com.example.avatar_ai_app.ui.MainViewModelFactory
+import com.example.avatar_ai_app.ui.TestScreen
 import com.example.avatar_ai_app.ui.components.CameraPermissionRequestProvider
 import com.example.avatar_ai_app.ui.components.PermissionDialog
 import com.example.avatar_ai_app.ui.components.RecordAudioPermissionRequestProvider
@@ -93,7 +92,12 @@ class MainActivity : ComponentActivity(), ErrorListener {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                 ) {
-                    ArScreen(
+//                    ArScreen(
+//                        mainViewModel,
+//                        arViewModel
+//                    )
+                    WindowCompat.setDecorFitsSystemWindows(window, false)
+                    TestScreen(
                         mainViewModel,
                         arViewModel
                     )
