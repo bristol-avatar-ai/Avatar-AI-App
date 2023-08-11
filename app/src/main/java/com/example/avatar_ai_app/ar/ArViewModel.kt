@@ -79,9 +79,6 @@ class ArViewModel(application: Application) : ViewModel(){
 
     fun initialiseArScene(arSceneView: ArSceneView) {
         arSceneView.lightEstimationMode = Config.LightEstimationMode.ENVIRONMENTAL_HDR
-        avatarModelNode = createModel(arSceneView, ModelType.AVATAR)
-        avatarModelNode.isVisible = false
-        arSceneView.addChild(avatarModelNode)
     }
 
     fun addModelToScene(arSceneView: ArSceneView, modelType: ModelType) {
