@@ -77,13 +77,27 @@ class ArViewModel(application: Application) : ViewModel(){
         }
     }
 
-    fun addAvatarToScene(arSceneView: ArSceneView) {
+    fun initialiseArScene(arSceneView: ArSceneView) {
         arSceneView.lightEstimationMode = Config.LightEstimationMode.ENVIRONMENTAL_HDR
         avatarModelNode = createModel(arSceneView, ModelType.AVATAR)
         avatarModelNode.isVisible = false
         arSceneView.addChild(avatarModelNode)
     }
 
+    fun addModelToScene(arSceneView: ArSceneView, modelType: ModelType) {
+        when(modelType) {
+            ModelType.AVATAR -> {
+                avatarModelNode = createModel(arSceneView, ModelType.AVATAR)
+                avatarModelNode.isVisible = false
+                arSceneView.addChild(avatarModelNode)
+            }
+            ModelType.CRYSTAL -> {
+
+            }
+        }
+    }
+
+    //Creates a model from the ModelType data class
     private fun createModel(arSceneView: ArSceneView, modelType: ModelType): ArModelNode {
         val modelNode = ArModelNode(arSceneView.engine).apply {
             viewModelScope.launch {

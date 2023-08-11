@@ -118,7 +118,8 @@ fun ArScreen(
                     nodes = remember { arViewModel.nodes },
                     planeRenderer = false,
                     onCreate = { arSceneView ->
-                        arViewModel.addAvatarToScene(arSceneView)
+                        arViewModel.initialiseArScene(arSceneView)
+                        arViewModel.addModelToScene(arSceneView, ArViewModel.ModelType.AVATAR)
                     },
                 )
             }
