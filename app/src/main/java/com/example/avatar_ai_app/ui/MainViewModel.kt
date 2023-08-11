@@ -26,8 +26,10 @@ import kotlinx.coroutines.launch
 private const val TAG = "ArViewModel"
 private const val RECORDING_WAIT = 200L
 
-class MainViewModel(private val chatViewModel: ChatViewModel,
-lifecycleOwner: LifecycleOwner) : ViewModel() {
+class MainViewModel(
+    private val chatViewModel: ChatViewModelInterface,
+    lifecycleOwner: LifecycleOwner,
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(UiState())
     private val _isCameraEnabled = MutableStateFlow(false)
@@ -52,25 +54,29 @@ lifecycleOwner: LifecycleOwner) : ViewModel() {
 
     init {
         chatViewModel.status.observe(lifecycleOwner) {
-            when(it){
+            when (it) {
                 ChatViewModelInterface.Status.INIT -> {
                     setTextToSpeechReady(false)
                     updateLoadingState(false)
                 }
+
                 ChatViewModelInterface.Status.READY -> {
                     setTextToSpeechReady(true)
                     updateLoadingState(true)
                     setRecordingState(UiState.ready)
                     updateTextFieldStringResId(R.string.send_message_hint)
                 }
+
                 ChatViewModelInterface.Status.RECORDING -> {
                     setRecordingState(UiState.recording)
                     updateTextFieldStringResId(R.string.recording_message)
                 }
+
                 ChatViewModelInterface.Status.PROCESSING -> {
                     setRecordingState(UiState.processing)
                     updateTextFieldStringResId(R.string.processing_message)
                 }
+
                 else -> {}
             }
         }
@@ -78,7 +84,7 @@ lifecycleOwner: LifecycleOwner) : ViewModel() {
         chatViewModel.messages.observe(lifecycleOwner) {
             //TODO
             var messages: String? = null
-            if(!it.isNullOrEmpty()){
+            if (!it.isNullOrEmpty()) {
                 messages = it[0].string
             }
             _uiState.update { currentState ->
@@ -246,8 +252,8 @@ lifecycleOwner: LifecycleOwner) : ViewModel() {
 
 class MainViewModelFactory(
     private val chatViewModel: ChatViewModel,
-    private val lifecycleOwner: LifecycleOwner
-    ): ViewModelProvider.Factory {
+    private val lifecycleOwner: LifecycleOwner,
+) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(MainViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")

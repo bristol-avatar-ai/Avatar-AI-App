@@ -164,7 +164,6 @@ fun TestScreen(
     }
 }
 
-//TODO make this composable independent from viewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BottomBar(

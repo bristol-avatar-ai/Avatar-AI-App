@@ -14,6 +14,8 @@ private val DarkColorScheme = darkColorScheme(
     primary = Crimson,
     background = DarkGray,
     surface = Thunder,
+    primaryContainer = Manatee,
+    secondaryContainer = Nepal,
     onSurface = White,
     inverseOnSurface = Black
 
@@ -23,29 +25,20 @@ private val LightColorScheme = lightColorScheme(
     primary = Crimson,
     background = WildSand,
     surface = Alto,
+    primaryContainer = Silver,
+    secondaryContainer = Malibu,
     onSurface = Black,
     inverseOnSurface = White
-
-
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
 )
 
 @Composable
 fun ARAppTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = when {
+    val myColorScheme = when {
         dynamicColor -> {
             val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
@@ -57,7 +50,7 @@ fun ARAppTheme(
 
     CompositionLocalProvider(LocalSpacing provides Spacing()) {
         MaterialTheme(
-            colorScheme = colorScheme,
+            colorScheme = myColorScheme,
             typography = Typography,
             content = content
         )
