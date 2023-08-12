@@ -1,12 +1,19 @@
 package com.example.avatar_ai_app.language
 
+import com.example.avatar_ai_app.chat.ChatViewModel
 import com.google.mlkit.nl.translate.TranslateLanguage
 import java.util.Locale
 
 /**
- * This enum class contains the language setting strings
- * for each ChatBox component.
+ * Contains the language setting strings for [ChatViewModel] components.
+ *
+ * @property string For display in the language selection menu.
+ * @property ibmModel IBM Speech To Text Model.
+ * @property locale Android Text To Speech Locale.
+ * @property mlKitLanguage Google MlKit Translate Language.
+ * @constructor Create Language instance.
  */
+
 enum class Language(
     val string: String,
     val ibmModel: String,

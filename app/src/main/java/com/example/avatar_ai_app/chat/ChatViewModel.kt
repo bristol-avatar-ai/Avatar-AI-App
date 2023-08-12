@@ -179,12 +179,12 @@ class ChatViewModel(
 
     private fun newNonEnglishMessage(message: String) {
         viewModelScope.launch(Dispatchers.IO) {
-            val englishMessage = chatTranslator.translateMessage(message)
+            val englishMessage = chatTranslator.translateInput(message)
             if (englishMessage == null) {
                 errorListener.onError(ErrorType.NETWORK)
             } else {
                 val englishResponse = chatService.getResponse(englishMessage)
-                val response = chatTranslator.translateResponse(englishResponse)
+                val response = chatTranslator.translateOutput(englishResponse)
                 if (response == null) {
                     errorListener.onError(ErrorType.NETWORK)
                 } else {
