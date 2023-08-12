@@ -3,26 +3,26 @@ package com.example.avatar_ai_app.chat
 import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import com.example.avatar_ai_cloud_storage.database.Exhibition
+import com.example.avatar_ai_cloud_storage.database.entity.Feature
 
 private const val TAG = "ChatService"
 
 private const val GREETING_MESSAGE = "Hello!"
 private const val HELP_MESSAGE =
-    "Feel free to ask me anything! I can recognise exhibitions and provide information about them. You can also ask me for directions!"
+    "Feel free to ask me anything! I can recognise features and provide information about them. You can also ask me for directions!"
 private const val NAVIGATION_MESSAGE =
     "Please follow the onscreen directions towards your destination!"
-private const val INVALID_EXHIBITION_MESSAGE = "Sorry, I don't recognise that exhibition!"
+private const val INVALID_EXHIBITION_MESSAGE = "Sorry, I don't recognise that feature!"
 private const val RECOGNITION_MESSAGE = "Let me have a quick look!"
 private const val GENERIC_MESSAGE =
-    "Sorry, I can't help you with that. Try asking me about an exhibition or for directions towards one!"
+    "Sorry, I can't help you with that. Try asking me about an feature or for directions towards one!"
 
 class ChatService {
 
     // User request types.
     enum class Request { CHAT, NAVIGATION, RECOGNITION }
 
-    var exhibitionList = emptyList<Exhibition>()
+    var featureList = emptyList<Feature>()
 
     private val _request = MutableLiveData<Request>()
     val request: LiveData<Request> get() = _request
@@ -66,24 +66,24 @@ class ChatService {
     }
 
     private fun navigationRequested(message: String): String {
-        val exhibition = parseExhibition(message)
-        return if (exhibition == null) {
+        val feature = parseExhibition(message)
+        return if (feature == null) {
             INVALID_EXHIBITION_MESSAGE
         } else {
             _request.postValue(Request.NAVIGATION)
-            _destinationID.postValue(exhibition.anchor)
+            _destinationID.postValue(feature.anchor)
             NAVIGATION_MESSAGE
         }
     }
 
-    private fun parseExhibition(message: String): Exhibition? {
-        exhibitionList.forEach {
+    private fun parseExhibition(message: String): Feature? {
+        featureList.forEach {
             if (isPhraseFoundRegex(message, it.name)) {
-                Log.i(TAG, "Exhibition: $it.name")
+                Log.i(TAG, "Feature: $it.name")
                 return it
             }
         }
-        Log.i(TAG, "Exhibition: null")
+        Log.i(TAG, "Feature: null")
         return null
     }
 
@@ -93,13 +93,13 @@ class ChatService {
     }
 
     private fun informationRequested(message: String): String {
-        val exhibition = parseExhibition(message)
+        val feature = parseExhibition(message)
         _request.postValue(Request.CHAT)
-        return exhibition?.description ?: INVALID_EXHIBITION_MESSAGE
+        return feature?.description ?: INVALID_EXHIBITION_MESSAGE
     }
 
     fun reset() {
-        exhibitionList = emptyList()
+        featureList = emptyList()
         _request.postValue(Request.CHAT)
     }
 }

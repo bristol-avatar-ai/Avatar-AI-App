@@ -58,7 +58,7 @@ class MainActivity : ComponentActivity(), ErrorListener {
             this,
             ChatViewModelFactory(this, Language.ENGLISH, this)
         )[ChatViewModel::class.java]
-        //TODO: Remember to update the ChatViewModel's exhibition list
+        //TODO: Remember to update the ChatViewModel's feature list
 
         arViewModel = ViewModelProvider(
             this,

@@ -15,7 +15,7 @@ import com.example.avatar_ai_app.language.ChatTranslator
 import com.example.avatar_ai_app.language.Language
 import com.example.avatar_ai_app.network.TranscriptionApi
 import com.example.avatar_ai_app.shared.ErrorType
-import com.example.avatar_ai_cloud_storage.database.Exhibition
+import com.example.avatar_ai_cloud_storage.database.entity.Feature
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.File
@@ -123,6 +123,7 @@ class ChatViewModel(
             errorListener.onError(ErrorType.SPEECH)
             false
         } else {
+            Log.i(TAG, "TextToSpeech ready")
             true
         }
         componentInitialised()
@@ -136,8 +137,8 @@ class ChatViewModel(
         chatTranslator.setLanguage(language.mlKitLanguage)
     }
 
-    override fun setExhibitionList(exhibitionList: List<Exhibition>) {
-        chatService.exhibitionList = exhibitionList
+    override fun setExhibitionList(featureList: List<Feature>) {
+        chatService.featureList = featureList
     }
 
     /*

@@ -3,7 +3,7 @@ package com.example.avatar_ai_app.chat
 import androidx.lifecycle.LiveData
 import com.example.avatar_ai_app.language.Language
 import com.example.avatar_ai_app.ui.MainViewModel
-import com.example.avatar_ai_cloud_storage.database.Exhibition
+import com.example.avatar_ai_cloud_storage.database.entity.Feature
 
 /**
  * ChatViewModelInterface is the interface between [MainViewModel] and the
@@ -29,8 +29,8 @@ interface ChatViewModelInterface {
     // Sets the chat language.
     fun setLanguage(language: Language)
 
-    // Sets the current exhibition list - an empty list is used by default.
-    fun setExhibitionList(exhibitionList: List<Exhibition>)
+    // Sets the current feature list - an empty list is used by default.
+    fun setExhibitionList(featureList: List<Feature>)
 
     // Provides a new user message to the ChatService.
     fun newUserMessage(message: String)
