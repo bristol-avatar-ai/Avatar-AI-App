@@ -7,19 +7,23 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.avatar_ai_cloud_storage.database.AppDatabase
+import com.example.avatar_ai_cloud_storage.database.entity.Anchor
 import com.example.avatar_ai_cloud_storage.database.entity.Feature
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
+
 private const val TAG = "DatabaseViewModel"
 
 /**
- * [DatabaseViewModel] provides access to database-related operations and data for the app.
+ * ViewModel providing access to database-related operations and data for the app.
+ *
+ * @param context The application context.
+ * @constructor Creates a [DatabaseViewModel] instance.
  */
-
 class DatabaseViewModel(context: Context) : ViewModel(), DatabaseViewModelInterface {
 
-    // LiveData to indicate if the database is ready.
+    // LiveData indicating whether the database is ready.
     private val _isReady = MutableLiveData<Boolean>()
     override val isReady: LiveData<Boolean> get() = _isReady
 
@@ -38,8 +42,10 @@ class DatabaseViewModel(context: Context) : ViewModel(), DatabaseViewModelInterf
         reload(context)
     }
 
-    /*
-    * Reloads the database instance and updates the _isReady LiveData.
+    /**
+     * Reloads the database instance and updates the [_isReady] LiveData.
+     *
+     * @param context The application context.
      */
     override fun reload(context: Context) {
         _isReady.postValue(false)
@@ -54,40 +60,49 @@ class DatabaseViewModel(context: Context) : ViewModel(), DatabaseViewModelInterf
             if (database != null) {
                 Log.i(TAG, "reload: success")
             } else {
-                Log.w(TAG, "reload: failed")
+                Log.e(TAG, "reload: failed")
             }
         }
     }
 
-    /*
-    * Retrieves a list of features from the database.
+    /**
+     * Retrieves a list of features from the database.
+     *
+     * @return List of [Feature] objects.
      */
     override fun getFeatures(): List<Feature> {
         return featureDao?.getFeatures() ?: emptyList()
     }
 
-    /*
-    * Retrieves a specific feature by its name from the database.
+    /**
+     * Retrieves a specific feature by its name from the database.
+     *
+     * @param name The name of the feature to retrieve.
+     * @return The [Feature] object with the specified name, or null if not found.
      */
     override fun getFeature(name: String): Feature? {
         return featureDao?.getFeature(name)
     }
 
-
-    /*
-    * Retrieves the primary feature at the given Anchor ID or null if it does not exist.
+    /**
+     * Retrieves the primary feature at the given Anchor ID, or null if it does not exist.
+     *
+     * @param anchorId The [Anchor] ID.
+     * @return The primary [Feature] located at the [Anchor], or null if it does not exist.
      */
     override fun getPrimaryFeature(anchorId: String): Feature? {
-        val featureName = primaryFeatureDao?.getPrimaryFeature(anchorId)
+        val featureName = primaryFeatureDao?.getPrimaryFeature(anchorId)?.feature
         return if (featureName != null) {
-            getFeature(featureName.feature)
+            getFeature(featureName)
         } else {
             null
         }
     }
 
-    /*
-    * Retrieves a graph representation of the anchors and paths from the database.
+    /**
+     * Retrieves a graph representation of anchors and paths from the database.
+     *
+     * @return A [HashMap] mapping anchor IDs to lists of destinationId-distance [Pair]s.
      */
     override fun getGraph(): HashMap<String, MutableList<Pair<String, Int>>> {
         val graph = HashMap<String, MutableList<Pair<String, Int>>>()
@@ -104,8 +119,10 @@ class DatabaseViewModel(context: Context) : ViewModel(), DatabaseViewModelInterf
         return graph
     }
 
-    /*
-    * Retrieve an ordered list of features in the tour.
+    /**
+     * Retrieves an ordered list of features in the tour.
+     *
+     * @return Ordered list of [Feature] objects in the tour.
      */
     override fun getTourFeatures(): List<Feature> {
         return tourFeatureDao?.getTourFeatures()?.mapNotNull {
