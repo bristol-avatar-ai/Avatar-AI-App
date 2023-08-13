@@ -13,7 +13,6 @@ import java.util.Locale
  * @property mlKitLanguage Google MlKit Translate Language.
  * @constructor Create Language instance.
  */
-
 enum class Language(
     val string: String,
     val ibmModel: String,

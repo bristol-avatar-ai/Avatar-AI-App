@@ -1,15 +1,15 @@
 package com.example.avatar_ai_app.data
 
-import android.content.Context
+import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 
 /**
  * A ViewModelFactory for creating instances of [DatabaseViewModel].
  *
- * @param context The [Context] instance used to initialize the ViewModel.
+ * @param application The [Application] instance used to initialize the ViewModel.
  */
-class DatabaseViewModelFactory(private val context: Context) :
+class DatabaseViewModelFactory(private val application: Application) :
     ViewModelProvider.Factory {
     /**
      * Creates and returns an instance of [DatabaseViewModel].
@@ -21,7 +21,7 @@ class DatabaseViewModelFactory(private val context: Context) :
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(DatabaseViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return DatabaseViewModel(context) as T
+            return DatabaseViewModel(application) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

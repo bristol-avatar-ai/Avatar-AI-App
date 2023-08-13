@@ -51,7 +51,7 @@ class MainActivity : ComponentActivity(), ErrorListener {
 
         databaseViewModel = ViewModelProvider(
             this,
-            DatabaseViewModelFactory(this)
+            DatabaseViewModelFactory(application)
         )[DatabaseViewModel::class.java]
 
         chatViewModel = ViewModelProvider(

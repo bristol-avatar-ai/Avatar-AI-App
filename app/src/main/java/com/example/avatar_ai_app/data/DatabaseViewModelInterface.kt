@@ -1,6 +1,5 @@
 package com.example.avatar_ai_app.data
 
-import android.content.Context
 import androidx.lifecycle.LiveData
 import com.example.avatar_ai_app.ui.MainViewModel
 import com.example.avatar_ai_cloud_storage.database.entity.Anchor
@@ -20,10 +19,8 @@ interface DatabaseViewModelInterface {
 
     /**
      * Reload the database with the newest version on the server.
-     *
-     * @param context The application context.
      */
-    fun reload(context: Context)
+    fun reload()
 
     /**
      * Retrieves a list of features from the database.

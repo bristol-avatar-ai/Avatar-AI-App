@@ -1,10 +1,10 @@
 package com.example.avatar_ai_app.data
 
-import android.content.Context
+import android.app.Application
 import android.util.Log
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.avatar_ai_cloud_storage.database.AppDatabase
 import com.example.avatar_ai_cloud_storage.database.entity.Anchor
@@ -12,16 +12,16 @@ import com.example.avatar_ai_cloud_storage.database.entity.Feature
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-
 private const val TAG = "DatabaseViewModel"
 
 /**
  * ViewModel providing access to database-related operations and data for the app.
  *
- * @param context The application context.
+ * @param application The application context.
  * @constructor Creates a [DatabaseViewModel] instance.
  */
-class DatabaseViewModel(context: Context) : ViewModel(), DatabaseViewModelInterface {
+class DatabaseViewModel(application: Application) : AndroidViewModel(application),
+    DatabaseViewModelInterface {
 
     // LiveData indicating whether the database is ready.
     private val _isReady = MutableLiveData<Boolean>()
@@ -39,23 +39,23 @@ class DatabaseViewModel(context: Context) : ViewModel(), DatabaseViewModelInterf
     * Reload the database on initialisation.
      */
     init {
-        reload(context)
+        reload()
     }
 
     /**
      * Reloads the database instance and updates the [_isReady] LiveData.
-     *
-     * @param context The application context.
      */
-    override fun reload(context: Context) {
+    override fun reload() {
         _isReady.postValue(false)
         AppDatabase.close()
         database = null
 
         viewModelScope.launch(Dispatchers.IO) {
             // Load database.
-            database = AppDatabase.getDatabase(context)
-
+            database = AppDatabase.getDatabase(
+                getApplication<Application>().applicationContext
+            )
+            // Update _isReady.
             _isReady.postValue(database != null)
             if (database != null) {
                 Log.i(TAG, "reload: success")
