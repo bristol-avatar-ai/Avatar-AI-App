@@ -17,10 +17,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
@@ -44,10 +43,12 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.avatar_ai_app.ar.ArViewModel
+import com.example.avatar_ai_app.ui.components.ChatBox
 import com.example.avatar_ai_app.ui.components.EnableCameraButton
 import com.example.avatar_ai_app.ui.components.LoadingScreen
 import com.example.avatar_ai_app.ui.components.SendAndMicButton
 import com.example.avatar_ai_app.ui.components.UserInput
+import com.example.avatar_ai_app.ui.theme.ARAppTheme
 import io.github.sceneview.ar.ARScene
 
 @Composable
@@ -93,7 +94,7 @@ fun TestScreen(
     )
 
     Box(
-        Modifier.fillMaxHeight()
+        Modifier.fillMaxHeight().background(MaterialTheme.colorScheme.background)
     ) {
         if (!uiState.isLoaded) {
             LoadingScreen()
@@ -108,7 +109,8 @@ fun TestScreen(
                 true -> {
                     ARScene(
                         modifier = Modifier
-                            .fillMaxSize(),
+                            .fillMaxSize()
+                            .navigationBarsPadding(),
                         nodes = remember { arViewModel.nodes },
                         planeRenderer = false,
                         onCreate = { arSceneView ->
@@ -117,6 +119,7 @@ fun TestScreen(
                         },
                     )
                 }
+
                 false -> {
                     Box(Modifier.align(Alignment.Center)) {
                         EnableCameraButton(
@@ -149,11 +152,15 @@ fun TestScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
                     .fillMaxSize()
-                    .navigationBarsPadding()
                     .imePadding()
+                    .navigationBarsPadding()
             ) {
-                TopBar( onClick = {} )
+                TopBar(onClick = {})
                 Spacer(Modifier.weight(1f))
+                ChatBox(
+                    messages = uiState.messages,
+                    showMessages = uiState.messagesAreShown
+                )
                 BottomBar(
                     mainViewModel = mainViewModel,
                     uiState = uiState,
@@ -187,19 +194,11 @@ fun BottomBar(
         }
     )
 
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(5.dp)
-    ) {
+    ARAppTheme {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(
-                    color = Color.Gray,
-                    shape = RoundedCornerShape(20.dp)
-                )
-                .padding(5.dp),
+                .background(color = MaterialTheme.colorScheme.surface),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Spacer(
@@ -232,5 +231,6 @@ fun BottomBar(
             )
         }
     }
+
 }
 

@@ -40,7 +40,8 @@ fun Message(
                 text = string,
                 modifier = Modifier
                     .background(color = contentColor, shape = RoundedCornerShape(10.dp))
-                    .padding(MaterialTheme.spacing.small)
+                    .padding(MaterialTheme.spacing.small),
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             if (type == MessageType.RESPONSE) Spacer(Modifier.weight(1f))

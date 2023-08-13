@@ -11,9 +11,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.avatar_ai_app.R
+import com.example.avatar_ai_app.chat.ChatMessage
 import com.example.avatar_ai_app.chat.ChatViewModel
 import com.example.avatar_ai_app.chat.ChatViewModelInterface
 import com.example.avatar_ai_app.language.Language
+import com.example.avatar_ai_app.shared.MessageType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -82,20 +84,26 @@ class MainViewModel(
         }
 
         chatViewModel.messages.observe(lifecycleOwner) {
-            //TODO
-            var messages: String? = null
             if (!it.isNullOrEmpty()) {
-                messages = it[0].string
-            }
-            _uiState.update { currentState ->
-                currentState.copy(
-                    responsePresent = messages != null,
-                    responseValue = messages ?: ""
-                )
-
+//                uiState.value.addMessage(it[0])
+                displayMessages(it)
             }
             //clear the text field
             textState.value = TextFieldValue()
+        }
+    }
+
+    private fun displayMessages(messages: List<ChatMessage>) {
+        //check that there is both a message and a response
+        if(messages.size %2 !=0 ) return
+
+        viewModelScope.launch {
+            if(messages[1].type == MessageType.USER) {
+                uiState.value.addMessage(messages[1])
+            }
+            if(messages[0].type == MessageType.RESPONSE) {
+                uiState.value.addMessage(messages[0])
+            }
         }
     }
 

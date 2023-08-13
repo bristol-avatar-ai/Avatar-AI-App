@@ -28,9 +28,7 @@ fun TopBar(
 ) {
     ARAppTheme {
         val topBarColor = MaterialTheme.colorScheme.surface
-        Column (
-            modifier = modifier
-                ){
+        Column (modifier = modifier){
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
