@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import com.example.avatar_ai_app.ar.ArViewModel
 import com.example.avatar_ai_app.ar.ArViewModelFactory
 import com.example.avatar_ai_app.chat.ChatViewModel
@@ -28,14 +29,23 @@ import com.example.avatar_ai_app.ui.components.PermissionDialog
 import com.example.avatar_ai_app.ui.components.RecordAudioPermissionRequestProvider
 import com.example.avatar_ai_app.ui.theme.ARAppTheme
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 private const val TAG = "MainActivity"
 
-/*
-* This listener should be passed into the ViewModels and
-* contains a function for showing error dialog boxes.
+/**
+ * Interface to be implemented by listeners that handle error events.
+ *
+ * This listener should be passed into the ViewModels and contains a function for displaying error dialog boxes.
  */
 interface ErrorListener {
+    /**
+     * Callback function to show an error dialog box based on the specified [errorType].
+     *
+     * @param errorType The type of error to handle.
+     */
     fun onError(errorType: ErrorType)
 }
 
@@ -56,7 +66,7 @@ class MainActivity : ComponentActivity(), ErrorListener {
 
         chatViewModel = ViewModelProvider(
             this,
-            ChatViewModelFactory(this, Language.ENGLISH, this)
+            ChatViewModelFactory(application, Language.ENGLISH, this)
         )[ChatViewModel::class.java]
         //TODO: Remember to update the ChatViewModel's feature list
 
@@ -109,24 +119,48 @@ class MainActivity : ComponentActivity(), ErrorListener {
         }
     }
 
-    /*
-    * This ErrorListener callback function displays an error dialog box.
+    /**
+     * Displays an error dialog box based on the given [errorType].
+     *
+     * Strings are displayed in the selected language, if possible.
+     *
+     * @param errorType The type of error to handle.
      */
     override fun onError(errorType: ErrorType) {
-        MaterialAlertDialogBuilder(this)
-            .setTitle(getString(R.string.error_title))
-            .setMessage(
-                when (errorType) {
-                    ErrorType.GENERIC -> getString(R.string.error_message)
-                    ErrorType.NETWORK -> getString(R.string.network_error_message)
-                    ErrorType.RECORDING -> getString(R.string.recording_error_message)
-                    ErrorType.RECORDING_LENGTH -> getString(R.string.recording_length_error_message)
-                    ErrorType.SPEECH -> getString(R.string.speech_error_message)
-                }
-            )
-            .setCancelable(false)
-            .setPositiveButton(getString(R.string.error_ok_button)) { _, _ -> }
-            .show()
+        lifecycleScope.launch(Dispatchers.IO) {
+            val errorStrings = getErrorStrings(errorType)
+
+            withContext(Dispatchers.Main) {
+                MaterialAlertDialogBuilder(this@MainActivity)
+                    .setTitle(errorStrings[0])
+                    .setMessage(errorStrings[1])
+                    .setCancelable(false)
+                    .setPositiveButton(errorStrings[2]) { _, _ -> }
+                    .show()
+            }
+        }
+    }
+
+    /**
+     * Retrieves a set of translated error message strings if available; otherwise, returns them in English.
+     *
+     * @param errorType The type of error to fetch messages for.
+     * @return A list of error message strings.
+     */
+    private suspend fun getErrorStrings(errorType: ErrorType): List<String> {
+        return listOf(
+            getString(R.string.error_title),
+            when (errorType) {
+                ErrorType.GENERIC -> getString(R.string.error_message)
+                ErrorType.NETWORK -> getString(R.string.network_error_message)
+                ErrorType.RECORDING -> getString(R.string.recording_error_message)
+                ErrorType.RECORDING_LENGTH -> getString(R.string.recording_length_error_message)
+                ErrorType.SPEECH -> getString(R.string.speech_error_message)
+            },
+            getString(R.string.error_ok_button)
+        ).map {
+            chatViewModel.translateOutput(it)
+        }
     }
 
 }
