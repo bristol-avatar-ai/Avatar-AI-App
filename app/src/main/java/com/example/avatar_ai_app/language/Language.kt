@@ -20,7 +20,7 @@ enum class Language(
     val mlKitLanguage: String
 ) {
     ENGLISH("English", "en-GB_Telephony", Locale.UK, TranslateLanguage.ENGLISH),
-    FRENCH("French", "fr-FR_Telephony", Locale.FRANCE, TranslateLanguage.FRENCH),
-    GERMAN("German", "de-DE_Telephony", Locale.GERMANY, TranslateLanguage.GERMAN),
-    CHINESE("Chinese", "zh-CN_Telephony", Locale.CHINA, TranslateLanguage.CHINESE)
+    FRENCH("Français", "fr-FR_Telephony", Locale.FRANCE, TranslateLanguage.FRENCH),
+    GERMAN("Deutsch", "de-DE_Telephony", Locale.GERMANY, TranslateLanguage.GERMAN),
+    CHINESE("中文", "zh-CN_Telephony", Locale.CHINA, TranslateLanguage.CHINESE)
 }
