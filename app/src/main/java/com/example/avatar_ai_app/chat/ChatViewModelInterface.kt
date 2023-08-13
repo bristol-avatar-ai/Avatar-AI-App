@@ -26,8 +26,8 @@ interface ChatViewModelInterface {
     // Message history (newest messages are stored first).
     val messages: LiveData<MutableList<ChatMessage>>
 
-    // Current user request type.
-    val request: LiveData<ChatService.Request>
+    // Current user intent.
+    val intent: LiveData<Intent>
 
     // Requested navigation destination Id.
     val destinationID: LiveData<String>

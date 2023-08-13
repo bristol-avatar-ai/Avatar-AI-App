@@ -71,11 +71,11 @@ enum class Intent(val triggerPhrases: List<String>) {
     ),
     RECOGNITION(
         listOf(
+            "identify",
+            "recognize",
             "what is this",
             "what's this",
             "what am I looking at",
-            "identify",
-            "recognize",
             "what do you see",
             "what's in front",
             "what is in front",
@@ -107,6 +107,17 @@ enum class Intent(val triggerPhrases: List<String>) {
             "features of",
             "characteristics of",
             "functionality of"
+        )
+    ),
+    TOUR(
+        listOf(
+            "tour",
+            "show me around",
+            "take me around",
+            "guide me around",
+            "lead me through",
+            "walk me around",
+            "show me what's here"
         )
     )
 }
