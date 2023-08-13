@@ -9,6 +9,10 @@ import com.example.avatar_ai_cloud_storage.database.entity.Feature
 
 private const val TAG = "ChatService"
 
+// Minimum Levenshtein Ratio allowed in fuzzy phrase searching.
+// This is around one-in-four characters edits.
+private const val MIN_LEVENSHTEIN_RATIO = 0.75
+
 /**
  * Service class for handling user message input and generating responses.
  *
@@ -59,7 +63,7 @@ class ChatService(private val context: Context) {
     private fun parseIntent(message: String): Intent? {
         Intent.values().forEach { intent ->
             intent.triggerPhrases.forEach { phrase ->
-                if (isPhraseFoundRegex(message, phrase)) {
+                if (message.containsPhraseFuzzy(phrase, MIN_LEVENSHTEIN_RATIO)) {
                     Log.i(TAG, "parseIntent: $intent")
                     return intent
                 }
@@ -67,14 +71,6 @@ class ChatService(private val context: Context) {
         }
         Log.i(TAG, "parseIntent: null")
         return null
-    }
-
-    /*
-    * Checks if a given phrase is found in the user's message using regex.
-     */
-    private fun isPhraseFoundRegex(message: String, phrase: String): Boolean {
-        val regex = Regex("(^|\\s)$phrase(\\s|\$)", RegexOption.IGNORE_CASE)
-        return message.contains(regex)
     }
 
     /*
@@ -106,7 +102,7 @@ class ChatService(private val context: Context) {
      */
     private fun parseFeature(message: String): Feature? {
         featureList.forEach {
-            if (isPhraseFoundRegex(message, it.name)) {
+            if (message.containsPhraseFuzzy(it.name, MIN_LEVENSHTEIN_RATIO)) {
                 Log.i(TAG, "parseFeature: $it.name")
                 return it
             }
