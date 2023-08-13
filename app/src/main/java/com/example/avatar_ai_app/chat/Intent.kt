@@ -1,5 +1,13 @@
 package com.example.avatar_ai_app.chat
 
+/**
+ * Enum class representing different user intents that the [ChatService] can recognize.
+ *
+ * Each intent is associated with a list of trigger phrases that users might use to express that intent.
+ *
+ * @property triggerPhrases A list of trigger phrases associated with the intent.
+ * @constructor Creates an instance of the [Intent] enum with its associated trigger phrases.
+ */
 enum class Intent(val triggerPhrases: List<String>) {
     GREETING(
         listOf(

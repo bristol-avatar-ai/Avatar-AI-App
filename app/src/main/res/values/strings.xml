@@ -21,6 +21,14 @@
     <string name="recording_message" tools:ignore="TypographyEllipsis">Recording...</string>
     <string name="processing_message" tools:ignore="TypographyEllipsis">Processing...</string>
 
+    <!--Chat Response Messages-->
+    <string name="greeting_message">Hello!</string>
+    <string name="help_message">Feel free to ask me anything! I can recognise features and provide information about them. You can also ask me for directions!</string>
+    <string name="navigation_message">Please follow the onscreen directions towards your destination!</string>
+    <string name="invalid_feature_message">Sorry, I don\'t recognise that feature!</string>
+    <string name="recognition_message">Let me have a quick look!</string>
+    <string name="generic_message">Sorry, I can\'t help you with that. Try asking me about an feature or for directions towards one!</string>
+
     <!--Error Messages-->
     <string name="error_title">Error</string>
     <string name="speech_error_message">Failed to load speech module. Please check your network connection and try again!</string>

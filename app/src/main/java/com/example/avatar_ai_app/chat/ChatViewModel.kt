@@ -1,12 +1,12 @@
 package com.example.avatar_ai_app.chat
 
-import android.content.Context
+import android.app.Application
 import android.speech.tts.TextToSpeech
 import android.speech.tts.TextToSpeech.OnInitListener
 import android.util.Log
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.avatar_ai_app.ErrorListener
 import com.example.avatar_ai_app.audio.AudioRecorder
@@ -22,233 +22,287 @@ import java.io.File
 
 private const val TAG = "ChatViewModel"
 
+// Audio recording details.
 private const val RECORDING_NAME = "recording"
 private const val RECORDING_FILE_TYPE = "ogg"
+
+// Number of components requiring confirmation of initialisation.
 private const val TOTAL_INIT_COUNT = 2
 
 /**
- * ViewModel containing the chat history and methods to modify it.
+ * ViewModel for managing chat-related functionality.
+ *
+ * This ViewModel class handles various chat-related tasks, including translating user input,
+ * processing responses, recording and transcribing audio, and handling message history.
+ *
+ * @property application The application context.
+ * @property language The initial language used for translation and speech.
+ * @property errorListener The listener for handling error events.
  */
-
 class ChatViewModel(
-    context: Context,
+    application: Application,
     private var language: Language,
     private val errorListener: ErrorListener
-) : ViewModel(),
+) : AndroidViewModel(application),
     ChatViewModelInterface,
     OnInitListener,
     AudioRecorder.RecordingCompletionListener,
     ChatTranslator.InitListener {
 
-    // Save the recordings filepath to the cache directory.
+    // File to store recordings in the cache directory.
     private val recordingFile: File =
-        File.createTempFile(RECORDING_NAME, RECORDING_FILE_TYPE, context.cacheDir)
+        File.createTempFile(
+            RECORDING_NAME,
+            RECORDING_FILE_TYPE,
+            getApplication<Application>().applicationContext.cacheDir
+        )
 
+    // Current ChatViewModel status.
     private val _status = MutableLiveData(Status.INIT)
     override val status: LiveData<Status> get() = _status
 
-    // Store message history as MutableLiveData backing property.
+    // Message history (newest messages are stored first).
     private val _messages = MutableLiveData<MutableList<ChatMessage>>(mutableListOf())
     override val messages: LiveData<MutableList<ChatMessage>> get() = _messages
 
-    // Initialise ChatService for message responses.
-    private val chatService = ChatService()
-
-    override val request = chatService.request
-
-    override val destinationID = chatService.destinationID
-
-    // Initialise TextToSpeech class for audio responses.
-    private val textToSpeech: TextToSpeech = TextToSpeech(context, this)
-
-    private var textToSpeechReady = false
-
-    // Initialise AudioRecorder class for recording audio input.
-    private val audioRecorder: AudioRecorder =
-        AudioRecorder(context, recordingFile, viewModelScope, this)
-
-    private val chatTranslator = ChatTranslator(language.mlKitLanguage, this)
-
+    // Initialised components counter.
     private var initCount = 0
 
-    /*
-    * Override onCleared() to release initialised resources
-    * when the ViewModel is destroyed.
+    // Instance of ChatService with exposed request and destinationID LiveData.
+    private val chatService = ChatService(getApplication<Application>().applicationContext)
+    override val request: LiveData<ChatService.Request> get() = chatService.request
+    override val destinationID: LiveData<String> get() = chatService.destinationID
+
+    // Instance of AudioRecorder.
+    private val audioRecorder: AudioRecorder = AudioRecorder(
+        getApplication<Application>().applicationContext,
+        recordingFile,
+        viewModelScope,
+        this
+    )
+
+    // Instance of ChatTranslator and readiness flag
+    private val chatTranslator = ChatTranslator(language.mlKitLanguage, this)
+    private var isChatTranslatorReady = false
+
+    // Instance of TextToSpeech and readiness flag.
+    private val textToSpeech: TextToSpeech =
+        TextToSpeech(getApplication<Application>().applicationContext, this)
+    private var isTextToSpeechReady = false
+
+    /**
+     * Called when ViewModel is no longer in use.
+     *
+     * Clears resources and resets status.
      */
     override fun onCleared() {
         super.onCleared()
         _messages.value?.clear()
         chatService.reset()
         audioRecorder.release()
+        chatTranslator.close()
+        isChatTranslatorReady = false
         textToSpeech.stop()
         textToSpeech.shutdown()
-        chatTranslator.close()
+        isTextToSpeechReady = false
         initCount = 0
     }
 
+    /*
+     * Increments the initialisation counter and
+     * checks if all components are initialised.
+     */
     private fun componentInitialised() {
         initCount++
         if (initCount >= TOTAL_INIT_COUNT) {
             _status.postValue(Status.READY)
+            Log.i(TAG, "componentInitialised: Status: READY")
         }
     }
 
+    /**
+     * Callback indicating the status of [ChatTranslator] initialisation.
+     *
+     * @param success Indicates whether ChatTranslator was successfully initialised.
+     */
     override fun onTranslatorInit(success: Boolean) {
+        Log.i(TAG, "onTranslatorInit: ChatTranslator ready")
+        isChatTranslatorReady = success
         componentInitialised()
     }
 
-    /*
-    * onInit is called when the TextToSpeech service is initialised.
-    * Initialisation errors are handled and the language is set.
+    /**
+     * Callback indicating the status of [TextToSpeech] initialisation.
+     *
+     * @param status The initialisation status code.
      */
     override fun onInit(status: Int) {
         if (status == TextToSpeech.SUCCESS) {
             setTextToSpeechLanguage()
         } else {
-            Log.e(TAG, "Failed to initialise TextToSpeech")
+            Log.e(TAG, "onInit: Failed to initialise TextToSpeech")
             errorListener.onError(ErrorType.NETWORK)
         }
     }
 
     /*
-    * This function sets the TextToSpeech language and handles any errors.
+    * Sets the TextToSpeech language and handles errors.
      */
     private fun setTextToSpeechLanguage() {
         val result = textToSpeech.setLanguage(language.locale)
 
-        textToSpeechReady = if (result == TextToSpeech.LANG_MISSING_DATA
+        isTextToSpeechReady = if (result == TextToSpeech.LANG_MISSING_DATA
             || result == TextToSpeech.LANG_NOT_SUPPORTED
         ) {
-            Log.e(TAG, "Failed to set TextToSpeech language")
+            Log.e(TAG, "setTextToSpeechLanguage: Failed to set TextToSpeech language")
             errorListener.onError(ErrorType.SPEECH)
             false
         } else {
-            Log.i(TAG, "TextToSpeech ready")
+            Log.i(TAG, "setTextToSpeechLanguage: TextToSpeech ready")
             true
         }
         componentInitialised()
     }
 
+    /**
+     * Sets the language used for translation and speech.
+     *
+     * @param language The new language to set.
+     */
     override fun setLanguage(language: Language) {
         this.language = language
         _status.value = Status.INIT
+        Log.i(TAG, "setLanguage: Status: INIT")
         initCount = 0
         setTextToSpeechLanguage()
         chatTranslator.setLanguage(language.mlKitLanguage)
     }
 
-    override fun setExhibitionList(featureList: List<Feature>) {
+    /**
+     * Sets the list of features used by [ChatService].
+     *
+     * [ChatService] utilises an empty list by default.
+     *
+     * @param featureList The list of features to set.
+     */
+    override fun setFeatureList(featureList: List<Feature>) {
         chatService.featureList = featureList
     }
 
-    /*
-    * Adds a new message to the chat history.
-    * Newest messages are stored first.
-    */
+    /**
+     * Adds a new message to the message list.
+     *
+     * The message list [LiveData] is posted to update any observers.
+     *
+     * @param message The message to add.
+     */
     private fun addMessage(message: ChatMessage) {
-        // Get the current message list, or create one if null.
         val currentMessages = _messages.value ?: mutableListOf()
-        // Add the new message to the list
         currentMessages.add(0, message)
-        // Set the updated list back to the MutableLiveData using postValue
         _messages.postValue(currentMessages)
     }
 
-    /*
-    * Processes user message input. Adds the new
-    * user message, then generates a reply.
+    /**
+     * Translates the output message using [ChatTranslator] if available.
+     *
+     * @param response The response to translate.
+     * @return Translated response if available, otherwise the original response.
      */
-    /*
-    * Gets a response to the input message with ChatService. Generates an audio
-    * reply and plays it if TextToSpeech has been initialised correctly.
-    * Coroutines are used to prevent blocking the main thread.
-     */
-    override fun newUserMessage(message: String) {
-        if (language == Language.ENGLISH) {
-            addMessage(ChatMessage(message, ChatMessage.USER))
-            viewModelScope.launch(Dispatchers.IO) {
-                // Generate reply with ChatService.
-                val response = chatService.getResponse(message)
-                readMessage(response)
-                addMessage(ChatMessage(response, ChatMessage.AI))
-            }
+    override suspend fun translateOutput(response: String): String {
+        return if (isChatTranslatorReady) {
+            chatTranslator.translateOutput(response) ?: response
         } else {
-            newNonEnglishMessage(message)
+            response
         }
     }
 
-    private fun newNonEnglishMessage(message: String) {
+    /**
+     * Processes a new message from the user.
+     *
+     * Generates a reply, reading and adding it to the message list.
+     * Messages and responses are translated if required.
+     *
+     * @param message The user's message.
+     */
+    override fun newUserMessage(message: String) {
         viewModelScope.launch(Dispatchers.IO) {
             val englishMessage = chatTranslator.translateInput(message)
             if (englishMessage == null) {
                 errorListener.onError(ErrorType.NETWORK)
             } else {
                 val englishResponse = chatService.getResponse(englishMessage)
-                val response = chatTranslator.translateOutput(englishResponse)
-                if (response == null) {
-                    errorListener.onError(ErrorType.NETWORK)
-                } else {
-                    readMessage(response)
-                    addMessage(ChatMessage(response, ChatMessage.AI))
-                }
+                val response = translateOutput(englishResponse)
+
+                readMessage(response)
+                addMessage(ChatMessage(response, ChatMessage.AI))
+                Log.i(TAG, "newUserMessage: response added")
             }
         }
     }
 
     /*
-    * Reads message with TextToSpeech if ready.
+    * Reads out a message using TextToSpeech if available.
      */
     private fun readMessage(message: String) {
-        if (textToSpeechReady) {
+        if (isTextToSpeechReady) {
             textToSpeech.speak(
                 message,
                 TextToSpeech.QUEUE_FLUSH, null, null
             )
+            Log.i(TAG, "readMessage: success")
         }
     }
 
-    /*
-    * This function starts the AudioRecorder, then disables
-    * text input and changes the hint.
+    /**
+     * Starts audio recording.
      */
     override fun startRecording() {
         try {
             audioRecorder.start()
             _status.postValue(Status.RECORDING)
+            Log.i(TAG, "startRecording: Status: RECORDING")
         } catch (_: Exception) {
             errorListener.onError(ErrorType.RECORDING)
         }
     }
 
+    /**
+     * Stops audio recording.
+     */
     override fun stopRecording() {
         audioRecorder.stop()
     }
 
-    /*
-    * onRecordingCompleted is called when the AudioRecorder stops recording.
-    * The action button is disables and the hint is modified. A reply is
-    * generated before the control and hint are reset.
-     */
-    /*
-    * This function transcribes the recordingFile into text, deletes the
-    * file, and then generates a reply.
+    /**
+     * Callback for when audio recording is completed.
+     *
+     * Transcribes the recording into text, generates a reply, then passes it to [newUserMessage].
      */
     override fun onRecordingCompleted() {
         _status.postValue(Status.PROCESSING)
-        viewModelScope.launch {
+        Log.i(TAG, "onRecordingCompleted: Status: PROCESSING")
+
+        viewModelScope.launch(Dispatchers.IO) {
             val message = TranscriptionApi.transcribe(recordingFile, language.ibmModel)
             if (recordingFile.exists()) {
                 recordingFile.delete()
             }
             if (message != null) {
+                Log.i(TAG, "Transcribed: $message")
                 newUserMessage(message)
             } else {
                 errorListener.onError(ErrorType.NETWORK)
             }
             _status.postValue(Status.READY)
+            Log.i(TAG, "onRecordingCompleted: Status: READY")
         }
     }
 
+    /**
+     * Reads a new response and adds it to the chat history.
+     *
+     * @param response The response to be used.
+     */
     override fun newResponse(response: String) {
         viewModelScope.launch(Dispatchers.IO) {
             readMessage(response)
@@ -256,9 +310,9 @@ class ChatViewModel(
         }
     }
 
-    /*
-    * Clear the message history.
-    */
+    /**
+     * Clears the chat history.
+     */
     override fun clearChatHistory() {
         _messages.value?.clear()
     }
