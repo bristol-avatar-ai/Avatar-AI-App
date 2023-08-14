@@ -114,7 +114,7 @@ class DatabaseViewModel(application: Application) : AndroidViewModel(application
 
         // Add paths to graph.
         pathDao?.getPaths()?.forEach {
-            graph[it.origin]?.add(Pair(it.destination, it.distance))
+            graph[it.anchor1]?.add(Pair(it.anchor2, it.distance))
         }
         return graph
     }
