@@ -85,7 +85,6 @@ class MainViewModel(
 
         chatViewModel.messages.observe(lifecycleOwner) {
             if (!it.isNullOrEmpty()) {
-//                uiState.value.addMessage(it[0])
                 displayMessages(it)
             }
             //clear the text field
@@ -104,6 +103,12 @@ class MainViewModel(
             if(messages[0].type == MessageType.RESPONSE) {
                 uiState.value.addMessage(messages[0])
             }
+        }
+
+        _uiState.update {currentState ->
+            currentState.copy(
+                messagesAreShown =  true
+            )
         }
     }
 
@@ -240,6 +245,14 @@ class MainViewModel(
             )
         }
         chatViewModel.setLanguage(language)
+    }
+
+    fun handleSwipe(pan: Float) {
+        _uiState.update { currentState ->
+            currentState.copy(
+                messagesAreShown = pan <=0
+            )
+        }
     }
 
 //    fun generateCoordinates(

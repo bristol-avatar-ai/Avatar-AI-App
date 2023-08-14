@@ -29,7 +29,7 @@ data class UiState(
 
     //Messages
     val messages: MutableList<ChatMessage> = mutableStateListOf(),
-    val messagesAreShown: Boolean = true
+    val messagesAreShown: Boolean = false
 
 ) {
     companion object {

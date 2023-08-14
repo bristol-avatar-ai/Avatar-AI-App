@@ -2,11 +2,14 @@ package com.example.avatar_ai_app.ui
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -50,6 +53,8 @@ import com.example.avatar_ai_app.ui.components.SendAndMicButton
 import com.example.avatar_ai_app.ui.components.UserInput
 import com.example.avatar_ai_app.ui.theme.ARAppTheme
 import io.github.sceneview.ar.ARScene
+import kotlinx.coroutines.awaitCancellation
+import kotlin.math.absoluteValue
 
 @Composable
 fun TestScreen(
@@ -136,11 +141,25 @@ fun TestScreen(
                     .fillMaxHeight(0.95f)
                     .fillMaxWidth(0.95f)
                     .align(Alignment.Center)
+                    .background(Color.Red)
                     .pointerInput(Unit) {
                         detectTapGestures(
                             onTap = {
                                 arViewModel.dismissActionMenu()
                                 focusRequester.requestFocus()
+                                Log.d("Swipe", "Tap detected")
+                            }
+                        )
+                    }
+                    .pointerInput(Unit) {
+                        var dragY = 0F
+                        detectVerticalDragGestures(
+                            onVerticalDrag = {
+                                _, dragAmount ->
+                                dragY = dragAmount
+                            },
+                            onDragEnd = {
+                                mainViewModel.handleSwipe(dragY)
                             }
                         )
                     }
@@ -231,6 +250,5 @@ fun BottomBar(
             )
         }
     }
-
 }
 
