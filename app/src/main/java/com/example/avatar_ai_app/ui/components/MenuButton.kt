@@ -15,12 +15,14 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.avatar_ai_app.R
 import com.example.avatar_ai_app.ui.theme.ARAppTheme
 
 @Composable
 fun MenuButton(
+    size: Dp = 48.dp,
     onClick: () -> Unit,
     contentDescription: String = "",
     iconId: Int,
@@ -34,8 +36,7 @@ fun MenuButton(
         )
 
         Box(
-            modifier = Modifier
-                .size(48.dp)
+            modifier = Modifier.size(size)
         ) {
             IconButton(
                 onClick = { onClick() },

@@ -26,7 +26,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 private const val TAG = "ArViewModel"
-private const val RECORDING_WAIT = 200L
+private const val RECORDING_WAIT = 100L
 
 class MainViewModel(
     private val chatViewModel: ChatViewModelInterface,
@@ -159,6 +159,14 @@ class MainViewModel(
         }
     }
 
+    fun resetTextField() {
+        _uiState.update { currentState ->
+            currentState.copy(
+                textFieldStringResId = R.string.send_message_hint
+            )
+        }
+    }
+
 
     fun dismissTextResponse() {
         _uiState.update { currentState ->
@@ -229,7 +237,11 @@ class MainViewModel(
             UiState.speech -> {
                 if (System.currentTimeMillis() - startTime < RECORDING_WAIT) {
                     recordingJob?.cancel()
-                    //TODO - update text field with message about holding down record button
+                    viewModelScope.launch {
+                        updateTextFieldStringResId(R.string.recording_length_error_message)
+                        delay(1000L)
+                        updateTextFieldStringResId(R.string.send_message_hint)
+                    }
                 } else {
                     chatViewModel.stopRecording()
                     // Reminder, controller stop is asynchronous, code after this should go in the call-back function.
