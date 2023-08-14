@@ -25,7 +25,7 @@ import com.example.avatar_ai_app.language.Language
 import com.example.avatar_ai_app.shared.ErrorType
 import com.example.avatar_ai_app.ui.MainViewModel
 import com.example.avatar_ai_app.ui.MainViewModelFactory
-import com.example.avatar_ai_app.ui.TestScreen
+import com.example.avatar_ai_app.ui.MainScreen
 import com.example.avatar_ai_app.ui.components.CameraPermissionRequestProvider
 import com.example.avatar_ai_app.ui.components.PermissionDialog
 import com.example.avatar_ai_app.ui.components.RecordAudioPermissionRequestProvider
@@ -92,12 +92,8 @@ class MainActivity : ComponentActivity(), ErrorListener {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                 ) {
-//                    ArScreen(
-//                        mainViewModel,
-//                        arViewModel
-//                    )
                     WindowCompat.setDecorFitsSystemWindows(window, false)
-                    TestScreen(
+                    MainScreen(
                         mainViewModel,
                         arViewModel
                     )
