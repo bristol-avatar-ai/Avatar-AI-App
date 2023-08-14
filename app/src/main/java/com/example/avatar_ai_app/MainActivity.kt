@@ -3,9 +3,11 @@ package com.example.avatar_ai_app
 import android.Manifest
 import android.app.Activity
 import android.content.Intent
+import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,6 +21,7 @@ import com.example.avatar_ai_app.chat.ChatViewModel
 import com.example.avatar_ai_app.chat.ChatViewModelFactory
 import com.example.avatar_ai_app.data.DatabaseViewModel
 import com.example.avatar_ai_app.data.DatabaseViewModelFactory
+import com.example.avatar_ai_app.imagerecognition.ImageRecognitionViewModel
 import com.example.avatar_ai_app.language.Language
 import com.example.avatar_ai_app.shared.ErrorType
 import com.example.avatar_ai_app.ui.ArScreen
@@ -55,6 +58,7 @@ class MainActivity : ComponentActivity(), ErrorListener {
     private lateinit var chatViewModel: ChatViewModel
     private lateinit var mainViewModel: MainViewModel
     private lateinit var arViewModel: ArViewModel
+    private lateinit var imageViewModel: ImageRecognitionViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -74,6 +78,8 @@ class MainActivity : ComponentActivity(), ErrorListener {
             this,
             ArViewModelFactory(this.application)
         )[ArViewModel::class.java]
+
+        imageViewModel = ViewModelProvider(this)[ImageRecognitionViewModel::class.java]
 
         mainViewModel =
             ViewModelProvider(
@@ -117,6 +123,7 @@ class MainActivity : ComponentActivity(), ErrorListener {
                 }
             }
         }
+
     }
 
     /**

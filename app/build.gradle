@@ -109,6 +109,18 @@ dependencies {
 
     debugImplementation 'androidx.compose.ui:ui-tooling:1.4.3'
     debugImplementation 'androidx.compose.ui:ui-test-manifest'
+
+    //TensorFlow packages
+    implementation 'org.tensorflow:tensorflow-lite:2.3.0'
+    implementation 'org.tensorflow:tensorflow-lite-gpu:2.3.0'
+    implementation ('org.tensorflow:tensorflow-lite-support:0.1.0') {
+        exclude group: 'com.google.flatbuffers', module: 'flatbuffers-java'
+    }
+    implementation ('org.tensorflow:tensorflow-lite-metadata:0.1.0') {
+        exclude group: 'com.google.flatbuffers', module: 'flatbuffers-java'
+    }
+
+
 }
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
     kotlinOptions {
