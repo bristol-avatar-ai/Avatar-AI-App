@@ -68,9 +68,9 @@ class ChatViewModel(
     // Initialised components counter.
     private var initCount = 0
 
-    // Instance of ChatService with exposed request and destinationID LiveData.
+    // Instance of ChatService with exposed intent and destinationID LiveData.
     private val chatService = ChatService(getApplication<Application>().applicationContext)
-    override val request: LiveData<ChatService.Request> get() = chatService.request
+    override val intent: LiveData<Intent> get() = chatService.intent
     override val destinationID: LiveData<String> get() = chatService.destinationID
 
     // Instance of AudioRecorder.

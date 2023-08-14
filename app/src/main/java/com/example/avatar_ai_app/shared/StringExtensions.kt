@@ -1,8 +1,8 @@
-package com.example.avatar_ai_app.chat
+package com.example.avatar_ai_app.shared
 
 import android.util.Log
-import com.example.avatar_ai_app.chat.StringExtensionsConstants.levenshteinDistance
-import com.example.avatar_ai_app.chat.StringExtensionsConstants.wordSeparatorRegex
+import com.example.avatar_ai_app.shared.StringExtensionsConstants.levenshteinDistance
+import com.example.avatar_ai_app.shared.StringExtensionsConstants.wordSeparatorRegex
 import org.apache.commons.text.similarity.LevenshteinDistance
 
 private const val TAG = "StringExtensions"

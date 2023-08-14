@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.example.avatar_ai_app.R
+import com.example.avatar_ai_app.shared.containsPhraseFuzzy
 import com.example.avatar_ai_cloud_storage.database.entity.Feature
 
 private const val TAG = "ChatService"
@@ -21,19 +22,12 @@ private const val MIN_LEVENSHTEIN_RATIO = 0.75
  */
 class ChatService(private val context: Context) {
 
-    /**
-     * Enum class representing different types of user requests.
-     *
-     * @constructor Creates an instance of the [Request] enum.
-     */
-    enum class Request { CHAT, NAVIGATION, RECOGNITION }
-
     // List of features; initialised empty.
     var featureList = emptyList<Feature>()
 
-    // Current user request.
-    private val _request = MutableLiveData<Request>()
-    val request: LiveData<Request> get() = _request
+    // Current user intent.
+    private val _intent = MutableLiveData<Intent>()
+    val intent: LiveData<Intent> get() = _intent
 
     // Currently requested destination.
     private val _destinationID = MutableLiveData<String>()
@@ -48,12 +42,12 @@ class ChatService(private val context: Context) {
     fun getResponse(message: String): String {
         Log.i(TAG, "getResponse: $message")
         return when (parseIntent(message)) {
-            Intent.GREETING -> returnChatResponse(context.getString(R.string.greeting_message))
-            Intent.HELP -> returnChatResponse(context.getString(R.string.help_message))
+            Intent.GREETING -> context.getString(R.string.greeting_message)
+            Intent.HELP -> context.getString(R.string.help_message)
             Intent.NAVIGATION -> navigationRequested(message)
-            Intent.RECOGNITION -> recognitionRequested()
+            Intent.RECOGNITION -> context.getString(R.string.recognition_message)
             Intent.INFORMATION -> informationRequested(message)
-            else -> returnChatResponse(context.getString(R.string.generic_message))
+            else -> context.getString(R.string.generic_message)
         }
     }
 
@@ -65,21 +59,14 @@ class ChatService(private val context: Context) {
             intent.triggerPhrases.forEach { phrase ->
                 if (message.containsPhraseFuzzy(phrase, MIN_LEVENSHTEIN_RATIO)) {
                     Log.i(TAG, "parseIntent: $intent")
+                    _intent.postValue(intent)
                     return intent
                 }
             }
         }
         Log.i(TAG, "parseIntent: null")
+        _intent.postValue(Intent.HELP)
         return null
-    }
-
-    /*
-    * Returns a response for chat-related requests.
-     */
-    private fun returnChatResponse(response: String): String {
-        _request.postValue(Request.CHAT)
-        Log.i(TAG, "response: $response")
-        return response
     }
 
     /*
@@ -88,12 +75,11 @@ class ChatService(private val context: Context) {
      */
     private fun navigationRequested(message: String): String {
         val feature = parseFeature(message)
-        return if (feature == null) {
-            context.getString(R.string.invalid_feature_message)
-        } else {
-            _request.postValue(Request.NAVIGATION)
+        return if (feature != null) {
             _destinationID.postValue(feature.anchor)
             context.getString(R.string.navigation_message)
+        } else {
+            context.getString(R.string.invalid_feature_message)
         }
     }
 
@@ -112,22 +98,12 @@ class ChatService(private val context: Context) {
     }
 
     /*
-    * Handles navigation-related user intents. Posts value to request.
-     */
-    private fun recognitionRequested(): String {
-        _request.postValue(Request.RECOGNITION)
-        return context.getString(R.string.recognition_message)
-    }
-
-    /*
     * Handles information-related intents. Returns the description of a
     * feature if it is found.
      */
     private fun informationRequested(message: String): String {
         val feature = parseFeature(message)
-        return returnChatResponse(
-            feature?.description ?: context.getString(R.string.invalid_feature_message)
-        )
+        return feature?.description ?: context.getString(R.string.invalid_feature_message)
     }
 
     /**
@@ -135,6 +111,5 @@ class ChatService(private val context: Context) {
      */
     fun reset() {
         featureList = emptyList()
-        _request.postValue(Request.CHAT)
     }
 }
