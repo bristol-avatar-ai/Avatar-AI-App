@@ -15,6 +15,7 @@ import com.example.avatar_ai_app.language.ChatTranslator
 import com.example.avatar_ai_app.language.Language
 import com.example.avatar_ai_app.network.TranscriptionApi
 import com.example.avatar_ai_app.shared.ErrorType
+import com.example.avatar_ai_app.shared.MessageType
 import com.example.avatar_ai_cloud_storage.database.entity.Feature
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -226,6 +227,8 @@ class ChatViewModel(
      */
     override fun newUserMessage(message: String) {
         viewModelScope.launch(Dispatchers.IO) {
+            addMessage(ChatMessage(message, MessageType.USER))
+
             val englishMessage = chatTranslator.translateInput(message)
             if (englishMessage == null) {
                 errorListener.onError(ErrorType.NETWORK)
@@ -234,7 +237,7 @@ class ChatViewModel(
                 val response = translateOutput(englishResponse)
 
                 readMessage(response)
-                addMessage(ChatMessage(response, ChatMessage.AI))
+                addMessage(ChatMessage(response, MessageType.RESPONSE))
                 Log.i(TAG, "newUserMessage: response added")
             }
         }
@@ -257,12 +260,16 @@ class ChatViewModel(
      * Starts audio recording.
      */
     override fun startRecording() {
-        try {
-            audioRecorder.start()
-            _status.postValue(Status.RECORDING)
-            Log.i(TAG, "startRecording: Status: RECORDING")
-        } catch (_: Exception) {
-            errorListener.onError(ErrorType.RECORDING)
+        if (_status.value == Status.READY) {
+            try {
+                audioRecorder.start()
+                _status.postValue(Status.RECORDING)
+                Log.i(TAG, "startRecording: Status: RECORDING")
+            } catch (_: Exception) {
+                errorListener.onError(ErrorType.RECORDING)
+            }
+        } else {
+            Log.w(TAG, "startRecording: status is ${_status.value}")
         }
     }
 
@@ -270,7 +277,11 @@ class ChatViewModel(
      * Stops audio recording.
      */
     override fun stopRecording() {
-        audioRecorder.stop()
+        if (_status.value == Status.RECORDING) {
+            audioRecorder.stop()
+        } else {
+            Log.w(TAG, "stopRecording: status is ${_status.value}")
+        }
     }
 
     /**
@@ -306,7 +317,7 @@ class ChatViewModel(
     override fun newResponse(response: String) {
         viewModelScope.launch(Dispatchers.IO) {
             readMessage(response)
-            addMessage(ChatMessage(response, ChatMessage.AI))
+            addMessage(ChatMessage(response, MessageType.RESPONSE))
         }
     }
 
