@@ -2,7 +2,6 @@ package com.example.avatar_ai_app.ui
 
 import android.Manifest
 import android.content.pm.PackageManager
-import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -29,6 +28,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -93,12 +93,19 @@ fun MainScreen(
         }
     )
 
+    var loadedState by remember { mutableStateOf(UiState(isLoaded = false)) }
+
+    val isChatLoaded by mainViewModel.isChatViewModelLoaded.collectAsState()
+    val isDatabaseLoaded by mainViewModel.isDatabaseViewModelLoaded.collectAsState()
+
+    val loaded = isChatLoaded && isDatabaseLoaded
+
     Box(
         Modifier
             .fillMaxHeight()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        if (!uiState.isLoaded) {
+        if (!loaded) {
             LoadingScreen()
         } else {
             LaunchedEffect(isCameraEnabled) {
@@ -143,7 +150,6 @@ fun MainScreen(
                         detectTapGestures(
                             onTap = {
                                 focusRequester.requestFocus()
-                                Log.d("Swipe", "Tap detected")
                             }
                         )
                     }

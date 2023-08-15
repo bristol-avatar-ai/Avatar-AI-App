@@ -32,7 +32,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-private const val TAG = "ArViewModel"
+private const val TAG = "MainViewModel"
 private const val RECORDING_WAIT = 100L
 
 class MainViewModel(
@@ -49,6 +49,8 @@ class MainViewModel(
     private val _isRecordingReady = MutableStateFlow(true)
     private var startTime = System.currentTimeMillis()
     private var recordingJob: Job? = null
+    val isChatViewModelLoaded = MutableStateFlow(false)
+    val isDatabaseViewModelLoaded = MutableStateFlow(false)
 
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
 
@@ -69,19 +71,19 @@ class MainViewModel(
     var textFieldFocusState = mutableStateOf(false)
 
     init {
-        chatViewModel.status.observe(lifecycleOwner) {
-            when (it) {
+        chatViewModel.status.observe(lifecycleOwner) { status ->
+            when (status) {
                 ChatViewModelInterface.Status.INIT -> {
                     setTextToSpeechReady(false)
-                    updateLoadingState(false)
+                    isChatViewModelLoaded.value = false
                 }
 
                 ChatViewModelInterface.Status.READY -> {
                     setTextToSpeechReady(true)
-                    updateLoadingState(true)
                     setRecordingState(UiState.ready)
                     updateTextFieldStringResId(R.string.send_message_hint)
                     _isRecordingReady.value = true
+                    isChatViewModelLoaded.value = true
                 }
 
                 ChatViewModelInterface.Status.RECORDING -> {
@@ -97,6 +99,17 @@ class MainViewModel(
                 }
 
                 else -> {}
+            }
+
+            databaseViewModel.isReady.observe(lifecycleOwner) {
+                when (it) {
+                    true -> {
+                        isDatabaseViewModelLoaded.value = true
+                    }
+                    false -> {
+                        isDatabaseViewModelLoaded.value = false
+                    }
+                }
             }
         }
 
@@ -227,15 +240,6 @@ class MainViewModel(
         }
     }
 
-    private fun updateLoadingState(loading: Boolean) {
-        _uiState.update { currentState ->
-            currentState.copy(
-                isLoaded = loading
-            )
-        }
-    }
-
-
     // Update the user input mode in the uiState based on the textField focus
     fun updateInputMode() {
         _uiState.update { currentState ->
@@ -313,7 +317,6 @@ class MainViewModel(
     }
 
     fun setGraph() {
-        //databaseViewModel.getGraph()
         viewModelScope.launch(Dispatchers.IO) {
             arViewModel.setGraph(databaseViewModel.getGraph())
         }
