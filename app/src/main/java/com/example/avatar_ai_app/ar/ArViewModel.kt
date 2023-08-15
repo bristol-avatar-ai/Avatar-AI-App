@@ -60,6 +60,7 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
 
     // TODO: Ed please remember to call this
     override fun setGraph(graph: Graph) {
+
         this.graph = graph
     }
 
