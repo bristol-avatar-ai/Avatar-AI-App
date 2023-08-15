@@ -345,6 +345,22 @@ class MainViewModel(
         }
     }
 
+    fun settingsMenuButtonOnClick() {
+        _uiState.update { currentState ->
+            currentState.copy(
+                isSettingsMenuShown = true
+            )
+        }
+    }
+
+    fun dismissSettingsMenu() {
+        _uiState.update { currentState ->
+            currentState.copy(
+                isSettingsMenuShown = false
+            )
+        }
+    }
+
 //    fun generateCoordinates(
 //        constraints: BoxWithConstraintsScope,
 //        tap: Offset

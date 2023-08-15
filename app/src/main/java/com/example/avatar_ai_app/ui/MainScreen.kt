@@ -175,7 +175,11 @@ fun MainScreen(
                     .imePadding()
                     .navigationBarsPadding()
             ) {
-                TopBar(onClick = {})
+                TopBar(
+                    onClick = { mainViewModel.settingsMenuButtonOnClick() },
+                    menuState = uiState.isSettingsMenuShown,
+                    onDismiss = { mainViewModel.dismissSettingsMenu() }
+                )
                 Spacer(Modifier.weight(1f))
                 ChatBox(
                     messages = uiState.messages,
