@@ -75,7 +75,7 @@ class MainActivity : ComponentActivity(), ErrorListener {
 
         arViewModel = ViewModelProvider(
             this,
-            ArViewModelFactory(this.application)
+            ArViewModelFactory(application)
         )[ArViewModel::class.java]
 
         imageViewModel = ViewModelProvider(this)[ImageRecognitionViewModel::class.java]
@@ -83,7 +83,7 @@ class MainActivity : ComponentActivity(), ErrorListener {
         mainViewModel =
             ViewModelProvider(
                 this,
-                MainViewModelFactory(chatViewModel, this)
+                MainViewModelFactory(chatViewModel, databaseViewModel, arViewModel,this)
             )[MainViewModel::class.java]
 
         setContent {
@@ -93,10 +93,7 @@ class MainActivity : ComponentActivity(), ErrorListener {
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     WindowCompat.setDecorFitsSystemWindows(window, false)
-                    MainScreen(
-                        mainViewModel,
-                        arViewModel
-                    )
+                    MainScreen(mainViewModel)
                     dialogQueue
                         .reversed()
                         .forEach { permission ->

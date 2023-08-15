@@ -11,11 +11,16 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.avatar_ai_app.R
+import com.example.avatar_ai_app.ar.ArViewModel
+import com.example.avatar_ai_app.ar.ArViewModelInterface
 import com.example.avatar_ai_app.chat.ChatMessage
 import com.example.avatar_ai_app.chat.ChatViewModel
 import com.example.avatar_ai_app.chat.ChatViewModelInterface
+import com.example.avatar_ai_app.data.DatabaseViewModel
+import com.example.avatar_ai_app.data.DatabaseViewModelInterface
 import com.example.avatar_ai_app.language.Language
 import com.example.avatar_ai_app.shared.MessageType
+import io.github.sceneview.ar.ArSceneView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -30,6 +35,8 @@ private const val RECORDING_WAIT = 100L
 
 class MainViewModel(
     private val chatViewModel: ChatViewModelInterface,
+    private val databaseViewModel: DatabaseViewModelInterface,
+    private val arViewModel: ArViewModelInterface,
     lifecycleOwner: LifecycleOwner,
 ) : ViewModel() {
 
@@ -260,6 +267,19 @@ class MainViewModel(
         }
     }
 
+    fun initialiseArScene(arSceneView: ArSceneView) {
+        arViewModel.initialiseArScene(arSceneView)
+    }
+
+    fun addModelToScene(arSceneView: ArSceneView, modelType: ArViewModel.ModelType) {
+        arViewModel.addModelToScene(arSceneView, modelType)
+    }
+
+    fun setGraph() {
+        //databaseViewModel.getGraph()
+        arViewModel.setGraph(databaseViewModel.getGraph())
+    }
+
 //    fun generateCoordinates(
 //        constraints: BoxWithConstraintsScope,
 //        tap: Offset
@@ -278,12 +298,14 @@ class MainViewModel(
 
 class MainViewModelFactory(
     private val chatViewModel: ChatViewModel,
+    private val databaseViewModel: DatabaseViewModel,
+    private val arViewModel: ArViewModel,
     private val lifecycleOwner: LifecycleOwner,
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(MainViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return MainViewModel(chatViewModel, lifecycleOwner) as T
+            return MainViewModel(chatViewModel, databaseViewModel, arViewModel, lifecycleOwner) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

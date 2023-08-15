@@ -28,7 +28,7 @@ import kotlin.math.sqrt
 
 private const val TAG = "ArViewModel"
 
-class ArViewModel(application: Application) : AndroidViewModel(application) {
+class ArViewModel(application: Application) : AndroidViewModel(application), ArViewModelInterface {
 
     private val _uiState = MutableStateFlow(AvatarState())
     private val _application = application
@@ -37,8 +37,11 @@ class ArViewModel(application: Application) : AndroidViewModel(application) {
     private val context
         get() = _application.applicationContext
 
-    val uiState: StateFlow<AvatarState> = _uiState.asStateFlow()
+    private val uiState: StateFlow<AvatarState> = _uiState.asStateFlow()
+
+    //Can we delete this??
     val nodes = mutableStateListOf<ArNode>()
+
 
     enum class AvatarButtonType {
         VISIBILITY,
@@ -53,7 +56,7 @@ class ArViewModel(application: Application) : AndroidViewModel(application) {
     private lateinit var avatarModelNode: ArModelNode
 
     // TODO: Ed please remember to call this
-    fun setGraph(graph: Graph) {
+    override fun setGraph(graph: Graph) {
         this.graph = graph
     }
 
@@ -96,12 +99,12 @@ class ArViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun initialiseArScene(arSceneView: ArSceneView) {
+    override fun initialiseArScene(arSceneView: ArSceneView) {
         arSceneView.lightEstimationMode = Config.LightEstimationMode.ENVIRONMENTAL_HDR
         resolveAllAnchors(arSceneView)
     }
 
-    fun addModelToScene(arSceneView: ArSceneView, modelType: ModelType) {
+    override fun addModelToScene(arSceneView: ArSceneView, modelType: ModelType) {
         when (modelType) {
             ModelType.AVATAR -> {
                 avatarModelNode = createModel(arSceneView, ModelType.AVATAR)

@@ -56,10 +56,9 @@ import io.github.sceneview.ar.ARScene
 @Composable
 fun MainScreen(
     mainViewModel: MainViewModel = viewModel(),
-    arViewModel: ArViewModel = viewModel(),
+
 ) {
     val uiState by mainViewModel.uiState.collectAsState()
-    val arState by arViewModel.uiState.collectAsState()
     val context = LocalContext.current
     val touchPosition by remember { mainViewModel.touchPosition }
     val focusRequester = remember { mainViewModel.focusRequester }
@@ -115,11 +114,11 @@ fun MainScreen(
                         modifier = Modifier
                             .fillMaxSize()
                             .navigationBarsPadding(),
-                        nodes = remember { arViewModel.nodes },
                         planeRenderer = false,
                         onCreate = { arSceneView ->
-                            arViewModel.initialiseArScene(arSceneView)
-                            arViewModel.addModelToScene(arSceneView, ArViewModel.ModelType.AVATAR)
+                            mainViewModel.setGraph()
+                            mainViewModel.initialiseArScene(arSceneView)
+                            mainViewModel.addModelToScene(arSceneView, ArViewModel.ModelType.AVATAR)
                         },
                     )
                 }
@@ -143,7 +142,6 @@ fun MainScreen(
                     .pointerInput(Unit) {
                         detectTapGestures(
                             onTap = {
-                                arViewModel.dismissActionMenu()
                                 focusRequester.requestFocus()
                                 Log.d("Swipe", "Tap detected")
                             }
