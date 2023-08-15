@@ -19,11 +19,13 @@ import com.google.ar.sceneform.math.Vector3
 import io.github.sceneview.ar.ArSceneView
 import io.github.sceneview.ar.node.ArModelNode
 import io.github.sceneview.ar.node.ArNode
+import io.github.sceneview.math.Rotation
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.math.atan2
 import kotlin.math.sqrt
 
 private const val TAG = "ArViewModel"
@@ -115,7 +117,6 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
             }
 
             ModelType.CRYSTAL -> {
-
             }
         }
     }
@@ -222,21 +223,21 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
 
     private fun resolveAllAnchors(arSceneView: ArSceneView) {
 
-        val nodeKeys = graph.keys?.toList()
+        val nodeKeys = graph.keys.toList()
 
         // Iterate over all node keys
-        if (nodeKeys != null) {
-            for (key in nodeKeys) {
-                val modelNode = createModel(arSceneView, ModelType.CRYSTAL)
+        for (key in nodeKeys) {
+            val modelNode = createModel(arSceneView, ModelType.CRYSTAL)
 
-                resolveModel(modelNode, key)
-                resolvedModelNodes.add(modelNode)
-            }
+            //need to check if this line is needed
+            arSceneView.addChild(modelNode)
+            resolveModel(modelNode, key)
+            resolvedModelNodes.add(modelNode)
         }
 
         // Map anchors to model nodes
         resolvedModelNodes.forEachIndexed { index, arModelNode ->
-            nodeKeys?.get(index)?.let { key ->
+            nodeKeys[index].let { key ->
                 anchorMap[key] = arModelNode
             }
         }
@@ -247,7 +248,9 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
         if (anchorId != null) {
             modelNode.resolveCloudAnchor(anchorId) { _: Anchor, success: Boolean ->
                 if (success) {
-                    modelNode.isVisible = false
+                    Toast.makeText(context, "Resolved!, $anchorId", Toast.LENGTH_SHORT).show()
+                    // TODO: Need to change back to false
+                    modelNode.isVisible = true
                 }
             }
         }
@@ -330,12 +333,6 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
         return Vector3(screenX, screenY, ndcCoord[2] / w)
     }
 
-    private fun updateVisibleModel(oldModel: ArModelNode?, newModel: ArModelNode?) {
-        // TODO: Cesca - change the model on appearance
-        oldModel?.isVisible = false
-        newModel?.isVisible = true
-    }
-
     private val handler = Handler(Looper.getMainLooper())
 
     private fun showPath(arSceneView: ArSceneView, path: List<String>?) {
@@ -356,7 +353,8 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
                         val nextModel = anchorMap[nextModelId]
 
                         if (distanceFromAnchor(arSceneView, currentModel) < thresholdDistance) {
-                            updateVisibleModel(currentModel, nextModel)
+                            //updateVisibleModel(currentModel, nextModel)
+                            moveAvatarToNewAnchor(currentModel, nextModel)
                         } else {
                             // If the threshold isn't met, move iterator back to retry the same step
                             if (pathIterator.hasPrevious()) {
@@ -372,8 +370,73 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
             }
         }
 
-        anchorMap[path?.firstOrNull()]?.isVisible = true
+        moveAvatarToFirstAnchor(anchorMap[path?.firstOrNull()], anchorMap[path?.elementAtOrNull(1)])
         handler.post(runnableCode)
+    }
+
+    private fun moveAvatarToFirstAnchor(nextModel: ArModelNode?, newModel: ArModelNode?) {
+        // Ensure the avatarModelNode is visible
+        avatarModelNode.isVisible = true
+
+        // Move the avatar to the position of the newModel (which represents the first anchor)
+        newModel?.let { newModelPosition ->
+            avatarModelNode.worldPosition = newModelPosition.worldPosition
+            avatarModelNode.worldScale = newModelPosition.worldScale
+
+            if(nextModel == null){
+                avatarModelNode.worldRotation = newModelPosition.worldRotation
+                return
+            }
+
+            // If there's a nextModel (meaning another anchor after the first one),
+            // calculate direction away from nextModel in the x-y plane
+            nextModel.let { nextModelPosition ->
+                val directionVector = Vector3(
+                    newModelPosition.worldPosition.x - nextModelPosition.worldPosition.x,
+                    newModelPosition.worldPosition.y - nextModelPosition.worldPosition.y,
+                    0f // Ignore z coordinate
+                ).normalized()
+
+                // Get the angle from the direction vector in degrees
+                val angle = Math.toDegrees(atan2(directionVector.y.toDouble(), directionVector.x.toDouble())).toFloat()
+
+                // Convert the angle to Euler angles for yaw (rotation around Z)
+                // You might need to import or define the Rotation class if it doesn't exist in your setup
+                val eulerZRotation = Rotation(0f, 0f, angle)
+
+                // Apply the Euler angles to the world rotation
+                avatarModelNode.worldRotation = eulerZRotation
+            }
+        }
+    }
+
+    private fun moveAvatarToNewAnchor(oldModel: ArModelNode?, newModel: ArModelNode?) {
+        // Ensure the avatarModelNode is visible
+        avatarModelNode.isVisible = true
+
+        // Move the avatar to the position of the newModel
+        newModel?.let { newModelPosition ->
+            avatarModelNode.worldPosition = newModelPosition.worldPosition
+            avatarModelNode.worldScale = newModelPosition.worldScale
+
+            // If there's an oldModel, calculate direction to oldModel in the x-y plane
+            oldModel?.let { oldModelPosition ->
+                val directionVector = Vector3(
+                    oldModelPosition.worldPosition.x - newModelPosition.worldPosition.x,
+                    oldModelPosition.worldPosition.y - newModelPosition.worldPosition.y,
+                    0f // Ignore z coordinate
+                ).normalized()
+
+                // Get the angle from the direction vector in degrees
+                val angle = Math.toDegrees(atan2(directionVector.y.toDouble(), directionVector.x.toDouble())).toFloat()
+
+                // Convert the angle to Euler angles for yaw (rotation around Z)
+                val eulerZRotation = Rotation(0f, 0f, angle)
+
+                // Apply the Euler angles to the world rotation
+                avatarModelNode.worldRotation = eulerZRotation
+            }
+        }
     }
 
     private fun loadDirections(arSceneView: ArSceneView, destination: String) {
