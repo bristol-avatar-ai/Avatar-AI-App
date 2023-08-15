@@ -1,6 +1,7 @@
 package com.example.avatar_ai_app.data
 
 import androidx.lifecycle.LiveData
+import com.example.avatar_ai_app.ar.Graph
 import com.example.avatar_ai_app.ui.MainViewModel
 import com.example.avatar_ai_cloud_storage.database.entity.Anchor
 import com.example.avatar_ai_cloud_storage.database.entity.Feature
@@ -50,7 +51,8 @@ interface DatabaseViewModelInterface {
      *
      * @return A [HashMap] mapping anchor IDs to lists of destinationId-distance [Pair]s.
      */
-    fun getGraph(): HashMap<String, MutableList<Pair<String, Int>>>
+//    fun getGraph(): HashMap<String, MutableList<Pair<String, Int>>>
+    fun getGraph(): Graph
 
     /**
      * Retrieves an ordered list of features in the tour.

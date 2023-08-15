@@ -3,6 +3,7 @@ package com.example.avatar_ai_app.ui.theme
 import androidx.compose.ui.graphics.Color
 
 val Crimson = Color(0XFF991A11)
+val PrimaryBlue = Color(0xFF2596BE)
 val DarkGray = Color(0xFF121212)
 val Thunder = Color(0xFF2D2B2D)
 val Alto = Color(0xFFD5D5D6)

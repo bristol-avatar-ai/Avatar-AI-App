@@ -6,6 +6,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
+import com.example.avatar_ai_app.ar.Graph
 import com.example.avatar_ai_cloud_storage.database.AppDatabase
 import com.example.avatar_ai_cloud_storage.database.entity.Anchor
 import com.example.avatar_ai_cloud_storage.database.entity.Feature
@@ -104,8 +105,8 @@ class DatabaseViewModel(application: Application) : AndroidViewModel(application
      *
      * @return A [HashMap] mapping anchor IDs to lists of destinationId-distance [Pair]s.
      */
-    override fun getGraph(): HashMap<String, MutableList<Pair<String, Int>>> {
-        val graph = HashMap<String, MutableList<Pair<String, Int>>>()
+    override fun getGraph(): Graph{
+        val graph = Graph()
 
         // Add anchors to graph.
         anchorDao?.getAnchors()?.forEach {

@@ -56,10 +56,9 @@ import io.github.sceneview.ar.ARScene
 @Composable
 fun MainScreen(
     mainViewModel: MainViewModel = viewModel(),
-    arViewModel: ArViewModel = viewModel(),
+
 ) {
     val uiState by mainViewModel.uiState.collectAsState()
-    val arState by arViewModel.uiState.collectAsState()
     val context = LocalContext.current
     val touchPosition by remember { mainViewModel.touchPosition }
     val focusRequester = remember { mainViewModel.focusRequester }
@@ -96,7 +95,9 @@ fun MainScreen(
     )
 
     Box(
-        Modifier.fillMaxHeight().background(MaterialTheme.colorScheme.background)
+        Modifier
+            .fillMaxHeight()
+            .background(MaterialTheme.colorScheme.background)
     ) {
         if (!uiState.isLoaded) {
             LoadingScreen()
@@ -113,11 +114,11 @@ fun MainScreen(
                         modifier = Modifier
                             .fillMaxSize()
                             .navigationBarsPadding(),
-                        nodes = remember { arViewModel.nodes },
                         planeRenderer = false,
                         onCreate = { arSceneView ->
-                            arViewModel.initialiseArScene(arSceneView)
-                            arViewModel.addModelToScene(arSceneView, ArViewModel.ModelType.AVATAR)
+                            mainViewModel.setGraph()
+                            mainViewModel.initialiseArScene(arSceneView)
+                            mainViewModel.addModelToScene(arSceneView, ArViewModel.ModelType.AVATAR)
                         },
                     )
                 }
@@ -141,7 +142,6 @@ fun MainScreen(
                     .pointerInput(Unit) {
                         detectTapGestures(
                             onTap = {
-                                arViewModel.dismissActionMenu()
                                 focusRequester.requestFocus()
                                 Log.d("Swipe", "Tap detected")
                             }
@@ -150,8 +150,7 @@ fun MainScreen(
                     .pointerInput(Unit) {
                         var dragY = 0F
                         detectVerticalDragGestures(
-                            onVerticalDrag = {
-                                _, dragAmount ->
+                            onVerticalDrag = { _, dragAmount ->
                                 dragY = dragAmount
                             },
                             onDragEnd = {
@@ -209,6 +208,8 @@ fun BottomBar(
         }
     )
 
+    val isRecordingReady by mainViewModel.isRecordingReady.collectAsState()
+
     ARAppTheme {
         Row(
             modifier = Modifier
@@ -242,7 +243,8 @@ fun BottomBar(
                 permissionLauncher = audioPermissionResultLauncher,
                 icon = painterResource(mainViewModel.getMicOrSendIcon()),
                 textFieldFocusState = textFieldFocusState,
-                recordingPermissionsEnabled = isRecordingEnabled
+                recordingPermissionsEnabled = isRecordingEnabled,
+                isRecordingReady = isRecordingReady
             )
         }
     }

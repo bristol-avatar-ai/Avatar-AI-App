@@ -11,11 +11,16 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.avatar_ai_app.R
+import com.example.avatar_ai_app.ar.ArViewModel
+import com.example.avatar_ai_app.ar.ArViewModelInterface
 import com.example.avatar_ai_app.chat.ChatMessage
 import com.example.avatar_ai_app.chat.ChatViewModel
 import com.example.avatar_ai_app.chat.ChatViewModelInterface
+import com.example.avatar_ai_app.data.DatabaseViewModel
+import com.example.avatar_ai_app.data.DatabaseViewModelInterface
 import com.example.avatar_ai_app.language.Language
 import com.example.avatar_ai_app.shared.MessageType
+import io.github.sceneview.ar.ArSceneView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -30,12 +35,15 @@ private const val RECORDING_WAIT = 100L
 
 class MainViewModel(
     private val chatViewModel: ChatViewModelInterface,
+    private val databaseViewModel: DatabaseViewModelInterface,
+    private val arViewModel: ArViewModelInterface,
     lifecycleOwner: LifecycleOwner,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(UiState())
     private val _isCameraEnabled = MutableStateFlow(false)
     private val _isRecordingEnabled = MutableStateFlow(false)
+    private val _isRecordingReady = MutableStateFlow(true)
     private var startTime = System.currentTimeMillis()
     private var recordingJob: Job? = null
 
@@ -46,6 +54,9 @@ class MainViewModel(
 
     val isRecordingEnabled: StateFlow<Boolean>
         get() = _isRecordingEnabled
+
+    val isRecordingReady: StateFlow<Boolean>
+        get() = _isRecordingReady
 
     //Queue for storing permission strings
     val visiblePermissionDialogQueue = mutableStateListOf<String>()
@@ -67,16 +78,19 @@ class MainViewModel(
                     updateLoadingState(true)
                     setRecordingState(UiState.ready)
                     updateTextFieldStringResId(R.string.send_message_hint)
+                    _isRecordingReady.value = true
                 }
 
                 ChatViewModelInterface.Status.RECORDING -> {
                     setRecordingState(UiState.recording)
                     updateTextFieldStringResId(R.string.recording_message)
+                    _isRecordingReady.value = false
                 }
 
                 ChatViewModelInterface.Status.PROCESSING -> {
                     setRecordingState(UiState.processing)
                     updateTextFieldStringResId(R.string.processing_message)
+                    _isRecordingReady.value = false
                 }
 
                 else -> {}
@@ -92,6 +106,7 @@ class MainViewModel(
         }
     }
 
+    //TODO rework this function so that it accounts for multiple messages from one sender, and empty messages
     private fun displayMessages(messages: List<ChatMessage>) {
         //check that there is both a message and a response
         if(messages.size %2 !=0 ) return
@@ -159,23 +174,6 @@ class MainViewModel(
         }
     }
 
-    fun resetTextField() {
-        _uiState.update { currentState ->
-            currentState.copy(
-                textFieldStringResId = R.string.send_message_hint
-            )
-        }
-    }
-
-
-    fun dismissTextResponse() {
-        _uiState.update { currentState ->
-            currentState.copy(
-                responsePresent = false
-            )
-        }
-    }
-
     private fun setTextToSpeechReady(ready: Boolean) {
         _uiState.update {
             it.copy(
@@ -223,10 +221,12 @@ class MainViewModel(
             }
 
             UiState.speech -> {
-                startTime = System.currentTimeMillis()
-                recordingJob = viewModelScope.launch(Dispatchers.IO) {
-                    delay(RECORDING_WAIT)
-                    chatViewModel.startRecording()
+                if(uiState.value.recordingState == UiState.ready) {
+                    startTime = System.currentTimeMillis()
+                    recordingJob = viewModelScope.launch(Dispatchers.IO) {
+                        delay(RECORDING_WAIT)
+                        chatViewModel.startRecording()
+                    }
                 }
             }
         }
@@ -267,6 +267,19 @@ class MainViewModel(
         }
     }
 
+    fun initialiseArScene(arSceneView: ArSceneView) {
+        arViewModel.initialiseArScene(arSceneView)
+    }
+
+    fun addModelToScene(arSceneView: ArSceneView, modelType: ArViewModel.ModelType) {
+        arViewModel.addModelToScene(arSceneView, modelType)
+    }
+
+    fun setGraph() {
+        //databaseViewModel.getGraph()
+        arViewModel.setGraph(databaseViewModel.getGraph())
+    }
+
 //    fun generateCoordinates(
 //        constraints: BoxWithConstraintsScope,
 //        tap: Offset
@@ -285,12 +298,14 @@ class MainViewModel(
 
 class MainViewModelFactory(
     private val chatViewModel: ChatViewModel,
+    private val databaseViewModel: DatabaseViewModel,
+    private val arViewModel: ArViewModel,
     private val lifecycleOwner: LifecycleOwner,
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(MainViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return MainViewModel(chatViewModel, lifecycleOwner) as T
+            return MainViewModel(chatViewModel, databaseViewModel, arViewModel, lifecycleOwner) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
