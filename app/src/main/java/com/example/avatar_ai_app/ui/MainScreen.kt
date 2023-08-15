@@ -96,7 +96,9 @@ fun MainScreen(
     )
 
     Box(
-        Modifier.fillMaxHeight().background(MaterialTheme.colorScheme.background)
+        Modifier
+            .fillMaxHeight()
+            .background(MaterialTheme.colorScheme.background)
     ) {
         if (!uiState.isLoaded) {
             LoadingScreen()
@@ -150,8 +152,7 @@ fun MainScreen(
                     .pointerInput(Unit) {
                         var dragY = 0F
                         detectVerticalDragGestures(
-                            onVerticalDrag = {
-                                _, dragAmount ->
+                            onVerticalDrag = { _, dragAmount ->
                                 dragY = dragAmount
                             },
                             onDragEnd = {
@@ -209,6 +210,8 @@ fun BottomBar(
         }
     )
 
+    val isRecordingReady by mainViewModel.isRecordingReady.collectAsState()
+
     ARAppTheme {
         Row(
             modifier = Modifier
@@ -242,7 +245,8 @@ fun BottomBar(
                 permissionLauncher = audioPermissionResultLauncher,
                 icon = painterResource(mainViewModel.getMicOrSendIcon()),
                 textFieldFocusState = textFieldFocusState,
-                recordingPermissionsEnabled = isRecordingEnabled
+                recordingPermissionsEnabled = isRecordingEnabled,
+                isRecordingReady = isRecordingReady
             )
         }
     }

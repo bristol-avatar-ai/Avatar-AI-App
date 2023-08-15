@@ -30,6 +30,7 @@ fun SendAndMicButton(
     description: String = "",
     textFieldFocusState: Boolean,
     recordingPermissionsEnabled: Boolean,
+    isRecordingReady: Boolean
 ) {
     val pressed = remember { mutableStateOf(false) }
 
@@ -45,6 +46,8 @@ fun SendAndMicButton(
 
     val permissionsState by rememberUpdatedState(newValue = recordingPermissionsEnabled)
 
+    val buttonEnabledState by rememberUpdatedState(newValue = isRecordingReady)
+
     Box(
         modifier = Modifier
             .size(50.dp)
@@ -53,21 +56,23 @@ fun SendAndMicButton(
             .pointerInput(Unit) {
                 detectTapGestures(
                     onPress = {
-                        try {
-                            if (permissionsState || isTextInputMode) {
-                                onPress()
-                            } else {
-                                permissionLauncher.launch(
-                                    Manifest.permission.RECORD_AUDIO
-                                )
+                        if (buttonEnabledState) {
+                            try {
+                                if (permissionsState || isTextInputMode) {
+                                    onPress()
+                                } else {
+                                    permissionLauncher.launch(
+                                        Manifest.permission.RECORD_AUDIO
+                                    )
+                                }
+                                pressed.value = true
+                                awaitRelease()
+                            } finally {
+                                if (permissionsState || isTextInputMode) {
+                                    onRelease()
+                                }
+                                pressed.value = false
                             }
-                            pressed.value = true
-                            awaitRelease()
-                        } finally {
-                            if (permissionsState || isTextInputMode) {
-                                onRelease()
-                            }
-                            pressed.value = false
                         }
                     }
                 )

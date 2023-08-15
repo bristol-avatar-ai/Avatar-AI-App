@@ -36,6 +36,7 @@ class MainViewModel(
     private val _uiState = MutableStateFlow(UiState())
     private val _isCameraEnabled = MutableStateFlow(false)
     private val _isRecordingEnabled = MutableStateFlow(false)
+    private val _isRecordingReady = MutableStateFlow(true)
     private var startTime = System.currentTimeMillis()
     private var recordingJob: Job? = null
 
@@ -46,6 +47,9 @@ class MainViewModel(
 
     val isRecordingEnabled: StateFlow<Boolean>
         get() = _isRecordingEnabled
+
+    val isRecordingReady: StateFlow<Boolean>
+        get() = _isRecordingReady
 
     //Queue for storing permission strings
     val visiblePermissionDialogQueue = mutableStateListOf<String>()
@@ -67,16 +71,19 @@ class MainViewModel(
                     updateLoadingState(true)
                     setRecordingState(UiState.ready)
                     updateTextFieldStringResId(R.string.send_message_hint)
+                    _isRecordingReady.value = true
                 }
 
                 ChatViewModelInterface.Status.RECORDING -> {
                     setRecordingState(UiState.recording)
                     updateTextFieldStringResId(R.string.recording_message)
+                    _isRecordingReady.value = false
                 }
 
                 ChatViewModelInterface.Status.PROCESSING -> {
                     setRecordingState(UiState.processing)
                     updateTextFieldStringResId(R.string.processing_message)
+                    _isRecordingReady.value = false
                 }
 
                 else -> {}
@@ -92,6 +99,7 @@ class MainViewModel(
         }
     }
 
+    //TODO rework this function so that it accounts for multiple messages from one sender, and empty messages
     private fun displayMessages(messages: List<ChatMessage>) {
         //check that there is both a message and a response
         if(messages.size %2 !=0 ) return
@@ -159,23 +167,6 @@ class MainViewModel(
         }
     }
 
-    fun resetTextField() {
-        _uiState.update { currentState ->
-            currentState.copy(
-                textFieldStringResId = R.string.send_message_hint
-            )
-        }
-    }
-
-
-    fun dismissTextResponse() {
-        _uiState.update { currentState ->
-            currentState.copy(
-                responsePresent = false
-            )
-        }
-    }
-
     private fun setTextToSpeechReady(ready: Boolean) {
         _uiState.update {
             it.copy(
@@ -223,10 +214,12 @@ class MainViewModel(
             }
 
             UiState.speech -> {
-                startTime = System.currentTimeMillis()
-                recordingJob = viewModelScope.launch(Dispatchers.IO) {
-                    delay(RECORDING_WAIT)
-                    chatViewModel.startRecording()
+                if(uiState.value.recordingState == UiState.ready) {
+                    startTime = System.currentTimeMillis()
+                    recordingJob = viewModelScope.launch(Dispatchers.IO) {
+                        delay(RECORDING_WAIT)
+                        chatViewModel.startRecording()
+                    }
                 }
             }
         }
