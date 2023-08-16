@@ -323,6 +323,23 @@ class MainViewModel(
         }
     }
 
+    fun languageSettingsButtonOnClick() {
+        _uiState.update { currentState ->
+            currentState.copy(
+                isLanguageMenuShown = true
+            )
+        }
+        dismissSettingsMenu()
+    }
+
+    fun dismissLanguageMenu() {
+        _uiState.update { currentState ->
+            currentState.copy(
+                isLanguageMenuShown = false
+            )
+        }
+    }
+
     fun handleSwipe(pan: Float) {
         _uiState.update { currentState ->
             currentState.copy(

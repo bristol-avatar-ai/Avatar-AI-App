@@ -25,6 +25,7 @@ fun TopBar(
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
     onDismiss: () -> Unit,
+    languageButtonOnClick: () -> Unit,
     menuState: Boolean
 ) {
 
@@ -55,7 +56,7 @@ fun TopBar(
                 SettingsMenu(
                     showMenu = showMenu.value,
                     dismissMenu = onDismiss,
-                    languageButtonOnClick = {}
+                    languageButtonOnClick = languageButtonOnClick
                 )
             }
             BottomShadow(alpha = 0.15f)
@@ -70,7 +71,8 @@ fun TopBarPreview() {
         TopBar(
             onClick = {},
             menuState = true,
-            onDismiss = {}
+            onDismiss = {},
+            languageButtonOnClick = {}
         )
     }
 }

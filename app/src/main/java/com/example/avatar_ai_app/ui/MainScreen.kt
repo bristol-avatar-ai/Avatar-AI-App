@@ -151,6 +151,7 @@ fun MainScreen(
                         detectTapGestures(
                             onTap = {
                                 focusRequester.requestFocus()
+                                mainViewModel.dismissLanguageMenu()
                             }
                         )
                     }
@@ -179,7 +180,8 @@ fun MainScreen(
                 TopBar(
                     onClick = { mainViewModel.settingsMenuButtonOnClick() },
                     menuState = uiState.isSettingsMenuShown,
-                    onDismiss = { mainViewModel.dismissSettingsMenu() }
+                    onDismiss = { mainViewModel.dismissSettingsMenu() },
+                    languageButtonOnClick = { mainViewModel.languageSettingsButtonOnClick() }
                 )
                 Spacer(Modifier.weight(1f))
                 ChatBox(
@@ -191,7 +193,11 @@ fun MainScreen(
                     uiState = uiState,
                     isRecordingEnabled = isRecordingEnabled
                 )
-                LanguageSelectionMenu(currentLanguage = uiState.language, mainViewModel = mainViewModel)
+            }
+            if(uiState.isLanguageMenuShown) {
+                Box(modifier = Modifier.align(Alignment.BottomCenter)) {
+                    LanguageSelectionMenu(currentLanguage = uiState.language, mainViewModel = mainViewModel)
+                }
             }
         }
     }

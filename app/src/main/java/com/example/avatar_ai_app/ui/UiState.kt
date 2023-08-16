@@ -22,6 +22,7 @@ data class UiState(
 
     //Language
     val language: Language = Language.ENGLISH,
+    val isLanguageMenuShown: Boolean = false,
 
     //Alert message
     val alertIsShown: Boolean = false,
