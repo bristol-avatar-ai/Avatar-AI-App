@@ -109,20 +109,20 @@ class MainViewModel(
     //TODO rework this function so that it accounts for multiple messages from one sender, and empty messages
     private fun displayMessages(messages: List<ChatMessage>) {
         //check that there is both a message and a response
-        if(messages.size %2 !=0 ) return
+        if (messages.size % 2 != 0) return
 
         viewModelScope.launch {
-            if(messages[1].type == MessageType.USER) {
+            if (messages[1].type == MessageType.USER) {
                 uiState.value.addMessage(messages[1])
             }
-            if(messages[0].type == MessageType.RESPONSE) {
+            if (messages[0].type == MessageType.RESPONSE) {
                 uiState.value.addMessage(messages[0])
             }
         }
 
-        _uiState.update {currentState ->
+        _uiState.update { currentState ->
             currentState.copy(
-                messagesAreShown =  true
+                messagesAreShown = true
             )
         }
     }
@@ -221,7 +221,7 @@ class MainViewModel(
             }
 
             UiState.speech -> {
-                if(uiState.value.recordingState == UiState.ready) {
+                if (uiState.value.recordingState == UiState.ready) {
                     startTime = System.currentTimeMillis()
                     recordingJob = viewModelScope.launch(Dispatchers.IO) {
                         delay(RECORDING_WAIT)
@@ -262,7 +262,7 @@ class MainViewModel(
     fun handleSwipe(pan: Float) {
         _uiState.update { currentState ->
             currentState.copy(
-                messagesAreShown = pan <=0
+                messagesAreShown = pan <= 0
             )
         }
     }
@@ -277,7 +277,9 @@ class MainViewModel(
 
     fun setGraph() {
         //databaseViewModel.getGraph()
-        arViewModel.setGraph(databaseViewModel.getGraph())
+        viewModelScope.launch(Dispatchers.IO) {
+            arViewModel.setGraph(databaseViewModel.getGraph())
+        }
     }
 
 //    fun generateCoordinates(

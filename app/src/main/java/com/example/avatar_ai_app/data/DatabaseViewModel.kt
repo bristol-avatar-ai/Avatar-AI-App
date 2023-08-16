@@ -71,7 +71,7 @@ class DatabaseViewModel(application: Application) : AndroidViewModel(application
      *
      * @return List of [Feature] objects.
      */
-    override fun getFeatures(): List<Feature> {
+    override suspend fun getFeatures(): List<Feature> {
         return featureDao?.getFeatures() ?: emptyList()
     }
 
@@ -81,7 +81,7 @@ class DatabaseViewModel(application: Application) : AndroidViewModel(application
      * @param name The name of the feature to retrieve.
      * @return The [Feature] object with the specified name, or null if not found.
      */
-    override fun getFeature(name: String): Feature? {
+    override suspend fun getFeature(name: String): Feature? {
         return featureDao?.getFeature(name)
     }
 
@@ -91,7 +91,7 @@ class DatabaseViewModel(application: Application) : AndroidViewModel(application
      * @param anchorId The [Anchor] ID.
      * @return The primary [Feature] located at the [Anchor], or null if it does not exist.
      */
-    override fun getPrimaryFeature(anchorId: String): Feature? {
+    override suspend fun getPrimaryFeature(anchorId: String): Feature? {
         val featureName = primaryFeatureDao?.getPrimaryFeature(anchorId)?.feature
         return if (featureName != null) {
             getFeature(featureName)
@@ -105,7 +105,7 @@ class DatabaseViewModel(application: Application) : AndroidViewModel(application
      *
      * @return A [Graph] mapping anchor IDs to lists of destinationId-distance [Pair]s.
      */
-    override fun getGraph(): Graph {
+    override suspend fun getGraph(): Graph {
         val graph = Graph()
 
         // Add anchors to graph.
@@ -126,7 +126,7 @@ class DatabaseViewModel(application: Application) : AndroidViewModel(application
      *
      * @return Ordered list of [Feature] objects in the tour.
      */
-    override fun getTourFeatures(): List<Feature> {
+    override suspend fun getTourFeatures(): List<Feature> {
         return tourFeatureDao?.getTourFeatures()?.mapNotNull {
             getFeature(it)
         } ?: emptyList()
