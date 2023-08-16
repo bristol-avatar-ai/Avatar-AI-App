@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-feature
         android:name="android.hardware.camera"
@@ -31,17 +30,9 @@
         </activity>
 
         <meta-data
-            android:name="com.google.ar.core.experimental"
-            android:value="cloud_anchor"/>
-
-        <meta-data
             android:name="com.google.android.ar.API_KEY"
-            android:value="${cloud_anchors_api_key}"/>
+            android:value="${cloud_anchors_api_key}" />
 
     </application>
-
-    <meta-data
-        android:name="com.google.ar.core"
-        android:value="required"/>
 
 </manifest>

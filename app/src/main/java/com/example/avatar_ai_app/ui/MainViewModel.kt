@@ -265,9 +265,13 @@ class MainViewModel(
     /**
      * Update the user input mode in the uiState based on the textField focus
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
      *
 >>>>>>> a8aac81 (Set arViewModel to receive destination ID from chatService)
+=======
+     *
+>>>>>>> 3cd9260 (Set arViewModel to receive destination ID from chatService)
      */
     fun updateInputMode() {
         _uiState.update { currentState ->
