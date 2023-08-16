@@ -101,6 +101,7 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
     }
     
     override fun initialiseArScene(arSceneView: ArSceneView) {
+        this.arSceneView = arSceneView
         arSceneView.lightEstimationMode = Config.LightEstimationMode.ENVIRONMENTAL_HDR
         resolveAllAnchors(arSceneView)
     }
