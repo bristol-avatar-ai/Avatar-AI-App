@@ -49,9 +49,8 @@ interface DatabaseViewModelInterface {
     /**
      * Retrieves a graph representation of anchors and paths from the database.
      *
-     * @return A [HashMap] mapping anchor IDs to lists of destinationId-distance [Pair]s.
+     * @return A [Graph] mapping anchor IDs to lists of destinationId-distance [Pair]s.
      */
-//    fun getGraph(): HashMap<String, MutableList<Pair<String, Int>>>
     fun getGraph(): Graph
 
     /**

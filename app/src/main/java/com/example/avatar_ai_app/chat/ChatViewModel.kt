@@ -280,7 +280,7 @@ class ChatViewModel(
         if (_status.value == Status.RECORDING) {
             audioRecorder.stop()
         } else {
-            Log.w(TAG, "stopRecording: status is ${_status.value}")
+            Log.w(TAG, "stopRecording: cannot stop recording when status is ${_status.value}")
         }
     }
 
