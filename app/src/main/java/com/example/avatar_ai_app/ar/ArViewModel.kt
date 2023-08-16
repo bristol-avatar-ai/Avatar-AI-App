@@ -34,6 +34,7 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
     private val _application = application
     private var graph: Graph = Graph()
 
+    var arSceneView: ArSceneView? = null
     private val context
         get() = _application.applicationContext
 
@@ -98,7 +99,7 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
             )
         }
     }
-
+    
     override fun initialiseArScene(arSceneView: ArSceneView) {
         arSceneView.lightEstimationMode = Config.LightEstimationMode.ENVIRONMENTAL_HDR
         resolveAllAnchors(arSceneView)
@@ -414,6 +415,7 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
         }
         return Pair(dist, paths)
     }
+
 
 }
 

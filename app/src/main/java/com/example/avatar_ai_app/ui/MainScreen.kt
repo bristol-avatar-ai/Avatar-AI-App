@@ -1,7 +1,10 @@
 package com.example.avatar_ai_app.ui
 
 import android.Manifest
+import android.content.Context
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.media.Image
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -45,18 +48,28 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.avatar_ai_app.ar.ArViewModel
+import com.example.avatar_ai_app.imagerecognition.ImageRecognitionViewModel
 import com.example.avatar_ai_app.ui.components.ChatBox
 import com.example.avatar_ai_app.ui.components.EnableCameraButton
 import com.example.avatar_ai_app.ui.components.LoadingScreen
 import com.example.avatar_ai_app.ui.components.SendAndMicButton
 import com.example.avatar_ai_app.ui.components.UserInput
 import com.example.avatar_ai_app.ui.theme.ARAppTheme
+import com.google.ar.core.TrackingState
 import io.github.sceneview.ar.ARScene
+import kotlinx.coroutines.delay
+import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun MainScreen(
     mainViewModel: MainViewModel = viewModel(),
-
+    arViewModel: ArViewModel = viewModel(),
+    imageViewModel: ImageRecognitionViewModel = viewModel(),
 ) {
     val uiState by mainViewModel.uiState.collectAsState()
     val context = LocalContext.current
@@ -121,6 +134,28 @@ fun MainScreen(
                             mainViewModel.addModelToScene(arSceneView, ArViewModel.ModelType.AVATAR)
                         },
                     )
+
+                    LaunchedEffect(Unit) {
+                        while (true) {
+                            val frame = arViewModel.arSceneView?.currentFrame
+                            if (frame?.camera?.trackingState == TrackingState.TRACKING) {
+                                try {
+                                    val image: Image = frame.frame.acquireCameraImage()
+                                    val bitmap: Bitmap? = imageViewModel.yuv420ToBitmap(image)
+                                    image.close()
+
+                                    if (bitmap != null) {
+                                        //saveBitmapToFile(imageViewModel.getApplication<Application>().applicationContext, bitmap)
+                                        imageViewModel.classifyImage(bitmap)
+                                    }
+                                } catch (e: Exception) {
+                                    Log.e("Camera", "Camera image not available", e)
+                                }
+                            }
+                            delay(500L) // Increased delay to 500 milliseconds for lower frame rate
+                        }
+                    }
+
                 }
 
                 false -> {
@@ -184,6 +219,33 @@ fun MainScreen(
         }
     }
 }
+
+
+fun saveBitmapToFile(context: Context, bitmap: Bitmap) {
+    val timeStamp: String = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+
+    val storageDir = File(context.filesDir, "MyImages")
+
+    if (!storageDir.exists()) {
+        storageDir.mkdirs()
+    }
+
+    val imageFile = File(storageDir, "JPEG_${timeStamp}_.png")
+
+    try {
+        val fos = FileOutputStream(imageFile)
+
+        // Compress the bitmap and save it as PNG format
+        bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos)
+
+        fos.close()
+
+        Log.i("SaveBitmap", "Bitmap saved to path: ${imageFile.absolutePath}")
+    } catch (e: IOException) {
+        Log.e("SaveBitmap", "Failed to save Bitmap.", e)
+    }
+}
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

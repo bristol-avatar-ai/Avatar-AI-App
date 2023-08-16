@@ -3,9 +3,11 @@ package com.example.avatar_ai_app
 import android.Manifest
 import android.app.Activity
 import android.content.Intent
+import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
@@ -23,9 +25,9 @@ import com.example.avatar_ai_app.data.DatabaseViewModelFactory
 import com.example.avatar_ai_app.imagerecognition.ImageRecognitionViewModel
 import com.example.avatar_ai_app.language.Language
 import com.example.avatar_ai_app.shared.ErrorType
+import com.example.avatar_ai_app.ui.MainScreen
 import com.example.avatar_ai_app.ui.MainViewModel
 import com.example.avatar_ai_app.ui.MainViewModelFactory
-import com.example.avatar_ai_app.ui.MainScreen
 import com.example.avatar_ai_app.ui.components.CameraPermissionRequestProvider
 import com.example.avatar_ai_app.ui.components.PermissionDialog
 import com.example.avatar_ai_app.ui.components.RecordAudioPermissionRequestProvider
@@ -86,6 +88,7 @@ class MainActivity : ComponentActivity(), ErrorListener {
                 MainViewModelFactory(chatViewModel, databaseViewModel, arViewModel,this)
             )[MainViewModel::class.java]
 
+
         setContent {
             ARAppTheme {
                 val dialogQueue = mainViewModel.visiblePermissionDialogQueue
@@ -93,7 +96,11 @@ class MainActivity : ComponentActivity(), ErrorListener {
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     WindowCompat.setDecorFitsSystemWindows(window, false)
-                    MainScreen(mainViewModel)
+                    MainScreen(
+                        mainViewModel,
+                        arViewModel,
+                        imageViewModel
+                    )
                     dialogQueue
                         .reversed()
                         .forEach { permission ->
@@ -121,6 +128,20 @@ class MainActivity : ComponentActivity(), ErrorListener {
             }
         }
 
+        launchTestImage()
+    }
+
+    private fun launchTestImage() {
+        lifecycleScope.launch {
+            testImage()
+        }
+
+    }
+    private suspend fun testImage()
+    {
+        imageViewModel.initialiseClassifier()
+        imageViewModel.classifyImage( BitmapFactory.decodeResource(getResources(), R.drawable.testimage))
+        Log.d("Daisy", "Classified?")
     }
 
     /**
