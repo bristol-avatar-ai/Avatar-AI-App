@@ -28,6 +28,9 @@ class DatabaseViewModel(application: Application) : AndroidViewModel(application
     private val _isReady = MutableLiveData<Boolean>()
     override val isReady: LiveData<Boolean> get() = _isReady
 
+    // Application context.
+    private val context get() = getApplication<Application>().applicationContext
+
     // Database and DAO instances.
     private var database: AppDatabase? = null
     private val anchorDao get() = database?.anchorDao()
@@ -53,9 +56,7 @@ class DatabaseViewModel(application: Application) : AndroidViewModel(application
 
         viewModelScope.launch(Dispatchers.IO) {
             // Load database.
-            database = AppDatabase.getDatabase(
-                getApplication<Application>().applicationContext
-            )
+            database = AppDatabase.getDatabase(context)
             // Update _isReady.
             _isReady.postValue(database != null)
             if (database != null) {

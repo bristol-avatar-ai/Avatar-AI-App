@@ -21,6 +21,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.File
 
+
 private const val TAG = "ChatViewModel"
 
 // Audio recording details.
@@ -50,12 +51,15 @@ class ChatViewModel(
     AudioRecorder.RecordingCompletionListener,
     ChatTranslator.InitListener {
 
+    // Application context getter.
+    private val context get() = getApplication<Application>().applicationContext
+
     // File to store recordings in the cache directory.
     private val recordingFile: File =
         File.createTempFile(
             RECORDING_NAME,
             RECORDING_FILE_TYPE,
-            getApplication<Application>().applicationContext.cacheDir
+            context.cacheDir
         )
 
     // Current ChatViewModel status.
@@ -70,13 +74,13 @@ class ChatViewModel(
     private var initCount = 0
 
     // Instance of ChatService with exposed intent and destinationID LiveData.
-    private val chatService = ChatService(getApplication<Application>().applicationContext)
+    private val chatService = ChatService(context)
     override val intent: LiveData<Intent> get() = chatService.intent
     override val destinationID: LiveData<String> get() = chatService.destinationID
 
     // Instance of AudioRecorder.
     private val audioRecorder: AudioRecorder = AudioRecorder(
-        getApplication<Application>().applicationContext,
+        context,
         recordingFile,
         viewModelScope,
         this
@@ -87,8 +91,7 @@ class ChatViewModel(
     private var isChatTranslatorReady = false
 
     // Instance of TextToSpeech and readiness flag.
-    private val textToSpeech: TextToSpeech =
-        TextToSpeech(getApplication<Application>().applicationContext, this)
+    private val textToSpeech: TextToSpeech = TextToSpeech(context, this)
     private var isTextToSpeechReady = false
 
     /**
