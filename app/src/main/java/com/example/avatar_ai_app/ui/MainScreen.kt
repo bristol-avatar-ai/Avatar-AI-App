@@ -47,6 +47,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.avatar_ai_app.ar.ArViewModel
 import com.example.avatar_ai_app.ui.components.ChatBox
 import com.example.avatar_ai_app.ui.components.EnableCameraButton
+import com.example.avatar_ai_app.ui.components.LanguageSelectionMenu
 import com.example.avatar_ai_app.ui.components.LoadingScreen
 import com.example.avatar_ai_app.ui.components.SendAndMicButton
 import com.example.avatar_ai_app.ui.components.UserInput
@@ -190,6 +191,7 @@ fun MainScreen(
                     uiState = uiState,
                     isRecordingEnabled = isRecordingEnabled
                 )
+                LanguageSelectionMenu(currentLanguage = uiState.language, mainViewModel = mainViewModel)
             }
         }
     }

@@ -315,12 +315,12 @@ class MainViewModel(
     }
 
     fun onLanguageSelectionResult(language: Language) {
+        chatViewModel.setLanguage(language)
         _uiState.update { currentState ->
             currentState.copy(
                 language = language
             )
         }
-        chatViewModel.setLanguage(language)
     }
 
     fun handleSwipe(pan: Float) {
