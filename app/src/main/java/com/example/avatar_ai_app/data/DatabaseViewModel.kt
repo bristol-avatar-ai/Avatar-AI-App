@@ -103,9 +103,9 @@ class DatabaseViewModel(application: Application) : AndroidViewModel(application
     /**
      * Retrieves a graph representation of anchors and paths from the database.
      *
-     * @return A [HashMap] mapping anchor IDs to lists of destinationId-distance [Pair]s.
+     * @return A [Graph] mapping anchor IDs to lists of destinationId-distance [Pair]s.
      */
-    override fun getGraph(): Graph{
+    override fun getGraph(): Graph {
         val graph = Graph()
 
         // Add anchors to graph.
