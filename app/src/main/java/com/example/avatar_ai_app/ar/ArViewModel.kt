@@ -63,6 +63,7 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
     override fun setGraph(graph: Graph) {
 
         this.graph = graph
+        Log.d("ArViewModel", "graph keys = ${graph.keys}")
     }
 
     private fun showAvatar() {
