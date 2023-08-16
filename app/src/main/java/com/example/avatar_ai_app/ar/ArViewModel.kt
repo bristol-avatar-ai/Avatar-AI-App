@@ -7,10 +7,8 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.widget.Toast
-import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.avatar_ai_app.R
 import com.example.avatar_ai_app.data.avatarModel
 import com.example.avatar_ai_app.data.crystalModel
 import com.example.avatar_ai_app.ui.AvatarState
@@ -20,12 +18,10 @@ import com.google.ar.core.Pose
 import com.google.ar.sceneform.math.Vector3
 import io.github.sceneview.ar.ArSceneView
 import io.github.sceneview.ar.node.ArModelNode
-import io.github.sceneview.ar.node.ArNode
+import io.github.sceneview.ar.node.PlacementMode
 import io.github.sceneview.math.Rotation
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.math.atan2
 import kotlin.math.sqrt
@@ -33,32 +29,19 @@ import kotlin.math.sqrt
 private const val TAG = "ArViewModel"
 
 class ArViewModel(application: Application) : AndroidViewModel(application), ArViewModelInterface {
-
-    private val _uiState = MutableStateFlow(AvatarState())
     private val _application = application
-    private var graph: Graph = Graph()
+    private lateinit var graph: Graph
     @SuppressLint("StaticFieldLeak")
-    lateinit var arSceneView: ArSceneView
+    private lateinit var arSceneView: ArSceneView
+    private lateinit var avatarModelNode: ArModelNode
 
     private val context
         get() = _application.applicationContext
-
-    private val uiState: StateFlow<AvatarState> = _uiState.asStateFlow()
-
-    //Can we delete this??
-    val nodes = mutableStateListOf<ArNode>()
-
-    enum class AvatarButtonType {
-        VISIBILITY,
-        MODE
-    }
 
     enum class ModelType {
         AVATAR,
         CRYSTAL
     }
-
-    private lateinit var avatarModelNode: ArModelNode
 
     override fun setGraph(graph: Graph) {
 
@@ -66,50 +49,16 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
         Log.d("ArViewModel", "graph keys = ${graph.keys}")
     }
 
-    private fun showAvatar() {
-        avatarModelNode.detachAnchor()
-        avatarModelNode.isVisible = true
-        _uiState.update { currentState ->
-            currentState.copy(
-                avatarIsAnchored = false,
-                avatarIsVisible = true
-            )
-        }
-    }
-
-    private fun hideAvatar() {
-        avatarModelNode.isVisible = false
-        _uiState.update { currentState ->
-            currentState.copy(
-                avatarIsVisible = false
-            )
-        }
-
-    }
-
-    private fun anchorAvatar() {
-        avatarModelNode.anchor()
-        _uiState.update { currentState ->
-            currentState.copy(
-                avatarIsAnchored = true
-            )
-        }
-    }
-
-    private fun detachAvatar() {
-        avatarModelNode.detachAnchor()
-        _uiState.update { currentState ->
-            currentState.copy(
-                avatarIsAnchored = false
-            )
-        }
-    }
-    
     override fun initialiseArScene(arSceneView: ArSceneView) {
+        viewModelScope.launch {
+            arSceneView.lightEstimationMode = Config.LightEstimationMode.ENVIRONMENTAL_HDR
+            arSceneView.cloudAnchorEnabled = true
+            delay(1000L)
+            resolveAllAnchors(arSceneView)
+        }
         this.arSceneView = arSceneView
-        arSceneView.lightEstimationMode = Config.LightEstimationMode.ENVIRONMENTAL_HDR
-        this.arSceneView = arSceneView
-        resolveAllAnchors(arSceneView)
+
+        Log.d("ArViewModel", "Initialise Done")
     }
 
     override fun addModelToScene(modelType: ModelType) {
@@ -125,101 +74,46 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
         }
     }
 
-    //Creates a model from the ModelType data class
     private fun createModel(modelType: ModelType): ArModelNode {
-        val modelNode = ArModelNode(arSceneView.engine).apply {
-            viewModelScope.launch {
-                when (modelType) {
-                    ModelType.AVATAR -> {
-                        loadModelGlb(
-                            context = context,
-                            glbFileLocation = avatarModel.fileLocation,
-                            scaleToUnits = avatarModel.scale,
-                            centerOrigin = avatarModel.position
-                        )
-                    }
+        val modelNode: ArModelNode
 
-                    ModelType.CRYSTAL -> {
+        when (modelType) {
+            ModelType.AVATAR -> {
+                val model = avatarModel
+                modelNode = ArModelNode(arSceneView.engine).apply {
+                    viewModelScope.launch {
                         loadModelGlb(
                             context = context,
-                            glbFileLocation = crystalModel.fileLocation,
-                            scaleToUnits = crystalModel.scale,
-                            centerOrigin = crystalModel.position
+                            glbFileLocation = model.fileLocation,
+                            scaleToUnits = model.scale,
+                            centerOrigin = model.position
                         )
                     }
                 }
             }
+
+            ModelType.CRYSTAL -> {
+                val model = crystalModel
+                modelNode = ArModelNode(arSceneView.engine).apply {
+                    viewModelScope.launch {
+                        loadModelGlb(
+                            context = context,
+                            glbFileLocation = model.fileLocation,
+                            scaleToUnits = model.scale,
+                            centerOrigin = model.position
+                        )
+                    }
+                }
+                modelNode.apply {
+                    placementMode = PlacementMode.INSTANT
+                    isVisible = true
+                }
+                arSceneView.addChild(modelNode)
+                arSceneView.selectedNode = modelNode
+            }
         }
+
         return modelNode
-    }
-
-    fun avatarButtonOnClick() {
-        _uiState.update { currentState ->
-            when (uiState.value.isAvatarMenuVisible) {
-                true -> currentState.copy(
-                    isAvatarMenuVisible = false
-                )
-
-                false -> currentState.copy(
-                    isAvatarMenuVisible = true
-                )
-            }
-        }
-    }
-
-    fun summonOrHideButtonOnClick() {
-        if (uiState.value.avatarIsVisible) {
-            hideAvatar()
-        } else {
-            showAvatar()
-        }
-    }
-
-    fun anchorOrFollowButtonOnClick() {
-        if (uiState.value.avatarIsAnchored) {
-            detachAvatar()
-        } else if (!uiState.value.avatarIsAnchored) {
-            anchorAvatar()
-        }
-    }
-
-    fun dismissActionMenu() {
-        if (uiState.value.isAvatarMenuVisible) {
-            _uiState.update { currentState ->
-                currentState.copy(
-                    isAvatarMenuVisible = false
-                )
-            }
-        }
-    }
-
-    fun getActionButtonValues(buttonType: AvatarButtonType):
-            Pair<Int, String> {
-        return when (buttonType) {
-            AvatarButtonType.VISIBILITY -> {
-                if (uiState.value.avatarIsVisible) {
-                    Pair(R.drawable.hide, "Dismiss Avatar")
-                } else Pair(R.drawable.robot_icon, "Summon Avatar")
-            }
-
-            AvatarButtonType.MODE -> {
-                if (uiState.value.avatarIsAnchored) {
-                    Pair(R.drawable.unlock_icon, "Release Avatar")
-                } else Pair(R.drawable.lock_icon, "Place Avatar Here")
-            }
-        }
-    }
-
-    fun enableActionButton(buttonType: AvatarButtonType): Boolean {
-        return when (buttonType) {
-            AvatarButtonType.MODE -> {
-                (uiState.value.isAvatarMenuVisible and uiState.value.avatarIsVisible)
-            }
-
-            AvatarButtonType.VISIBILITY -> {
-                uiState.value.isAvatarMenuVisible
-            }
-        }
     }
 
     private val resolvedModelNodes = mutableListOf<ArModelNode>()
@@ -227,7 +121,12 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
 
     private fun resolveAllAnchors(arSceneView: ArSceneView) {
 
+        Log.d("ArViewModel", "Graph keys 2 : ${graph.keys}")
+        Log.d("ArViewModel", "Graph keys 3 : ${graph.keys.toList()}")
+
         val nodeKeys = graph.keys.toList()
+        Log.d("ArViewModel", "nodeKeys: $nodeKeys")
+
 
         // Iterate over all node keys
         for (key in nodeKeys) {
@@ -249,13 +148,27 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
 
     private fun resolveModel(modelNode: ArModelNode, anchorId: String?) {
 
+        Log.d("ArViewModel", "ResolveModel")
+
         if (anchorId != null) {
-            modelNode.resolveCloudAnchor(anchorId) { _: Anchor, success: Boolean ->
+            Log.d("ArViewModel", "Not null")
+
+            modelNode.resolveCloudAnchor(anchorId) { anchor: Anchor, success: Boolean ->
+                Log.d(TAG, anchor.trackingState.toString())
+
                 if (success) {
+                    Log.d("ArViewModel", "Success")
+
                     Toast.makeText(context, "Resolved!, $anchorId", Toast.LENGTH_SHORT).show()
+
                     // TODO: Need to change back to false
                     modelNode.isVisible = true
                 }
+                if(!success) {
+                    Log.d("ArViewModel", "Failure")
+                }
+
+
             }
         }
     }

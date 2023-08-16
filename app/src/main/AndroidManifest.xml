@@ -31,9 +31,17 @@
         </activity>
 
         <meta-data
+            android:name="com.google.ar.core.experimental"
+            android:value="cloud_anchor"/>
+
+        <meta-data
             android:name="com.google.android.ar.API_KEY"
             android:value="${cloud_anchors_api_key}"/>
 
     </application>
+
+    <meta-data
+        android:name="com.google.ar.core"
+        android:value="required"/>
 
 </manifest>

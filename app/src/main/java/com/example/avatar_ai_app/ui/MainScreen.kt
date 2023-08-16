@@ -128,9 +128,9 @@ fun MainScreen(
                             .navigationBarsPadding(),
                         planeRenderer = false,
                         onCreate = { arSceneView ->
-                            mainViewModel.setGraph()
+                            //mainViewModel.setGraph()
                             mainViewModel.initialiseArScene(arSceneView)
-                            mainViewModel.addModelToScene(ArViewModel.ModelType.AVATAR)
+                            //mainViewModel.addModelToScene(ArViewModel.ModelType.AVATAR)
                         },
                     )
 
