@@ -188,6 +188,7 @@ class ChatViewModel(
      */
     override fun setFeatureList(featureList: List<Feature>) {
         chatService.featureList = featureList
+        Log.i(TAG, "setFeatureList: featureList size: ${featureList.size}")
     }
 
     /**
@@ -211,8 +212,14 @@ class ChatViewModel(
      */
     override suspend fun translateOutput(response: String): String {
         return if (isChatTranslatorReady) {
-            chatTranslator.translateOutput(response) ?: response
+            chatTranslator.translateOutput(response)?.apply {
+                Log.i(TAG, "translateOutput: translated response: $this")
+                return this
+            }
+            Log.w(TAG, "translateOutput: translation failed")
+            return response
         } else {
+            Log.w(TAG, "translateOutput: ChatTranslator not ready")
             response
         }
     }
@@ -226,6 +233,7 @@ class ChatViewModel(
      * @param message The user's message.
      */
     override fun newUserMessage(message: String) {
+        Log.i(TAG, "newUserMessage: message: $message")
         viewModelScope.launch(Dispatchers.IO) {
             addMessage(ChatMessage(message, MessageType.USER))
 
@@ -238,7 +246,7 @@ class ChatViewModel(
 
                 readMessage(response)
                 addMessage(ChatMessage(response, MessageType.RESPONSE))
-                Log.i(TAG, "newUserMessage: response added")
+                Log.i(TAG, "newUserMessage: response: $response")
             }
         }
     }
@@ -269,7 +277,7 @@ class ChatViewModel(
                 errorListener.onError(ErrorType.RECORDING)
             }
         } else {
-            Log.w(TAG, "startRecording: status is ${_status.value}")
+            Log.w(TAG, "startRecording: cannot start recording when status is ${_status.value}")
         }
     }
 
@@ -315,6 +323,7 @@ class ChatViewModel(
      * @param response The response to be used.
      */
     override fun newResponse(response: String) {
+        Log.i(TAG, "newResponse: $response")
         viewModelScope.launch(Dispatchers.IO) {
             readMessage(response)
             addMessage(ChatMessage(response, MessageType.RESPONSE))
