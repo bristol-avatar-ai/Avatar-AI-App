@@ -6,6 +6,13 @@ import android.util.Log
 import com.example.avatar_ai_app.imagerecognition.tf.Model
 import org.tensorflow.lite.support.image.TensorImage
 
+private const val TAG = "ImageClassifier"
+
+/**
+ * Threshold for determining if a classification is confident enough.
+ */
+private const val THRESHOLD: Double = 0.7
+
 /**
  * An `ImageClassifier` class that handles the process of classifying images using a pretrained
  * TensorFlow Lite model.
@@ -17,28 +24,24 @@ import org.tensorflow.lite.support.image.TensorImage
 class ImageClassifier(private val context: Context, private val modelPath: String) {
 
     /**
-     * Threshold for determining if a classification is confident enough.
-     */
-    private val THRESHOLD: Double = 0.7
-
-    /**
      * The machine learning model instance used for image classification.
      */
-    private var model: Model? = null
+    var model: Model? = null
 
     /**
      * Initializes the machine learning model.
      *
      * @return true if the model is initialised successfully, false otherwise.
      */
-    fun initialise(): Boolean {
-        try {
-            model = Model.newInstance(context, modelPath)
-        } catch (e: Exception) {
-            Log.d("IMAGE", "Message: " + e.stackTraceToString())
-            return false
+    fun initialise() {
+        if (model == null) {
+            try {
+                model = Model.newInstance(context, modelPath)
+                Log.i(TAG, "initialise: success")
+            } catch (e: Exception) {
+                Log.e(TAG, "initialise: failed", e)
+            }
         }
-        return true
     }
 
     /**
@@ -56,8 +59,7 @@ class ImageClassifier(private val context: Context, private val modelPath: Strin
         var maxLabel: String? = null
 
         if (probabilities != null) {
-            for (category in probabilities)
-            {
+            for (category in probabilities) {
                 if (maxProbability == null || category.score > maxProbability) {
                     maxProbability = category.score
                     maxLabel = category.label
@@ -78,5 +80,6 @@ class ImageClassifier(private val context: Context, private val modelPath: Strin
      */
     fun closeModel() {
         model?.close()
+        model = null
     }
 }

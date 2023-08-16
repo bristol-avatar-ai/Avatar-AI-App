@@ -16,8 +16,10 @@ import com.example.avatar_ai_app.ar.ArViewModelInterface
 import com.example.avatar_ai_app.chat.ChatMessage
 import com.example.avatar_ai_app.chat.ChatViewModel
 import com.example.avatar_ai_app.chat.ChatViewModelInterface
+import com.example.avatar_ai_app.chat.Intent
 import com.example.avatar_ai_app.data.DatabaseViewModel
 import com.example.avatar_ai_app.data.DatabaseViewModelInterface
+import com.example.avatar_ai_app.imagerecognition.ImageRecognitionViewModel
 import com.example.avatar_ai_app.language.Language
 import com.example.avatar_ai_app.shared.MessageType
 import io.github.sceneview.ar.ArSceneView
@@ -37,7 +39,8 @@ class MainViewModel(
     private val chatViewModel: ChatViewModelInterface,
     private val databaseViewModel: DatabaseViewModelInterface,
     private val arViewModel: ArViewModelInterface,
-    lifecycleOwner: LifecycleOwner,
+    private val imageViewModel: ImageRecognitionViewModel,
+    lifecycleOwner: LifecycleOwner
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(UiState())
@@ -97,12 +100,46 @@ class MainViewModel(
             }
         }
 
+        // TODO: fill this out
+        imageViewModel.status.observe(lifecycleOwner) {
+            when (it) {
+                null -> {}
+                ImageRecognitionViewModel.Status.INIT -> {}
+                ImageRecognitionViewModel.Status.READY -> {}
+                ImageRecognitionViewModel.Status.ERROR -> {}
+            }
+        }
+
         chatViewModel.messages.observe(lifecycleOwner) {
             if (!it.isNullOrEmpty()) {
                 displayMessages(it)
             }
             //clear the text field
             textState.value = TextFieldValue()
+        }
+
+        // TODO: fill this out
+        chatViewModel.intent.observe(lifecycleOwner) {
+            when (it) {
+                Intent.RECOGNITION -> processRecognitionRequest()
+                else -> {}
+            }
+        }
+    }
+
+    private fun processRecognitionRequest() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val featureName = imageViewModel.recogniseFeature()
+            if (featureName != null) {
+                val feature = databaseViewModel.getFeature(featureName)
+                if (feature != null) {
+                    chatViewModel.newResponse(feature.description)
+                } else {
+                    chatViewModel.newResponse("Sorry, I don't recognise this feature!")
+                }
+            } else {
+                chatViewModel.newResponse("Sorry, I don't recognise this feature!")
+            }
         }
     }
 
@@ -302,12 +339,19 @@ class MainViewModelFactory(
     private val chatViewModel: ChatViewModel,
     private val databaseViewModel: DatabaseViewModel,
     private val arViewModel: ArViewModel,
-    private val lifecycleOwner: LifecycleOwner,
+    private val imageRecognitionViewModel: ImageRecognitionViewModel,
+    private val lifecycleOwner: LifecycleOwner
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(MainViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return MainViewModel(chatViewModel, databaseViewModel, arViewModel, lifecycleOwner) as T
+            return MainViewModel(
+                chatViewModel,
+                databaseViewModel,
+                arViewModel,
+                imageRecognitionViewModel,
+                lifecycleOwner
+            ) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

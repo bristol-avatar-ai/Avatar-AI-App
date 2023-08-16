@@ -1,7 +1,6 @@
 package com.example.avatar_ai_app.imagerecognition
 
 import android.app.Application
-import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.ImageFormat
@@ -10,85 +9,95 @@ import android.graphics.YuvImage
 import android.media.Image
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import com.example.avatar_ai_cloud_storage.database.AppDatabase
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
+import com.example.avatar_ai_app.ErrorListener
+import com.example.avatar_ai_app.ar.ArViewModel
+import com.example.avatar_ai_app.chat.ChatViewModel
+import com.example.avatar_ai_app.shared.ErrorType
 import com.example.avatar_ai_cloud_storage.network.CloudStorageApi
+import com.google.ar.core.TrackingState
+import io.github.sceneview.ar.arcore.ArFrame
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 import java.io.ByteArrayOutputStream
 import java.io.File
+
+private const val TAG = "ImageRecognitionViewModel"
+
+// Filename for the machine learning model.
+private const val FILENAME = "model.tflite"
+
+private const val TIMEOUT = 10000L
+private const val DELAY = 500L
+private const val MIN_COUNT = 5
 
 /**
  * ViewModel class for Image Recognition which handles the image classification process.
  *
  * @param application The application instance to access the app context and other app-level functionalities.
  */
-class ImageRecognitionViewModel(application: Application) : AndroidViewModel(application) {
+class ImageRecognitionViewModel(
+    application: Application,
+    private val arViewModel: ArViewModel,
+    private val errorListener: ErrorListener
+) : AndroidViewModel(application) {
 
-    // The image classifier instance responsible for the actual classification.
-    private var classifier: ImageClassifier? = null
+    enum class Status { INIT, READY, ERROR }
 
-    // Filename for the machine learning model.
-    private val FILENAME = "model.tflite"
-
-    // Retaining application instance for later use.
-    private val _application = application
+    private val _status: MutableLiveData<Status?> = MutableLiveData(null)
+    val status: LiveData<Status?> get() = _status
 
     // Application's context, mainly used for accessing files and app-level resources.
     private val context
-        get() = _application.applicationContext
+        get() = getApplication<Application>().applicationContext
 
-    /** LiveData to notify observers if the model has been downloaded.
-     */
-    val hasDownloaded: MutableLiveData<Boolean> = MutableLiveData(null)
+    // Model storage location.
+    private val modelFile = File(context.filesDir, FILENAME)
 
-    /** LiveData to notify observers when the classifier is ready for predictions.
-      */
-    val isReady: MutableLiveData<Boolean> = MutableLiveData(false)
+    // The image classifier instance responsible for the actual classification.
+    private var classifier = ImageClassifier(context, modelFile.canonicalPath)
 
-    /** LiveData to hold the result of the image classification.
-     */
-    val result: MutableLiveData<String?> = MutableLiveData(null)
+    private var result: String? = null
+    private var resultCounter: Int = 0
+
+    init {
+        viewModelScope.launch(Dispatchers.IO) {
+            reload()
+        }
+    }
+
+    private fun updateStatus(status: Status?) {
+        Log.i(TAG, "updateStatus: $status")
+        _status.postValue(status)
+    }
 
     /**
      * Initialises the image classifier. This involves downloading the model and setting up the classifier.
      */
-    suspend fun initialiseClassifier() {
-        // Model storage location.
-        val modelFile = File(context.filesDir, FILENAME)
-
-        // Update model from cloud storage if necessary.
-        val updateModel = CloudStorageApi.updateModel(modelFile)
-
-        // Check if the model file exists locally.
-        val fileExists = modelFile.exists()
-
+    suspend fun reload() {
+        updateStatus(Status.INIT)
         // If the model cannot be obtained, notify observers and return.
-        if (!updateModel && !fileExists) {
-            hasDownloaded.postValue(false)
-            return
+        if (!CloudStorageApi.updateModel(modelFile) && !modelFile.exists()) {
+            errorListener.onError(ErrorType.NETWORK)
+            Log.e(TAG, "initialiseClassifier: failed to download model file")
         }
-
-        hasDownloaded.postValue(true)
 
         // Initialise the classifier with the model.
-        classifier = ImageClassifier(context, modelFile.canonicalPath)
-        if (classifier!!.initialise()) {
-            isReady.postValue(true)
-            Log.d("IMAGE", "Loaded model")
-        }
-    }
-
-    /**
-     * Classify the provided bitmap image.
-     *
-     * @param bitmap The image that needs to be classified.
-     */
-    suspend fun classifyImage(bitmap: Bitmap) = withContext(Dispatchers.Default) {
-        val output = classifier?.getExhibitName(bitmap)
-        withContext(Dispatchers.Main) {
-            result.postValue(output)
-            Log.d("IMAGE", "Output is: $output")
+        classifier.initialise()
+        if (classifier.model != null) {
+            Log.i(TAG, "initialiseClassifier: ready")
+            updateStatus(Status.READY)
+        } else {
+            Log.e(TAG, "initialiseClassifier: failed to initialise")
+            updateStatus(Status.ERROR)
+            errorListener.onError(ErrorType.GENERIC)
         }
     }
 
@@ -97,13 +106,62 @@ class ImageRecognitionViewModel(application: Application) : AndroidViewModel(app
      */
     override fun onCleared() {
         super.onCleared()
-        classifier?.closeModel()
+        updateStatus(null)
+        classifier.closeModel()
+        result = null
+        resultCounter = 0
+    }
+
+    suspend fun recogniseFeature(): String? {
+        return try {
+            withTimeout(TIMEOUT) {
+                while (resultCounter < MIN_COUNT) {
+                    val lastResult = result
+                    result = classifyImage(arViewModel.arSceneView?.currentFrame)
+                    if (result != null && result == lastResult) {
+                        resultCounter++
+                    } else {
+                        resultCounter = 0
+                    }
+                    delay(DELAY)
+                }
+            }
+            Log.i(TAG, "recogniseFeature: feature: $result")
+            result
+        } catch (e: TimeoutCancellationException) {
+            Log.i(TAG, "recogniseFeature: not recognised before timeout")
+            null
+        }
+    }
+
+    /**
+     * Classify the provided bitmap image.
+     *
+     * @param bitmap The image that needs to be classified.
+     */
+    private fun classifyImage(frame: ArFrame?): String? {
+        if (frame?.camera?.trackingState == TrackingState.TRACKING) {
+            return try {
+                val image = frame.frame.acquireCameraImage()
+                val bitmap = yuv420ToBitmap(image)
+                image.close()
+                val result = classifier.getExhibitName(bitmap)
+                Log.i(TAG, "classifyImage: result: $result")
+                result
+            } catch (e: Exception) {
+                Log.w(TAG, "classifyImage: camera image not available", e)
+                null
+            }
+        } else {
+            Log.w(TAG, "classifyImage: invalid frame")
+            return null
+        }
     }
 
     /**
      * Function to convert Yuv420 to bitmap images.
      */
-    fun yuv420ToBitmap(yuvImage: Image): Bitmap? {
+    private fun yuv420ToBitmap(yuvImage: Image): Bitmap {
         val yBuffer = yuvImage.planes[0].buffer
         val uBuffer = yuvImage.planes[1].buffer
         val vBuffer = yuvImage.planes[2].buffer
@@ -124,5 +182,33 @@ class ImageRecognitionViewModel(application: Application) : AndroidViewModel(app
         yuvImage.compressToJpeg(Rect(0, 0, yuvImage.width, yuvImage.height), 75, out)
         val imageBytes = out.toByteArray()
         return BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
+    }
+}
+
+/**
+ * Factory class for creating instances of [ChatViewModel].
+ *
+ * @param application The application context.
+ * @param language The initial language for translation and speech.
+ * @param errorListener The listener for handling error events.
+ */
+class ImageRecognitionViewModelFactory(
+    private val application: Application,
+    private val arViewModel: ArViewModel,
+    private val errorListener: ErrorListener
+) : ViewModelProvider.Factory {
+    /**
+     * Creates an instance of the requested ViewModel class.
+     *
+     * @param modelClass The class of the ViewModel to be created.
+     * @return An instance of the requested ViewModel class.
+     * @throws IllegalArgumentException if the provided class is not [ChatViewModel].
+     */
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(ImageRecognitionViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return ImageRecognitionViewModel(application, arViewModel, errorListener) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }

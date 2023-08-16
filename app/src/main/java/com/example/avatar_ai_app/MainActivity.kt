@@ -3,11 +3,9 @@ package com.example.avatar_ai_app
 import android.Manifest
 import android.app.Activity
 import android.content.Intent
-import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
@@ -23,6 +21,7 @@ import com.example.avatar_ai_app.chat.ChatViewModelFactory
 import com.example.avatar_ai_app.data.DatabaseViewModel
 import com.example.avatar_ai_app.data.DatabaseViewModelFactory
 import com.example.avatar_ai_app.imagerecognition.ImageRecognitionViewModel
+import com.example.avatar_ai_app.imagerecognition.ImageRecognitionViewModelFactory
 import com.example.avatar_ai_app.language.Language
 import com.example.avatar_ai_app.shared.ErrorType
 import com.example.avatar_ai_app.ui.MainScreen
@@ -80,12 +79,21 @@ class MainActivity : ComponentActivity(), ErrorListener {
             ArViewModelFactory(application)
         )[ArViewModel::class.java]
 
-        imageViewModel = ViewModelProvider(this)[ImageRecognitionViewModel::class.java]
+        imageViewModel = ViewModelProvider(
+            this,
+            ImageRecognitionViewModelFactory(this.application, arViewModel, this)
+        )[ImageRecognitionViewModel::class.java]
 
         mainViewModel =
             ViewModelProvider(
                 this,
-                MainViewModelFactory(chatViewModel, databaseViewModel, arViewModel,this)
+                MainViewModelFactory(
+                    chatViewModel,
+                    databaseViewModel,
+                    arViewModel,
+                    imageViewModel,
+                    this
+                )
             )[MainViewModel::class.java]
 
 
@@ -97,9 +105,7 @@ class MainActivity : ComponentActivity(), ErrorListener {
                 ) {
                     WindowCompat.setDecorFitsSystemWindows(window, false)
                     MainScreen(
-                        mainViewModel,
-                        arViewModel,
-                        imageViewModel
+                        mainViewModel
                     )
                     dialogQueue
                         .reversed()
@@ -128,20 +134,6 @@ class MainActivity : ComponentActivity(), ErrorListener {
             }
         }
 
-        launchTestImage()
-    }
-
-    private fun launchTestImage() {
-        lifecycleScope.launch {
-            testImage()
-        }
-
-    }
-    private suspend fun testImage()
-    {
-        imageViewModel.initialiseClassifier()
-        imageViewModel.classifyImage( BitmapFactory.decodeResource(getResources(), R.drawable.testimage))
-        Log.d("Daisy", "Classified?")
     }
 
     /**
