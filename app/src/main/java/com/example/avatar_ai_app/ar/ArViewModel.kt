@@ -1,9 +1,11 @@
 package com.example.avatar_ai_app.ar
 
+import android.annotation.SuppressLint
 import android.app.Application
 import android.opengl.Matrix
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.AndroidViewModel
@@ -35,8 +37,9 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
     private val _uiState = MutableStateFlow(AvatarState())
     private val _application = application
     private var graph: Graph = Graph()
+    @SuppressLint("StaticFieldLeak")
+    lateinit var arSceneView: ArSceneView
 
-    var arSceneView: ArSceneView? = null
     private val context
         get() = _application.applicationContext
 
@@ -44,7 +47,6 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
 
     //Can we delete this??
     val nodes = mutableStateListOf<ArNode>()
-
 
     enum class AvatarButtonType {
         VISIBILITY,
@@ -58,7 +60,6 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
 
     private lateinit var avatarModelNode: ArModelNode
 
-    // TODO: Ed please remember to call this
     override fun setGraph(graph: Graph) {
 
         this.graph = graph
@@ -106,13 +107,14 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
     override fun initialiseArScene(arSceneView: ArSceneView) {
         this.arSceneView = arSceneView
         arSceneView.lightEstimationMode = Config.LightEstimationMode.ENVIRONMENTAL_HDR
+        this.arSceneView = arSceneView
         resolveAllAnchors(arSceneView)
     }
 
-    override fun addModelToScene(arSceneView: ArSceneView, modelType: ModelType) {
+    override fun addModelToScene(modelType: ModelType) {
         when (modelType) {
             ModelType.AVATAR -> {
-                avatarModelNode = createModel(arSceneView, ModelType.AVATAR)
+                avatarModelNode = createModel(ModelType.AVATAR)
                 avatarModelNode.isVisible = false
                 arSceneView.addChild(avatarModelNode)
             }
@@ -123,7 +125,7 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
     }
 
     //Creates a model from the ModelType data class
-    private fun createModel(arSceneView: ArSceneView, modelType: ModelType): ArModelNode {
+    private fun createModel(modelType: ModelType): ArModelNode {
         val modelNode = ArModelNode(arSceneView.engine).apply {
             viewModelScope.launch {
                 when (modelType) {
@@ -228,7 +230,7 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
 
         // Iterate over all node keys
         for (key in nodeKeys) {
-            val modelNode = createModel(arSceneView, ModelType.CRYSTAL)
+            val modelNode = createModel(ModelType.CRYSTAL)
 
             //need to check if this line is needed
             arSceneView.addChild(modelNode)
@@ -258,14 +260,14 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
     }
 
     // This function will return the Id of the nearest cloud anchor
-    private fun closestAnchor(arSceneView: ArSceneView): String? {
+    private fun closestAnchor(): String? {
         var minDistance = Float.MAX_VALUE
         var closestAnchorId: String? = null
 
         for ((anchorId, anchorNode) in anchorMap) {
             val nodePose = anchorNode.anchor?.pose
-            if (nodePose != null && isInView(arSceneView, nodePose)) {
-                val distance = distanceFromAnchor(arSceneView, anchorNode)
+            if (nodePose != null && isInView(nodePose)) {
+                val distance = distanceFromAnchor(anchorNode)
                 if (distance < minDistance) {
                     minDistance = distance
                     closestAnchorId = anchorId
@@ -275,12 +277,12 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
         return closestAnchorId
     }
 
-    private fun distanceFromAnchor(arSceneView: ArSceneView, anchorNode: ArModelNode?): Float {
+    private fun distanceFromAnchor(anchorNode: ArModelNode?): Float {
         val cameraPose = arSceneView.currentFrame?.camera?.pose
 
         val nodePose = anchorNode?.anchor?.pose
 
-        if (nodePose != null && isInView(arSceneView, nodePose)) {
+        if (nodePose != null && isInView(nodePose)) {
             val dx = cameraPose?.tx()?.minus(nodePose.tx())
             val dy = cameraPose?.ty()?.minus(nodePose.ty())
             val dz = cameraPose?.tz()?.minus(nodePose.tz())
@@ -289,8 +291,8 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
         return Float.MAX_VALUE
     }
 
-    private fun isInView(arSceneView: ArSceneView, pose: Pose): Boolean {
-        val screenCoord = getScreenCoordinates(arSceneView, pose) ?: return false
+    private fun isInView(pose: Pose): Boolean {
+        val screenCoord = getScreenCoordinates(pose) ?: return false
         return screenCoord.x >= 0 && screenCoord.y >= 0 && screenCoord.x <= arSceneView.width && screenCoord.y <= arSceneView.height
     }
 
@@ -302,7 +304,7 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
      * pose - The 3D position in AR space to be transformed.
      * returns Vector3 containing the x, y screen coordinates, and z depth.
      */
-    private fun getScreenCoordinates(arSceneView: ArSceneView, pose: Pose): Vector3? {
+    private fun getScreenCoordinates(pose: Pose): Vector3? {
         val camera = arSceneView.currentFrame?.camera ?: return null
 
         val projectionMatrix = FloatArray(16)
@@ -336,7 +338,7 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
 
     private val handler = Handler(Looper.getMainLooper())
 
-    private fun showPath(arSceneView: ArSceneView, path: List<String>?) {
+    private fun showPath(path: List<String>?) {
         val pathIterator = path?.listIterator()
 
         val runnableCode = object : Runnable {
@@ -353,7 +355,7 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
                         val nextModelId = pathIterator.next()
                         val nextModel = anchorMap[nextModelId]
 
-                        if (distanceFromAnchor(arSceneView, currentModel) < thresholdDistance) {
+                        if (distanceFromAnchor(currentModel) < thresholdDistance) {
                             //updateVisibleModel(currentModel, nextModel)
                             moveAvatarToNewAnchor(currentModel, nextModel)
                         } else {
@@ -440,8 +442,8 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
         }
     }
 
-    private fun loadDirections(arSceneView: ArSceneView, destination: String) {
-        val currentLocation = closestAnchor(arSceneView)
+    override fun loadDirections(destination: String) {
+        val currentLocation = closestAnchor()
         if (currentLocation.equals(null)) {
             Toast.makeText(context, "Please point me to nearest anchor", Toast.LENGTH_SHORT).show()
             return
@@ -449,7 +451,7 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
 
         val (_, paths) = dijkstra(currentLocation!!)
         val path = paths[destination]
-        showPath(arSceneView, path)
+        showPath(path)
     }
 
     private fun dijkstra(src: String): Pair<Map<String, Int>, Map<String, List<String>>> {
@@ -481,7 +483,10 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
         return Pair(dist, paths)
     }
 
-
+    fun onDestroy() {
+        arSceneView.arSession?.destroy()
+        arSceneView.destroy()
+    }
 }
 
 

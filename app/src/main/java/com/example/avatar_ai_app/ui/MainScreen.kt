@@ -124,7 +124,7 @@ fun MainScreen(
                         onCreate = { arSceneView ->
                             mainViewModel.setGraph()
                             mainViewModel.initialiseArScene(arSceneView)
-                            mainViewModel.addModelToScene(arSceneView, ArViewModel.ModelType.AVATAR)
+                            mainViewModel.addModelToScene(ArViewModel.ModelType.AVATAR)
                         },
                     )
 

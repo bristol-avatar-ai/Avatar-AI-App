@@ -1,6 +1,7 @@
 package com.example.avatar_ai_app.ui
 
 import android.Manifest
+import android.util.Log
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.focus.FocusRequester
@@ -105,6 +106,7 @@ class MainViewModel(
                 when (it) {
                     true -> {
                         isDatabaseViewModelLoaded.value = true
+                        setFeatureList()
                     }
                     false -> {
                         isDatabaseViewModelLoaded.value = false
@@ -131,14 +133,23 @@ class MainViewModel(
             textState.value = TextFieldValue()
         }
 
+
         // TODO: fill this out
         chatViewModel.intent.observe(lifecycleOwner) {
             when (it) {
                 Intent.RECOGNITION -> processRecognitionRequest()
                 else -> {}
             }
+
+            chatViewModel.destinationID.observe(lifecycleOwner) {
+                if (!it.isNullOrEmpty()) {
+                    arViewModel.loadDirections(it)
+
+                }
+            }
         }
     }
+
 
     private fun processRecognitionRequest() {
         viewModelScope.launch(Dispatchers.IO) {
@@ -156,10 +167,16 @@ class MainViewModel(
         }
     }
 
+    private fun setFeatureList() {
+        viewModelScope.launch(Dispatchers.IO) {
+            chatViewModel.setFeatureList(databaseViewModel.getFeatures())
+        }
+    }
+
     //TODO rework this function so that it accounts for multiple messages from one sender, and empty messages
     private fun displayMessages(messages: List<ChatMessage>) {
-        //check that there is both a message and a response
-        if (messages.size % 2 != 0) return
+
+        if (messages.size < 2) return
 
         viewModelScope.launch {
             if (messages[1].type == MessageType.USER) {
@@ -177,9 +194,11 @@ class MainViewModel(
         }
     }
 
-    /*
-    * If a permission is not granted, it is added to the queue
-    */
+    /**
+     * If a permission is not granted, it is added to the queue
+     * @param permission the Manifest.permission being requested
+     * @param isGranted whether the permission is granted
+     */
     fun onPermissionResult(permission: String, isGranted: Boolean) {
         if (!isGranted) {
             visiblePermissionDialogQueue.add(0, permission)
@@ -198,16 +217,16 @@ class MainViewModel(
 
     }
 
-    /*
-    * Dismisses the dialog box for the last permission added to the queue
-    */
+    /**
+     * Dismisses the dialog box for the last permission added to the queue
+     */
     fun dismissDialog() {
         visiblePermissionDialogQueue.removeLast()
     }
 
-    /*
-    * Returns a mic or send icon for the send button depending on the focus state
-    */
+    /**
+     * Returns a mic or send icon for the send button depending on the focus state
+     */
     fun getMicOrSendIcon(): Int {
         return if (!textFieldFocusState.value) {
             R.drawable.mic_icon
@@ -240,7 +259,10 @@ class MainViewModel(
         }
     }
 
-    // Update the user input mode in the uiState based on the textField focus
+    /**
+     * Update the user input mode in the uiState based on the textField focus
+     *
+     */
     fun updateInputMode() {
         _uiState.update { currentState ->
             when (textFieldFocusState.value) {
@@ -259,6 +281,7 @@ class MainViewModel(
         when (uiState.value.inputMode) {
             UiState.text -> {
                 chatViewModel.newUserMessage(textState.value.text)
+                Log.d(TAG, "Message received: ${textState.value.text}")
             }
 
             UiState.speech -> {
@@ -312,8 +335,8 @@ class MainViewModel(
         arViewModel.initialiseArScene(arSceneView)
     }
 
-    fun addModelToScene(arSceneView: ArSceneView, modelType: ArViewModel.ModelType) {
-        arViewModel.addModelToScene(arSceneView, modelType)
+    fun addModelToScene(modelType: ArViewModel.ModelType) {
+        arViewModel.addModelToScene(modelType)
     }
 
     fun setGraph() {
@@ -337,6 +360,7 @@ class MainViewModel(
 //        return IntOffset(tap.x.toInt(), tap.y.toInt())
 //    }
 }
+
 
 class MainViewModelFactory(
     private val chatViewModel: ChatViewModel,
