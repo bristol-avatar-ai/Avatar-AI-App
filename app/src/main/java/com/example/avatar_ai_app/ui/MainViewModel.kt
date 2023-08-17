@@ -343,9 +343,10 @@ class MainViewModel(
     fun handleSwipe(pan: Float) {
         _uiState.update { currentState ->
             currentState.copy(
-                messagesAreShown = pan <= 0
+                messagesAreShown = pan <= 0,
             )
         }
+        if(pan >0) dismissLanguageMenu()
     }
 
     fun initialiseArScene(arSceneView: ArSceneView) {
