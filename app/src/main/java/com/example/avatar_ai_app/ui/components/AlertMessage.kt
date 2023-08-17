@@ -11,24 +11,27 @@ import com.example.avatar_ai_app.ui.theme.ARAppTheme
 
 @Composable
 fun AlertScreen(
-    dismiss: () -> Unit = {},
-    title: String = "",
+    onDismiss: () -> Unit = {},
     bodyText: String = "",
-    buttonText: String = "Dismiss"
+    onConfirm: () -> Unit = {}
 ) {
     AlertDialog(
-        onDismissRequest = { dismiss() },
-        title = {
-            Text(title)
-        },
+        onDismissRequest = { onDismiss() },
         text = {
             Text(bodyText)
         },
         confirmButton = {
             TextButton(
-                onClick = { dismiss() }
+                onClick = onConfirm
             ) {
-                Text( buttonText)
+                Text(text = "Confirm")
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss
+            ) {
+                Text(text = "Go back")
             }
         }
     )
@@ -39,7 +42,7 @@ fun AlertScreen(
 fun AlertScreenPreview() {
     ARAppTheme {
         AlertScreen(
-            bodyText = stringResource(id = R.string.speech_error_message)
+            bodyText = stringResource(id = R.string.clear_chat_message)
         )
     }
 }

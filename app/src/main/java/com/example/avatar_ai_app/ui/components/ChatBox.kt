@@ -1,5 +1,8 @@
 package com.example.avatar_ai_app.ui.components
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
@@ -76,7 +79,10 @@ fun ChatBox(
                     interactionSource = interactionSource,
                     reverseDirection = true,
                 )
-                .background(color = MaterialTheme.colorScheme.surface),
+                .background(color = MaterialTheme.colorScheme.surface)
+                .animateContentSize(
+
+                ),
         ) {
             Row(
                 modifier = Modifier

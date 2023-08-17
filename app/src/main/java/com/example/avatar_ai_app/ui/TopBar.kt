@@ -20,12 +20,17 @@ import com.example.avatar_ai_app.ui.components.MenuButton
 import com.example.avatar_ai_app.ui.components.SettingsMenu
 import com.example.avatar_ai_app.ui.theme.ARAppTheme
 
+/**
+ * Top bar for the application. Contains a dropdown settings menu
+ */
 @Composable
 fun TopBar(
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
     onDismiss: () -> Unit,
     languageButtonOnClick: () -> Unit,
+    clearChatButtonOnClick: () -> Unit,
+    helpButtonOnClick: () -> Unit,
     menuState: Boolean
 ) {
 
@@ -56,7 +61,9 @@ fun TopBar(
                 SettingsMenu(
                     showMenu = showMenu.value,
                     dismissMenu = onDismiss,
-                    languageButtonOnClick = languageButtonOnClick
+                    languageButtonOnClick = languageButtonOnClick,
+                    clearChatButtonOnClick = clearChatButtonOnClick,
+                    helpButtonOnClick = helpButtonOnClick
                 )
             }
             BottomShadow(alpha = 0.15f)
@@ -72,7 +79,9 @@ fun TopBarPreview() {
             onClick = {},
             menuState = true,
             onDismiss = {},
-            languageButtonOnClick = {}
+            languageButtonOnClick = {},
+            clearChatButtonOnClick = {},
+            helpButtonOnClick = {}
         )
     }
 }

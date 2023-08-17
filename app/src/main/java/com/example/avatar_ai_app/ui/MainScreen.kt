@@ -2,15 +2,16 @@ package com.example.avatar_ai_app.ui
 
 import android.Manifest
 import android.content.pm.PackageManager
-import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -46,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.avatar_ai_app.ar.ArViewModel
+import com.example.avatar_ai_app.ui.components.AlertScreen
 import com.example.avatar_ai_app.ui.components.ChatBox
 import com.example.avatar_ai_app.ui.components.EnableCameraButton
 import com.example.avatar_ai_app.ui.components.LanguageSelectionMenu
@@ -116,7 +118,7 @@ fun MainScreen(
             }
         }
         //This code block won't run until startup is complete
-        if(startupComplete.value) {
+        if (startupComplete.value) {
             //If camera is enabled load the ArScene, otherwise load the camera enable button
             when (isCameraEnabled) {
                 true -> {
@@ -126,7 +128,6 @@ fun MainScreen(
                             .navigationBarsPadding(),
                         planeRenderer = false,
                         onCreate = { arSceneView ->
-                            Log.d(TAG, "ArScreen created")
                             mainViewModel.setGraph()
                             mainViewModel.initialiseArScene(arSceneView)
                             mainViewModel.addModelToScene(ArViewModel.ModelType.AVATAR)
@@ -148,7 +149,7 @@ fun MainScreen(
         }
 
         //Adds an invisible box to detect touches on the ArScreen and request focus
-        BoxWithConstraints(
+        Box(
             Modifier
                 .fillMaxHeight(0.95f)
                 .fillMaxWidth(0.95f)
@@ -174,8 +175,7 @@ fun MainScreen(
                 }
                 .focusRequester(focusRequester)
                 .focusable()
-        ) {}
-        //Adjust the position of the BottomBar depending on the keyboard state
+        )
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
@@ -187,7 +187,9 @@ fun MainScreen(
                 onClick = { mainViewModel.settingsMenuButtonOnClick() },
                 menuState = uiState.isSettingsMenuShown,
                 onDismiss = { mainViewModel.dismissSettingsMenu() },
-                languageButtonOnClick = { mainViewModel.languageSettingsButtonOnClick() }
+                languageButtonOnClick = { mainViewModel.languageSettingsButtonOnClick() },
+                clearChatButtonOnClick = { mainViewModel.clearChatButtonOnClick() },
+                helpButtonOnClick = { mainViewModel.helpButtonOnClick() }
             )
             Spacer(Modifier.weight(1f))
             ChatBox(
@@ -200,22 +202,32 @@ fun MainScreen(
                 isRecordingEnabled = isRecordingEnabled
             )
         }
-        if (uiState.isLanguageMenuShown) {
-            Box(modifier = Modifier.align(Alignment.BottomCenter)) {
-                LanguageSelectionMenu(
-                    currentLanguage = uiState.language,
-                    mainViewModel = mainViewModel
-                )
-            }
+        AnimatedVisibility(
+            visible = uiState.isLanguageMenuShown,
+            enter = slideInVertically(initialOffsetY = {it}),
+            exit = slideOutVertically(targetOffsetY = {it}),
+            modifier = Modifier.align(Alignment.BottomCenter)
+        ) {
+            LanguageSelectionMenu(
+                currentLanguage = uiState.language,
+                mainViewModel = mainViewModel
+            )
         }
         if (isLoading) {
             LoadingScreen()
         } else {
             LaunchedEffect(startupComplete.value) {
-                if(!startupComplete.value) {
+                if (!startupComplete.value) {
                     startupComplete.value = true
                 }
             }
+        }
+        if (uiState.alertIsShown) {
+            AlertScreen(
+                bodyText = stringResource(uiState.alertResId),
+                onDismiss = { mainViewModel.dismissAlertDialogue() },
+                onConfirm = { mainViewModel.alertOnClick() }
+            )
         }
     }
 }
