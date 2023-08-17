@@ -5,7 +5,6 @@ import android.util.Log
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModel
@@ -67,9 +66,13 @@ class MainViewModel(
     //Queue for storing permission strings
     val visiblePermissionDialogQueue = mutableStateListOf<String>()
     val focusRequester = FocusRequester()
-    var touchPosition = mutableStateOf(Offset.Zero)
     val textState = mutableStateOf(TextFieldValue())
     var textFieldFocusState = mutableStateOf(false)
+
+    enum class AlertType{
+        CLEAR_CHAT,
+        HELP
+    }
 
     init {
         chatViewModel.status.observe(lifecycleOwner) { status ->
@@ -135,15 +138,15 @@ class MainViewModel(
 
 
         // TODO: fill this out
-        chatViewModel.intent.observe(lifecycleOwner) {
-            when (it) {
+        chatViewModel.intent.observe(lifecycleOwner) { intent ->
+            when (intent) {
                 Intent.RECOGNITION -> processRecognitionRequest()
                 else -> {}
             }
 
-            chatViewModel.destinationID.observe(lifecycleOwner) {
-                if (!it.isNullOrEmpty()) {
-                    arViewModel.loadDirections(it)
+            chatViewModel.destinationID.observe(lifecycleOwner) { destinationID ->
+                if (!destinationID.isNullOrEmpty()) {
+                    arViewModel.loadDirections(destinationID)
 
                 }
             }
@@ -261,7 +264,6 @@ class MainViewModel(
 
     /**
      * Update the user input mode in the uiState based on the textField focus
-     *
      */
     fun updateInputMode() {
         _uiState.update { currentState ->
@@ -314,6 +316,10 @@ class MainViewModel(
         }
     }
 
+    /**
+     * Sets the language for the application
+     * @param language
+     */
     fun onLanguageSelectionResult(language: Language) {
         chatViewModel.setLanguage(language)
         _uiState.update { currentState ->
@@ -323,6 +329,9 @@ class MainViewModel(
         }
     }
 
+    /**
+     * Shows the language menu and dismisses the settings menu
+     */
     fun languageSettingsButtonOnClick() {
         _uiState.update { currentState ->
             currentState.copy(
@@ -332,6 +341,9 @@ class MainViewModel(
         dismissSettingsMenu()
     }
 
+    /**
+     * Dismisses the language menu
+     */
     fun dismissLanguageMenu() {
         _uiState.update { currentState ->
             currentState.copy(
@@ -340,6 +352,66 @@ class MainViewModel(
         }
     }
 
+    fun clearChatButtonOnClick() {
+        generateAlert(AlertType.CLEAR_CHAT)
+        dismissSettingsMenu()
+    }
+
+    fun helpButtonOnClick() {
+        generateAlert(AlertType.HELP)
+        dismissSettingsMenu()
+    }
+
+    private fun generateAlert(alertType: AlertType) {
+        _uiState.update { currentState ->
+            when(alertType) {
+                AlertType.HELP -> {
+                    currentState.copy(
+                        alertIsShown = true,
+                        alertResId = R.string.not_implemented_message,
+                        alertIntent = UiState.help
+                    )
+                }
+                AlertType.CLEAR_CHAT -> {
+                    currentState.copy(
+                        alertIsShown = true,
+                        alertResId = R.string.clear_chat_message,
+                        alertIntent = UiState.clear
+                    )
+                }
+            }
+        }
+    }
+
+    fun alertOnClick(){
+        when(uiState.value.alertIntent) {
+            UiState.clear -> clearChatHistory()
+
+            UiState.help -> dismissAlertDialogue()
+        }
+    }
+
+    fun dismissAlertDialogue() {
+        _uiState.update {currentState ->
+            currentState.copy(
+                alertIsShown = false
+            )
+        }
+    }
+
+    /**
+     * Wipes the chat history and deletes all messages from the uiState
+     */
+    fun clearChatHistory() {
+        chatViewModel.clearChatHistory()
+        uiState.value.clearMessages()
+        dismissAlertDialogue()
+    }
+
+    /**
+     * Updates the ui based on swipe inputs
+     * @param pan distance moved across the Y axis
+     */
     fun handleSwipe(pan: Float) {
         _uiState.update { currentState ->
             currentState.copy(
@@ -378,21 +450,6 @@ class MainViewModel(
             )
         }
     }
-
-//    fun generateCoordinates(
-//        constraints: BoxWithConstraintsScope,
-//        tap: Offset
-//    ): IntOffset {
-//        val x = tap.x
-//        val y = tap.y
-//        val width = constraints.constraints.maxWidth
-//        val height = constraints.constraints.maxHeight
-//
-//        val topHalf = y < height / 2
-//        val leftHalf = x < width / 2
-//
-//        return IntOffset(tap.x.toInt(), tap.y.toInt())
-//    }
 }
 
 

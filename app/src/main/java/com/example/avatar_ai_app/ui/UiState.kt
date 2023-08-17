@@ -27,6 +27,8 @@ data class UiState(
     //Alert message
     val alertIsShown: Boolean = false,
     val alertResId: Int = R.string.empty_string,
+    val alertIntent: Int = help,
+
 
     //Messages
     val messages: MutableList<ChatMessage> = mutableStateListOf(),
@@ -42,9 +44,15 @@ data class UiState(
         const val processing = 2
         const val text = 0
         const val speech = 1
+        const val help = 0
+        const val clear = 1
     }
 
     fun addMessage(msg: ChatMessage) {
         messages.add(0, msg)
+    }
+
+    fun clearMessages() {
+        messages.clear()
     }
 }

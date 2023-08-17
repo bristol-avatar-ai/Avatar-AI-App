@@ -20,6 +20,8 @@
     <string name="audio_permission_dialog_button">OK</string>
     <string name="recording_message" tools:ignore="TypographyEllipsis">Recording...</string>
     <string name="processing_message" tools:ignore="TypographyEllipsis">Processing...</string>
+    <string name="clear_chat_message">Clear all messages?</string>
+    <string name="not_implemented_message">This feature is not yet implemented</string>
 
     <!--Chat Response Messages-->
     <string name="greeting_message">Hello!</string>
@@ -36,6 +38,6 @@
     <string name="recording_error_message">Failed to initialise recording. Please check your microphone settings and try again!</string>
     <string name="error_message">Sorry, something went wrong!</string>
     <string name="network_error_message">Sorry, something went wrong. Please check your network connection and try again!</string>
-    <string name="recording_length_error_message">To record, please hold down the microphone button and speak</string>
+    <string name="recording_length_error_message">Hold down to record</string>
     <string name="error_ok_button">OK</string>
 </resources>

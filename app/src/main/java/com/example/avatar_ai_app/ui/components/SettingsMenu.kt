@@ -3,6 +3,7 @@ package com.example.avatar_ai_app.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -21,7 +22,6 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import com.example.avatar_ai_app.R
 import com.example.avatar_ai_app.ui.theme.ARAppTheme
@@ -31,17 +31,30 @@ import com.example.avatar_ai_app.ui.theme.spacing
 fun SettingsMenu(
     showMenu: Boolean,
     dismissMenu: () -> Unit,
-    languageButtonOnClick: () -> Unit
+    languageButtonOnClick: () -> Unit,
+    clearChatButtonOnClick: () -> Unit,
+    helpButtonOnClick: () -> Unit
 ) {
     DropdownMenu(
         expanded = showMenu,
         onDismissRequest = dismissMenu,
-        modifier = Modifier.background(color = MaterialTheme.colorScheme.surface)
+        modifier = Modifier
+            .background(color = MaterialTheme.colorScheme.surface)
     ) {
         SettingsMenuItem(
             onClick = languageButtonOnClick,
             iconId = R.drawable.language_icon,
             text = "Language"
+        )
+        SettingsMenuItem(
+            onClick = clearChatButtonOnClick,
+            iconId = R.drawable.delete_icon,
+            text = "Clear Messages"
+        )
+        SettingsMenuItem(
+            onClick = helpButtonOnClick,
+            iconId = R.drawable.help_icon,
+            text = "Help"
         )
     }
 }
@@ -84,6 +97,7 @@ fun SettingsMenuItem(
             tint = iconAndTextColor,
             contentDescription = null
         )
+        Spacer(modifier = Modifier.padding(MaterialTheme.spacing.extraSmall))
         Text(
             text = text,
             textAlign = TextAlign.Center,
@@ -96,7 +110,13 @@ fun SettingsMenuItem(
 @Composable
 fun SettingsMenuPreview() {
     ARAppTheme {
-        SettingsMenu(showMenu = true, dismissMenu = {}, languageButtonOnClick = {})
+        SettingsMenu(
+            showMenu = true,
+            dismissMenu = {},
+            languageButtonOnClick = {},
+            clearChatButtonOnClick = {},
+            helpButtonOnClick = {}
+        )
     }
 }
 
