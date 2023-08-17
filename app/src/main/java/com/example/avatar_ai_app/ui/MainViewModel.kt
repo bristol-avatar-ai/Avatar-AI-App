@@ -1,6 +1,7 @@
 package com.example.avatar_ai_app.ui
 
 import android.Manifest
+import android.util.Log
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.focus.FocusRequester
@@ -32,7 +33,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-private const val TAG = "ArViewModel"
+private const val TAG = "MainViewModel"
 private const val RECORDING_WAIT = 100L
 
 class MainViewModel(
@@ -49,6 +50,8 @@ class MainViewModel(
     private val _isRecordingReady = MutableStateFlow(true)
     private var startTime = System.currentTimeMillis()
     private var recordingJob: Job? = null
+    val isChatViewModelLoaded = MutableStateFlow(false)
+    val isDatabaseViewModelLoaded = MutableStateFlow(false)
 
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
 
@@ -69,19 +72,19 @@ class MainViewModel(
     var textFieldFocusState = mutableStateOf(false)
 
     init {
-        chatViewModel.status.observe(lifecycleOwner) {
-            when (it) {
+        chatViewModel.status.observe(lifecycleOwner) { status ->
+            when (status) {
                 ChatViewModelInterface.Status.INIT -> {
                     setTextToSpeechReady(false)
-                    updateLoadingState(false)
+                    isChatViewModelLoaded.value = false
                 }
 
                 ChatViewModelInterface.Status.READY -> {
                     setTextToSpeechReady(true)
-                    updateLoadingState(true)
                     setRecordingState(UiState.ready)
                     updateTextFieldStringResId(R.string.send_message_hint)
                     _isRecordingReady.value = true
+                    isChatViewModelLoaded.value = true
                 }
 
                 ChatViewModelInterface.Status.RECORDING -> {
@@ -97,6 +100,18 @@ class MainViewModel(
                 }
 
                 else -> {}
+            }
+
+            databaseViewModel.isReady.observe(lifecycleOwner) {
+                when (it) {
+                    true -> {
+                        isDatabaseViewModelLoaded.value = true
+                        setFeatureList()
+                    }
+                    false -> {
+                        isDatabaseViewModelLoaded.value = false
+                    }
+                }
             }
         }
 
@@ -118,14 +133,23 @@ class MainViewModel(
             textState.value = TextFieldValue()
         }
 
+
         // TODO: fill this out
         chatViewModel.intent.observe(lifecycleOwner) {
             when (it) {
                 Intent.RECOGNITION -> processRecognitionRequest()
                 else -> {}
             }
+
+            chatViewModel.destinationID.observe(lifecycleOwner) {
+                if (!it.isNullOrEmpty()) {
+                    arViewModel.loadDirections(it)
+
+                }
+            }
         }
     }
+
 
     private fun processRecognitionRequest() {
         viewModelScope.launch(Dispatchers.IO) {
@@ -143,10 +167,16 @@ class MainViewModel(
         }
     }
 
+    private fun setFeatureList() {
+        viewModelScope.launch(Dispatchers.IO) {
+            chatViewModel.setFeatureList(databaseViewModel.getFeatures())
+        }
+    }
+
     //TODO rework this function so that it accounts for multiple messages from one sender, and empty messages
     private fun displayMessages(messages: List<ChatMessage>) {
-        //check that there is both a message and a response
-        if (messages.size % 2 != 0) return
+
+        if (messages.size < 2) return
 
         viewModelScope.launch {
             if (messages[1].type == MessageType.USER) {
@@ -164,9 +194,11 @@ class MainViewModel(
         }
     }
 
-    /*
-    * If a permission is not granted, it is added to the queue
-    */
+    /**
+     * If a permission is not granted, it is added to the queue
+     * @param permission the Manifest.permission being requested
+     * @param isGranted whether the permission is granted
+     */
     fun onPermissionResult(permission: String, isGranted: Boolean) {
         if (!isGranted) {
             visiblePermissionDialogQueue.add(0, permission)
@@ -185,16 +217,16 @@ class MainViewModel(
 
     }
 
-    /*
-    * Dismisses the dialog box for the last permission added to the queue
-    */
+    /**
+     * Dismisses the dialog box for the last permission added to the queue
+     */
     fun dismissDialog() {
         visiblePermissionDialogQueue.removeLast()
     }
 
-    /*
-    * Returns a mic or send icon for the send button depending on the focus state
-    */
+    /**
+     * Returns a mic or send icon for the send button depending on the focus state
+     */
     fun getMicOrSendIcon(): Int {
         return if (!textFieldFocusState.value) {
             R.drawable.mic_icon
@@ -227,16 +259,10 @@ class MainViewModel(
         }
     }
 
-    private fun updateLoadingState(loading: Boolean) {
-        _uiState.update { currentState ->
-            currentState.copy(
-                isLoaded = loading
-            )
-        }
-    }
-
-
-    // Update the user input mode in the uiState based on the textField focus
+    /**
+     * Update the user input mode in the uiState based on the textField focus
+     *
+     */
     fun updateInputMode() {
         _uiState.update { currentState ->
             when (textFieldFocusState.value) {
@@ -255,6 +281,7 @@ class MainViewModel(
         when (uiState.value.inputMode) {
             UiState.text -> {
                 chatViewModel.newUserMessage(textState.value.text)
+                Log.d(TAG, "Message received: ${textState.value.text}")
             }
 
             UiState.speech -> {
@@ -288,34 +315,67 @@ class MainViewModel(
     }
 
     fun onLanguageSelectionResult(language: Language) {
+        chatViewModel.setLanguage(language)
         _uiState.update { currentState ->
             currentState.copy(
                 language = language
             )
         }
-        chatViewModel.setLanguage(language)
+    }
+
+    fun languageSettingsButtonOnClick() {
+        _uiState.update { currentState ->
+            currentState.copy(
+                isLanguageMenuShown = true
+            )
+        }
+        dismissSettingsMenu()
+    }
+
+    fun dismissLanguageMenu() {
+        _uiState.update { currentState ->
+            currentState.copy(
+                isLanguageMenuShown = false
+            )
+        }
     }
 
     fun handleSwipe(pan: Float) {
         _uiState.update { currentState ->
             currentState.copy(
-                messagesAreShown = pan <= 0
+                messagesAreShown = pan <= 0,
             )
         }
+        if(pan >0) dismissLanguageMenu()
     }
 
     fun initialiseArScene(arSceneView: ArSceneView) {
         arViewModel.initialiseArScene(arSceneView)
     }
 
-    fun addModelToScene(arSceneView: ArSceneView, modelType: ArViewModel.ModelType) {
-        arViewModel.addModelToScene(arSceneView, modelType)
+    fun addModelToScene(modelType: ArViewModel.ModelType) {
+        arViewModel.addModelToScene(modelType)
     }
 
     fun setGraph() {
-        //databaseViewModel.getGraph()
         viewModelScope.launch(Dispatchers.IO) {
             arViewModel.setGraph(databaseViewModel.getGraph())
+        }
+    }
+
+    fun settingsMenuButtonOnClick() {
+        _uiState.update { currentState ->
+            currentState.copy(
+                isSettingsMenuShown = true
+            )
+        }
+    }
+
+    fun dismissSettingsMenu() {
+        _uiState.update { currentState ->
+            currentState.copy(
+                isSettingsMenuShown = false
+            )
         }
     }
 
@@ -334,6 +394,7 @@ class MainViewModel(
 //        return IntOffset(tap.x.toInt(), tap.y.toInt())
 //    }
 }
+
 
 class MainViewModelFactory(
     private val chatViewModel: ChatViewModel,

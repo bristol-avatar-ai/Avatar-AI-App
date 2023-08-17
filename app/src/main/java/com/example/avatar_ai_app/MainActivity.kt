@@ -72,7 +72,6 @@ class MainActivity : ComponentActivity(), ErrorListener {
             this,
             ChatViewModelFactory(application, Language.ENGLISH, this)
         )[ChatViewModel::class.java]
-        //TODO: Remember to update the ChatViewModel's feature list
 
         arViewModel = ViewModelProvider(
             this,
@@ -134,6 +133,11 @@ class MainActivity : ComponentActivity(), ErrorListener {
             }
         }
 
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        arViewModel.onDestroy()
     }
 
     /**

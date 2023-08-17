@@ -22,6 +22,7 @@ data class UiState(
 
     //Language
     val language: Language = Language.ENGLISH,
+    val isLanguageMenuShown: Boolean = false,
 
     //Alert message
     val alertIsShown: Boolean = false,
@@ -29,7 +30,10 @@ data class UiState(
 
     //Messages
     val messages: MutableList<ChatMessage> = mutableStateListOf(),
-    val messagesAreShown: Boolean = false
+    val messagesAreShown: Boolean = false,
+
+    //Settings menu
+    val isSettingsMenuShown: Boolean = false
 
 ) {
     companion object {

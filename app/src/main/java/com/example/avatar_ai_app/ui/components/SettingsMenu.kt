@@ -1,7 +1,7 @@
 package com.example.avatar_ai_app.ui.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -21,6 +21,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import com.example.avatar_ai_app.R
 import com.example.avatar_ai_app.ui.theme.ARAppTheme
@@ -35,7 +36,7 @@ fun SettingsMenu(
     DropdownMenu(
         expanded = showMenu,
         onDismissRequest = dismissMenu,
-        modifier = Modifier.background(color = MaterialTheme.colorScheme.surface )
+        modifier = Modifier.background(color = MaterialTheme.colorScheme.surface)
     ) {
         SettingsMenuItem(
             onClick = languageButtonOnClick,
@@ -53,31 +54,41 @@ fun SettingsMenuItem(
 ) {
     val pressed = remember { mutableStateOf(false) }
 
-//    val backgroundColor by rememberUpdatedState(
-//        if (pressed.value) MaterialTheme.colorScheme.surface
-//        else MaterialTheme.colorScheme.inverseSurface
-//    )
-//
-//    val iconAndTextColor by rememberUpdatedState(
-//        if (pressed.value) MaterialTheme.colorScheme.onSurface
-//        else MaterialTheme.colorScheme.inverseOnSurface
-//    )
+    val iconAndTextColor by rememberUpdatedState(
+        if (pressed.value) MaterialTheme.colorScheme.inverseOnSurface
+        else MaterialTheme.colorScheme.onSurface
+    )
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(MaterialTheme.spacing.small)
-//            .pointerInput(unit) {
-//            }
-            ,
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onPress = {
+                        try {
+                            onClick()
+                            pressed.value = true
+                            awaitRelease()
+                        } finally {
+                            pressed.value = false
+                        }
+                    }
+                )
+            },
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             modifier = Modifier.size(size = 20.dp),
             painter = painterResource(id = iconId),
+            tint = iconAndTextColor,
             contentDescription = null
         )
-        Text(text = text, textAlign = TextAlign.Center)
+        Text(
+            text = text,
+            textAlign = TextAlign.Center,
+            color = iconAndTextColor
+        )
     }
 }
 
