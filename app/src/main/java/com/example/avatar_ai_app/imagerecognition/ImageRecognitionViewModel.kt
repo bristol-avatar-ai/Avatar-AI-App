@@ -114,6 +114,9 @@ class ImageRecognitionViewModel(
     }
 
     suspend fun recogniseFeature(): String? {
+        result = null
+        resultCounter = 0
+
         return try {
             withTimeout(TIMEOUT) {
                 while (resultCounter < MIN_COUNT) {
