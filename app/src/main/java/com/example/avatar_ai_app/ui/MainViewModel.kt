@@ -111,6 +111,7 @@ class MainViewModel(
                         isDatabaseViewModelLoaded.value = true
                         setFeatureList()
                     }
+
                     false -> {
                         isDatabaseViewModelLoaded.value = false
                     }
@@ -263,6 +264,14 @@ class MainViewModel(
 
     /**
      * Update the user input mode in the uiState based on the textField focus
+<<<<<<< HEAD
+<<<<<<< HEAD
+=======
+     *
+>>>>>>> a8aac81 (Set arViewModel to receive destination ID from chatService)
+=======
+     *
+>>>>>>> 3cd9260 (Set arViewModel to receive destination ID from chatService)
      */
     fun updateInputMode() {
         _uiState.update { currentState ->
@@ -423,7 +432,11 @@ class MainViewModel(
     }
 
     fun initialiseArScene(arSceneView: ArSceneView) {
-        arViewModel.initialiseArScene(arSceneView)
+        viewModelScope.launch(Dispatchers.IO) {
+            arViewModel.setGraph(databaseViewModel.getGraph())
+            arViewModel.initialiseArScene(arSceneView)
+            arViewModel.addModelToScene(ArViewModel.ModelType.AVATAR)
+        }
     }
 
     fun addModelToScene(modelType: ArViewModel.ModelType) {

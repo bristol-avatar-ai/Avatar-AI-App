@@ -7,10 +7,8 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.widget.Toast
-import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.avatar_ai_app.R
 import com.example.avatar_ai_app.data.avatarModel
 import com.example.avatar_ai_app.data.crystalModel
 import com.example.avatar_ai_app.ui.AvatarState
@@ -20,95 +18,48 @@ import com.google.ar.core.Pose
 import com.google.ar.sceneform.math.Vector3
 import io.github.sceneview.ar.ArSceneView
 import io.github.sceneview.ar.node.ArModelNode
-import io.github.sceneview.ar.node.ArNode
+import io.github.sceneview.ar.node.PlacementMode
 import io.github.sceneview.math.Rotation
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import okhttp3.internal.wait
 import kotlin.math.atan2
 import kotlin.math.sqrt
 
 private const val TAG = "ArViewModel"
 
 class ArViewModel(application: Application) : AndroidViewModel(application), ArViewModelInterface {
-
-    private val _uiState = MutableStateFlow(AvatarState())
     private val _application = application
-    private var graph: Graph = Graph()
+    private lateinit var graph: Graph
     @SuppressLint("StaticFieldLeak")
     lateinit var arSceneView: ArSceneView
+    private lateinit var avatarModelNode: ArModelNode
 
     private val context
         get() = _application.applicationContext
-
-    private val uiState: StateFlow<AvatarState> = _uiState.asStateFlow()
-
-    //Can we delete this??
-    val nodes = mutableStateListOf<ArNode>()
-
-    enum class AvatarButtonType {
-        VISIBILITY,
-        MODE
-    }
 
     enum class ModelType {
         AVATAR,
         CRYSTAL
     }
 
-    private lateinit var avatarModelNode: ArModelNode
-
     override fun setGraph(graph: Graph) {
 
         this.graph = graph
+        Log.d("ArViewModel", "graph keys = ${graph.keys}")
     }
 
-    private fun showAvatar() {
-        avatarModelNode.detachAnchor()
-        avatarModelNode.isVisible = true
-        _uiState.update { currentState ->
-            currentState.copy(
-                avatarIsAnchored = false,
-                avatarIsVisible = true
-            )
-        }
-    }
-
-    private fun hideAvatar() {
-        avatarModelNode.isVisible = false
-        _uiState.update { currentState ->
-            currentState.copy(
-                avatarIsVisible = false
-            )
-        }
-
-    }
-
-    private fun anchorAvatar() {
-        avatarModelNode.anchor()
-        _uiState.update { currentState ->
-            currentState.copy(
-                avatarIsAnchored = true
-            )
-        }
-    }
-
-    private fun detachAvatar() {
-        avatarModelNode.detachAnchor()
-        _uiState.update { currentState ->
-            currentState.copy(
-                avatarIsAnchored = false
-            )
-        }
-    }
-    
     override fun initialiseArScene(arSceneView: ArSceneView) {
+        viewModelScope.launch {
+            arSceneView.lightEstimationMode = Config.LightEstimationMode.ENVIRONMENTAL_HDR
+            arSceneView.cloudAnchorEnabled = true
+            delay(1000L)
+            resolveAllAnchors(arSceneView)
+        }
         this.arSceneView = arSceneView
-        arSceneView.lightEstimationMode = Config.LightEstimationMode.ENVIRONMENTAL_HDR
-        this.arSceneView = arSceneView
-        resolveAllAnchors(arSceneView)
+
+        Log.d("ArViewModel", "Initialise Done")
     }
 
     override fun addModelToScene(modelType: ModelType) {
@@ -124,101 +75,46 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
         }
     }
 
-    //Creates a model from the ModelType data class
     private fun createModel(modelType: ModelType): ArModelNode {
-        val modelNode = ArModelNode(arSceneView.engine).apply {
-            viewModelScope.launch {
-                when (modelType) {
-                    ModelType.AVATAR -> {
-                        loadModelGlb(
-                            context = context,
-                            glbFileLocation = avatarModel.fileLocation,
-                            scaleToUnits = avatarModel.scale,
-                            centerOrigin = avatarModel.position
-                        )
-                    }
+        val modelNode: ArModelNode
 
-                    ModelType.CRYSTAL -> {
+        when (modelType) {
+            ModelType.AVATAR -> {
+                val model = avatarModel
+                modelNode = ArModelNode(arSceneView.engine).apply {
+                    viewModelScope.launch {
                         loadModelGlb(
                             context = context,
-                            glbFileLocation = crystalModel.fileLocation,
-                            scaleToUnits = crystalModel.scale,
-                            centerOrigin = crystalModel.position
+                            glbFileLocation = model.fileLocation,
+                            scaleToUnits = model.scale,
+                            centerOrigin = model.position
                         )
                     }
                 }
             }
+
+            ModelType.CRYSTAL -> {
+                val model = crystalModel
+                modelNode = ArModelNode(arSceneView.engine).apply {
+                    viewModelScope.launch {
+                        loadModelGlb(
+                            context = context,
+                            glbFileLocation = model.fileLocation,
+                            scaleToUnits = model.scale,
+                            centerOrigin = model.position
+                        )
+                    }
+                }
+                modelNode.apply {
+                    placementMode = PlacementMode.INSTANT
+                    isVisible = false
+                }
+                arSceneView.addChild(modelNode)
+                arSceneView.selectedNode = modelNode
+            }
         }
+
         return modelNode
-    }
-
-    fun avatarButtonOnClick() {
-        _uiState.update { currentState ->
-            when (uiState.value.isAvatarMenuVisible) {
-                true -> currentState.copy(
-                    isAvatarMenuVisible = false
-                )
-
-                false -> currentState.copy(
-                    isAvatarMenuVisible = true
-                )
-            }
-        }
-    }
-
-    fun summonOrHideButtonOnClick() {
-        if (uiState.value.avatarIsVisible) {
-            hideAvatar()
-        } else {
-            showAvatar()
-        }
-    }
-
-    fun anchorOrFollowButtonOnClick() {
-        if (uiState.value.avatarIsAnchored) {
-            detachAvatar()
-        } else if (!uiState.value.avatarIsAnchored) {
-            anchorAvatar()
-        }
-    }
-
-    fun dismissActionMenu() {
-        if (uiState.value.isAvatarMenuVisible) {
-            _uiState.update { currentState ->
-                currentState.copy(
-                    isAvatarMenuVisible = false
-                )
-            }
-        }
-    }
-
-    fun getActionButtonValues(buttonType: AvatarButtonType):
-            Pair<Int, String> {
-        return when (buttonType) {
-            AvatarButtonType.VISIBILITY -> {
-                if (uiState.value.avatarIsVisible) {
-                    Pair(R.drawable.hide, "Dismiss Avatar")
-                } else Pair(R.drawable.robot_icon, "Summon Avatar")
-            }
-
-            AvatarButtonType.MODE -> {
-                if (uiState.value.avatarIsAnchored) {
-                    Pair(R.drawable.unlock_icon, "Release Avatar")
-                } else Pair(R.drawable.lock_icon, "Place Avatar Here")
-            }
-        }
-    }
-
-    fun enableActionButton(buttonType: AvatarButtonType): Boolean {
-        return when (buttonType) {
-            AvatarButtonType.MODE -> {
-                (uiState.value.isAvatarMenuVisible and uiState.value.avatarIsVisible)
-            }
-
-            AvatarButtonType.VISIBILITY -> {
-                uiState.value.isAvatarMenuVisible
-            }
-        }
     }
 
     private val resolvedModelNodes = mutableListOf<ArModelNode>()
@@ -226,7 +122,12 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
 
     private fun resolveAllAnchors(arSceneView: ArSceneView) {
 
+        Log.d("ArViewModel", "Graph keys 2 : ${graph.keys}")
+        Log.d("ArViewModel", "Graph keys 3 : ${graph.keys.toList()}")
+
         val nodeKeys = graph.keys.toList()
+        Log.d("ArViewModel", "nodeKeys: $nodeKeys")
+
 
         // Iterate over all node keys
         for (key in nodeKeys) {
@@ -248,34 +149,53 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
 
     private fun resolveModel(modelNode: ArModelNode, anchorId: String?) {
 
+
         if (anchorId != null) {
-            modelNode.resolveCloudAnchor(anchorId) { _: Anchor, success: Boolean ->
+            modelNode.resolveCloudAnchor(anchorId) { anchor: Anchor, success: Boolean ->
+                Log.d(TAG, anchor.trackingState.toString())
+
                 if (success) {
-                    Toast.makeText(context, "Resolved!, $anchorId", Toast.LENGTH_SHORT).show()
                     // TODO: Need to change back to false
-                    modelNode.isVisible = true
+                    modelNode.isVisible = false
                 }
+                if(!success) {
+                    Log.d("ArViewModel", "Failure")
+                }
+
+
             }
         }
     }
 
     // This function will return the Id of the nearest cloud anchor
     private fun closestAnchor(): String? {
-        var minDistance = Float.MAX_VALUE
         var closestAnchorId: String? = null
 
-        for ((anchorId, anchorNode) in anchorMap) {
-            val nodePose = anchorNode.anchor?.pose
-            if (nodePose != null && isInView(nodePose)) {
-                val distance = distanceFromAnchor(anchorNode)
-                if (distance < minDistance) {
-                    minDistance = distance
-                    closestAnchorId = anchorId
+        // This will run until an anchor is found in view and returned
+        //while (closestAnchorId == null) {
+            // TODO: DISPLAY A MESSAGE ASKING THE USER TO PAN AROUND?
+            var minDistance = Float.MAX_VALUE
+
+            for ((anchorId, anchorNode) in anchorMap) {
+                val nodePose = anchorNode.anchor?.pose
+                if (nodePose != null && isInView(nodePose)) {
+                    val distance = distanceFromAnchor(anchorNode)
+                    if (distance < minDistance) {
+                        minDistance = distance
+                        closestAnchorId = anchorId
+                    }
                 }
             }
-        }
+
+//            if (closestAnchorId == null) {
+//                // Sleep for a short duration to avoid overwhelming the CPU
+//                Thread.sleep(500)
+//            }
+        //}
+
         return closestAnchorId
     }
+
 
     private fun distanceFromAnchor(anchorNode: ArModelNode?): Float {
         val cameraPose = arSceneView.currentFrame?.camera?.pose
@@ -338,80 +258,122 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
 
     private val handler = Handler(Looper.getMainLooper())
 
-    private fun showPath(path: List<String>?) {
-        val pathIterator = path?.listIterator()
+//    private fun showPath(path: List<String>?) {
+//        Log.d("ArViewModel", path.toString())
+//        val pathIterator = path?.listIterator()
+//
+//        val runnableCode = object : Runnable {
+//            override fun run() {
+//                val thresholdDistance = 2
+//
+//                // If there's a next model in the path
+//                if (pathIterator?.hasNext() == true) {
+//                    val currentModelId = pathIterator.next()
+//                    val currentModel = anchorMap[currentModelId]
+//
+//                    // If there's another next model in the path after the current model
+//                    if (pathIterator.hasNext()) {
+//                        val nextModelId = pathIterator.next()
+//                        val nextModel = anchorMap[nextModelId]
+//
+//                        if (distanceFromAnchor(currentModel) < thresholdDistance) {
+//                            Toast.makeText(context, "Within threshold", Toast.LENGTH_SHORT).show()
+//
+//                            updateVisibleModel(currentModel, nextModel)
+//                            Toast.makeText(context, "Next model visible", Toast.LENGTH_SHORT).show()
+//
+//                            //moveAvatarToNewAnchor(currentModel, nextModel)
+//                        } else {
+//                            // If the threshold isn't met, move iterator back to retry the same step
+//                            if (pathIterator.hasPrevious()) {
+//                                pathIterator.previous() // move back to 'nextModelId'
+//                                if (pathIterator.hasPrevious()) {
+//                                    pathIterator.previous() // move back to 'currentModelId'
+//                                }
+//                            }
+//                        }
+//                        handler.postDelayed(this, 500)
+//                    } else {
+//                        // Last model reached
+//                        if (distanceFromAnchor(currentModel) < thresholdDistance) {
+//                            currentModel?.isVisible = false
+//                            Toast.makeText(context, "Path completed", Toast.LENGTH_LONG).show()
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//
+//        anchorMap[path?.elementAtOrNull(0)]?.isVisible = true
+//        //moveAvatarToFirstAnchor(anchorMap[path?.elementAtOrNull(1)], anchorMap[path?.elementAtOrNull(0)])
+//        handler.post(runnableCode)
+//    }
 
+    private var modelIndex = 0
+
+    private fun showPath(path: List<String>?) {
         val runnableCode = object : Runnable {
             override fun run() {
-                val thresholdDistance = 2
 
-                // If there's a next model in the path
-                if (pathIterator?.hasNext() == true) {
-                    val currentModelId = pathIterator.next()
-                    val currentModel = anchorMap[currentModelId]
+                val thresholdDistance = 1.5
 
-                    // If there's another next model in the path after the current model
-                    if (pathIterator.hasNext()) {
-                        val nextModelId = pathIterator.next()
-                        val nextModel = anchorMap[nextModelId]
+                val model = anchorMap[path!![modelIndex]]
 
-                        if (distanceFromAnchor(currentModel) < thresholdDistance) {
-                            //updateVisibleModel(currentModel, nextModel)
-                            moveAvatarToNewAnchor(currentModel, nextModel)
-                        } else {
-                            // If the threshold isn't met, move iterator back to retry the same step
-                            if (pathIterator.hasPrevious()) {
-                                pathIterator.previous() // move back to 'nextModelId'
-                                if (pathIterator.hasPrevious()) {
-                                    pathIterator.previous() // move back to 'currentModelId'
-                                }
-                            }
-                        }
-                        handler.postDelayed(this, 500)
+                if (distanceFromAnchor(model) < thresholdDistance) {
+                    if (modelIndex < path.size - 1) {
+                        updateVisibleModel(anchorMap[path[modelIndex]], anchorMap[path[modelIndex+1]])
+                        modelIndex++
                     }
+                }
+                if (modelIndex < path.size - 1) {
+                    handler.postDelayed(this, 500)
                 }
             }
         }
-
-        moveAvatarToFirstAnchor(anchorMap[path?.firstOrNull()], anchorMap[path?.elementAtOrNull(1)])
+        (anchorMap[path!![0]] as ArModelNode).isVisible = true
         handler.post(runnableCode)
     }
 
+
+    private fun updateVisibleModel(oldModel: ArModelNode?, newModel: ArModelNode?) {
+        oldModel?.isVisible = false
+        newModel?.isVisible = true
+    }
+
+
     private fun moveAvatarToFirstAnchor(nextModel: ArModelNode?, newModel: ArModelNode?) {
-        // Ensure the avatarModelNode is visible
         avatarModelNode.isVisible = true
 
-        // Move the avatar to the position of the newModel (which represents the first anchor)
         newModel?.let { newModelPosition ->
             avatarModelNode.worldPosition = newModelPosition.worldPosition
             avatarModelNode.worldScale = newModelPosition.worldScale
 
-            if(nextModel == null){
-                avatarModelNode.worldRotation = newModelPosition.worldRotation
-                return
-            }
-
-            // If there's a nextModel (meaning another anchor after the first one),
-            // calculate direction away from nextModel in the x-y plane
-            nextModel.let { nextModelPosition ->
+            nextModel?.let { nextModelPosition ->
                 val directionVector = Vector3(
-                    newModelPosition.worldPosition.x - nextModelPosition.worldPosition.x,
-                    newModelPosition.worldPosition.y - nextModelPosition.worldPosition.y,
+                    nextModelPosition.worldPosition.x - newModelPosition.worldPosition.x,
+                    nextModelPosition.worldPosition.y - nextModelPosition.worldPosition.y,
                     0f // Ignore z coordinate
-                ).normalized()
+                )
 
-                // Get the angle from the direction vector in degrees
-                val angle = Math.toDegrees(atan2(directionVector.y.toDouble(), directionVector.x.toDouble())).toFloat()
+                if (!directionVector.equals(0)) {
+                    val normalizedDirection = directionVector.normalized()
+                    val angle = Math.toDegrees(atan2(normalizedDirection.y.toDouble(), normalizedDirection.x.toDouble())).toFloat()
 
-                // Convert the angle to Euler angles for yaw (rotation around Z)
-                // You might need to import or define the Rotation class if it doesn't exist in your setup
-                val eulerZRotation = Rotation(0f, 0f, angle)
+                    // Get the new model's rotation as Euler angles
+                    val newModelEulerRotation = newModelPosition.worldRotation
 
-                // Apply the Euler angles to the world rotation
-                avatarModelNode.worldRotation = eulerZRotation
+                    // Set the avatar's rotation
+                    avatarModelNode.worldRotation = Rotation(newModelEulerRotation.x, newModelEulerRotation.y, angle)
+                }
+            } ?: run {
+                avatarModelNode.worldRotation = newModelPosition.worldRotation
             }
         }
+        Toast.makeText(context, "Avatar at first anchor", Toast.LENGTH_SHORT).show()
     }
+
+
+
 
     private fun moveAvatarToNewAnchor(oldModel: ArModelNode?, newModel: ArModelNode?) {
         // Ensure the avatarModelNode is visible
@@ -440,10 +402,13 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
                 avatarModelNode.worldRotation = eulerZRotation
             }
         }
+        Toast.makeText(context, "End of move avatar to next model", Toast.LENGTH_SHORT).show()
+
     }
 
     override fun loadDirections(destination: String) {
         val currentLocation = closestAnchor()
+
         if (currentLocation.equals(null)) {
             Toast.makeText(context, "Please point me to nearest anchor", Toast.LENGTH_SHORT).show()
             return
