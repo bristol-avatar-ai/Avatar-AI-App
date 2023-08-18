@@ -60,7 +60,7 @@ public final class Model {
         model = AdaptedModel.createModel(context, modelPath, options);
         zipFile = createZipFile(model.getData());
         ImageProcessor.Builder imageProcessorBuilder = new ImageProcessor.Builder()
-                .add(new ResizeOp(224, 224, ResizeMethod.NEAREST_NEIGHBOR))
+                .add(new ResizeOp(300, 300, ResizeMethod.NEAREST_NEIGHBOR))
                 .add(new NormalizeOp(new float[] {0.0f}, new float[] {255.0f}))
                 .add(new QuantizeOp(0f, 0.003921569f))
                 .add(new CastOp(DataType.UINT8));

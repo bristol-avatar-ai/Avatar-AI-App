@@ -4,6 +4,7 @@ import android.app.Application
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.ImageFormat
+import android.graphics.Matrix
 import android.graphics.Rect
 import android.graphics.YuvImage
 import android.media.Image
@@ -143,9 +144,14 @@ class ImageRecognitionViewModel(
         if (frame?.camera?.trackingState == TrackingState.TRACKING) {
             return try {
                 val image = frame.frame.acquireCameraImage()
-                val bitmap = yuv420ToBitmap(image)
+                val originalBitmap = yuv420ToBitmap(image)
                 image.close()
-                val result = classifier.getExhibitName(bitmap)
+
+                //TODO: Ensure that this works regardless of phone orientation
+                //Rotate bitmap
+                val rotatedBitmap = rotateBitmap(originalBitmap, 90f)
+
+                val result = classifier.getExhibitName(rotatedBitmap)
                 Log.i(TAG, "classifyImage: result: $result")
                 result
             } catch (e: Exception) {
@@ -156,6 +162,15 @@ class ImageRecognitionViewModel(
             Log.w(TAG, "classifyImage: invalid frame")
             return null
         }
+    }
+
+    /**
+     * Function to rotate bitmap images
+     */
+    private fun rotateBitmap(source: Bitmap, angle: Float): Bitmap {
+        val matrix = Matrix()
+        matrix.postRotate(angle)
+        return Bitmap.createBitmap(source, 0, 0, source.width, source.height, matrix, true)
     }
 
     /**
