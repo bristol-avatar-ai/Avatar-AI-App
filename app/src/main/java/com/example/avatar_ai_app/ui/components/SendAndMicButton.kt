@@ -1,8 +1,10 @@
 package com.example.avatar_ai_app.ui.components
 
 import android.Manifest
+import android.util.Log
 import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.GestureCancellationException
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -60,18 +62,24 @@ fun SendAndMicButton(
                             try {
                                 if (permissionsState || isTextInputMode) {
                                     onPress()
+                                    Log.d("SendButton","Button pressed")
                                 } else {
                                     permissionLauncher.launch(
                                         Manifest.permission.RECORD_AUDIO
                                     )
                                 }
                                 pressed.value = true
-                                awaitRelease()
+                                try{
+                                    awaitRelease()
+                                } catch (e: GestureCancellationException) {
+                                    Log.e("SendButton", "Error - gesture cancelled")
+                                }
                             } finally {
                                 if (permissionsState || isTextInputMode) {
                                     onRelease()
                                 }
                                 pressed.value = false
+                                Log.d("SendButton","Released")
                             }
                         }
                     }

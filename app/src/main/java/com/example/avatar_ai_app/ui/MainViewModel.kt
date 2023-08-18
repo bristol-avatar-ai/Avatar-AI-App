@@ -143,12 +143,11 @@ class MainViewModel(
                 Intent.RECOGNITION -> processRecognitionRequest()
                 else -> {}
             }
+        }
+        chatViewModel.destinationID.observe(lifecycleOwner) { destinationID ->
+            if (!destinationID.isNullOrEmpty()) {
+                arViewModel.loadDirections(destinationID)
 
-            chatViewModel.destinationID.observe(lifecycleOwner) { destinationID ->
-                if (!destinationID.isNullOrEmpty()) {
-                    arViewModel.loadDirections(destinationID)
-
-                }
             }
         }
     }
@@ -292,6 +291,7 @@ class MainViewModel(
                     recordingJob = viewModelScope.launch(Dispatchers.IO) {
                         delay(RECORDING_WAIT)
                         chatViewModel.startRecording()
+                        Log.d("SendButton", "Main viewModel - recording started")
                     }
                 }
             }
@@ -309,6 +309,7 @@ class MainViewModel(
                         updateTextFieldStringResId(R.string.send_message_hint)
                     }
                 } else {
+                    Log.d("SendButton", "Main viewModel - recording stopped")
                     chatViewModel.stopRecording()
                     // Reminder, controller stop is asynchronous, code after this should go in the call-back function.
                 }
@@ -402,7 +403,7 @@ class MainViewModel(
     /**
      * Wipes the chat history and deletes all messages from the uiState
      */
-    fun clearChatHistory() {
+    private fun clearChatHistory() {
         chatViewModel.clearChatHistory()
         uiState.value.clearMessages()
         dismissAlertDialogue()
