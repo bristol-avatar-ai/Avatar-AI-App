@@ -288,11 +288,8 @@ class ChatViewModel(
      * Stops audio recording.
      */
     override fun stopRecording() {
-        if (_status.value == Status.RECORDING) {
-            audioRecorder.stop()
-        } else {
-            Log.w(TAG, "stopRecording: cannot stop recording when status is ${_status.value}")
-        }
+        audioRecorder.stop()
+        Log.i(TAG, "stopRecording: called")
     }
 
     /**
