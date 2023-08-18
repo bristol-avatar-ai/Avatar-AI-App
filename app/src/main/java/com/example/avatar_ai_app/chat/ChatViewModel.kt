@@ -276,7 +276,6 @@ class ChatViewModel(
                 audioRecorder.start()
                 _status.postValue(Status.RECORDING)
                 Log.i(TAG, "startRecording: Status: RECORDING")
-                Log.d("SendButton", "Chat viewModel - Recording started")
             } catch (_: Exception) {
                 errorListener.onError(ErrorType.RECORDING)
             }
