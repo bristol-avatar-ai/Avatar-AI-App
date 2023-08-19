@@ -1,27 +1,34 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <string name="app_name">Avatar AI App</string>
-    <string name="summon_avatar_button">Summon Avatar</string>
-    <string name="place_avatar_button">Place Avatar</string>
-    <string name="avatar_button">Summon Avatar</string>
-    <string name="mic_button">Mic</string>
-    <string name="menu_option_1">Option 1</string>
-    <string name="menu_option_2">Option 2</string>
-    <string name="listening_text">Listening</string>
-    <string name="empty_string"/>
-    <string name="camera_not_enabled">To use AR features please enable Camera Permissions</string>
+    <!--Button text-->
+    <string name="languageButton">Language</string>
+    <string name="clearMessagesButton">Clear Messages</string>
+    <string name="helpButton">Help</string>
 
+    <!--ChatBox text-->
     <string name="send_message_hint">Ask me anything</string>
-    <string name="action_button_description">Button for sending or recording messages.</string>
-    <string name="example_message">This is an example message.</string>
-    <string name="action_reset_chat">Reset chat button.</string>
-    <string name="loading_message">Loading</string>
-    <string name="audio_permission_dialog_title">Permissions Required</string>
-    <string name="audio_permission_dialog_message">Please allow audio recording permissions to access Speech to Text functionality.</string>
-    <string name="audio_permission_dialog_button">OK</string>
     <string name="recording_message" tools:ignore="TypographyEllipsis">Recording...</string>
     <string name="processing_message" tools:ignore="TypographyEllipsis">Processing...</string>
+
+    <!--Loading screen-->
+    <string name="loading_message">Loading</string>
+
+    <!--Permissions-->
+    <string name="permission_required">Permission required</string>
+    <string name="grant_permission">Grant Permission</string>
+    <string name="permission_ok">OK</string>
+    <string name="camera_permissions_declined">It seems you permanently declined Camera permission. You can go the app settings to grant it.</string>
+    <string name="audio_permissions_declined">It seems you permanently declined Audio Recording permission. You can go the app settings to grant it.</string>
+    <string name="camera_permissions_rationale">This app needs access to your camera for Augmented Reality Navigation and visual recognition of points of interest.</string>
+    <string name="audio_permissions_rationale">This app needs to record audio so that you can ask questions with your voice.</string>
+    <string name="camera_permissions_declined_screen">AR features need access to your camera</string>
+    <string name="grant_camera_access_button">Grant camera access</string>
+    <!--Alert-->
     <string name="clear_chat_message">Clear all messages?</string>
     <string name="not_implemented_message">This feature is not yet implemented</string>
+
+
+    <string name="app_name">Avatar AI App</string>
+    <string name="empty_string" />
 
     <!--Chat Response Messages-->
     <string name="greeting_message">Hello!</string>

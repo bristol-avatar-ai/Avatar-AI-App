@@ -1,4 +1,4 @@
-package com.example.avatar_ai_app.ui.components
+package com.example.avatar_ai_app.ui.components.topbar
 
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState

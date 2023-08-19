@@ -187,6 +187,11 @@ class ChatViewModel(
         initCount = 0
         setTextToSpeechLanguage()
         chatTranslator.setLanguage(language.mlKitLanguage)
+
+        val resources = context.resources
+        val configuration = resources.configuration
+        configuration.setLocale(language.locale)
+        resources.updateConfiguration(configuration, resources.displayMetrics)
     }
 
     /**

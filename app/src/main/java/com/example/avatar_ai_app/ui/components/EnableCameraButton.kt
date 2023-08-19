@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.avatar_ai_app.R
@@ -44,14 +45,14 @@ fun EnableCameraButton(
         Text(
             modifier = Modifier
                 .padding(16.dp),
-            text = "AR features need access to your camera"
+            text = stringResource(id = R.string.camera_permissions_declined_screen)
         )
         Button(
             onClick = { onClick() },
             colors = ButtonDefaults.buttonColors(containerColor = buttonColor),
             interactionSource = interactionSource
         ) {
-            Text(text = "Grant camera access")
+            Text(text = stringResource(id = R.string.grant_camera_access_button))
         }
     }
 }

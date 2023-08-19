@@ -48,12 +48,13 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.avatar_ai_app.ar.ArViewModel
 import com.example.avatar_ai_app.ui.components.AlertScreen
-import com.example.avatar_ai_app.ui.components.ChatBox
+import com.example.avatar_ai_app.ui.components.chatBox.ChatBox
 import com.example.avatar_ai_app.ui.components.EnableCameraButton
-import com.example.avatar_ai_app.ui.components.LanguageSelectionMenu
+import com.example.avatar_ai_app.ui.components.languageMenu.LanguageSelectionMenu
 import com.example.avatar_ai_app.ui.components.LoadingScreen
-import com.example.avatar_ai_app.ui.components.SendAndMicButton
-import com.example.avatar_ai_app.ui.components.UserInput
+import com.example.avatar_ai_app.ui.components.chatBox.SendAndMicButton
+import com.example.avatar_ai_app.ui.components.chatBox.UserInput
+import com.example.avatar_ai_app.ui.components.topbar.TopBar
 import com.example.avatar_ai_app.ui.theme.ARAppTheme
 import io.github.sceneview.ar.ARScene
 
@@ -100,10 +101,7 @@ fun MainScreen(
         ) == PackageManager.PERMISSION_GRANTED
 
         mainViewModel.updatePermissionStatus(Manifest.permission.CAMERA, cameraPermissionStatus)
-        mainViewModel.updatePermissionStatus(
-            Manifest.permission.RECORD_AUDIO,
-            recordingPermissionStatus
-        )
+        mainViewModel.updatePermissionStatus(Manifest.permission.RECORD_AUDIO, recordingPermissionStatus)
     }
 
     Box(

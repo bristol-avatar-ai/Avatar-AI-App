@@ -1,4 +1,4 @@
-package com.example.avatar_ai_app.ui.components
+package com.example.avatar_ai_app.ui.components.languageMenu
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures

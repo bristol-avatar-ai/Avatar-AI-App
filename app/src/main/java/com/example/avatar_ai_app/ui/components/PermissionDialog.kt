@@ -9,9 +9,11 @@ import androidx.compose.material3.Divider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.example.avatar_ai_app.R
 
 @Composable
 fun PermissionDialog(
@@ -31,16 +33,16 @@ fun PermissionDialog(
                 Divider()
                 Text(
                     text = if(isPermanentlyDeclined) {
-                        "Grant permission"
+                        stringResource(id = R.string.grant_permission)
                     } else {
-                        "Ok"
+                        stringResource(id = R.string.permission_ok)
                     },
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center,
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable {
-                            if(isPermanentlyDeclined) {
+                            if (isPermanentlyDeclined) {
                                 onGoToAppSettingsClick()
                             } else {
                                 onEnableClick()
@@ -51,11 +53,11 @@ fun PermissionDialog(
             }
         },
         title = {
-            Text(text = "Permission required")
+            Text(text = stringResource(id = R.string.permission_required))
         },
         text = {
             Text(
-                text = permissionTextProvider.getDescription(isPermanentlyDeclined)
+                text = stringResource(id = permissionTextProvider.getDescription(isPermanentlyDeclined))
             )
         },
         modifier = modifier
@@ -63,29 +65,18 @@ fun PermissionDialog(
 }
 
 interface PermissionTextProvider {
-    fun getDescription(isPermanentlyDeclined: Boolean): String
+    fun getDescription(isPermanentlyDeclined: Boolean): Int
 }
-
 class CameraPermissionRequestProvider: PermissionTextProvider {
-    override fun getDescription(isPermanentlyDeclined: Boolean): String {
-        return if (isPermanentlyDeclined) {
-          "It seems you permanently declined Camera permission. " +
-                  "You can go the the app settings to grant it."
-        } else {
-            "This app needs access to your camera for Augmented Reality Navigation " +
-                     "and visual recognition of points of interest."
-        }
+    override fun getDescription(isPermanentlyDeclined: Boolean): Int{
+        return if (isPermanentlyDeclined) R.string.camera_permissions_declined
+         else R.string.camera_permissions_rationale
     }
 }
 
 class RecordAudioPermissionRequestProvider: PermissionTextProvider {
-    override fun getDescription(isPermanentlyDeclined: Boolean): String {
-        return if (isPermanentlyDeclined) {
-            "It seems you permanently declined Audio Recording permission. " +
-                    "You can go the the app settings to grant it."
-        } else {
-            "This app needs to record audio so that you can ask questions with " +
-                    "your voice."
-        }
+    override fun getDescription(isPermanentlyDeclined: Boolean): Int {
+        return if (isPermanentlyDeclined) R.string.audio_permissions_declined
+        else R.string.audio_permissions_rationale
     }
 }
