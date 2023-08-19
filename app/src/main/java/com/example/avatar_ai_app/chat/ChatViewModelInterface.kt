@@ -18,7 +18,7 @@ interface ChatViewModelInterface {
      *
      * @constructor Creates an instance of [Status].
      */
-    enum class Status { INIT, READY, RECORDING, PROCESSING }
+    enum class Status { LOADING, READY, RECORDING, PROCESSING }
 
     // Current ChatViewModel status.
     val status: LiveData<Status>

@@ -7,6 +7,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.example.avatar_ai_app.ar.Graph
+import com.example.avatar_ai_app.data.DatabaseViewModelInterface.Status
 import com.example.avatar_ai_cloud_storage.database.AppDatabase
 import com.example.avatar_ai_cloud_storage.database.entity.Anchor
 import com.example.avatar_ai_cloud_storage.database.entity.Feature
@@ -24,9 +25,8 @@ private const val TAG = "DatabaseViewModel"
 class DatabaseViewModel(application: Application) : AndroidViewModel(application),
     DatabaseViewModelInterface {
 
-    // LiveData indicating whether the database is ready.
-    private val _isReady = MutableLiveData<Boolean>()
-    override val isReady: LiveData<Boolean> get() = _isReady
+    private val _status = MutableLiveData<Status>()
+    override val status: LiveData<Status> get() = _status
 
     // Application context.
     private val context get() = getApplication<Application>().applicationContext
@@ -40,6 +40,18 @@ class DatabaseViewModel(application: Application) : AndroidViewModel(application
     private val tourFeatureDao get() = database?.tourFeatureDao()
 
     /*
+    * Post the current Status to the _status LiveData.
+     */
+    private fun postStatus(status: Status) {
+        _status.postValue(status)
+        if (status != Status.ERROR) {
+            Log.i(TAG, "status: $status")
+        } else {
+            Log.w(TAG, "status: $status")
+        }
+    }
+
+    /*
     * Reload the database on initialisation.
      */
     init {
@@ -47,23 +59,24 @@ class DatabaseViewModel(application: Application) : AndroidViewModel(application
     }
 
     /**
-     * Reloads the database instance and updates the [_isReady] LiveData.
+     * Reloads the database instance and updates the [status] LiveData.
      */
     override fun reload() {
-        _isReady.postValue(false)
+        postStatus(Status.LOADING)
         AppDatabase.close()
         database = null
 
         viewModelScope.launch(Dispatchers.IO) {
             // Load database.
             database = AppDatabase.getDatabase(context)
-            // Update _isReady.
-            _isReady.postValue(database != null)
-            if (database != null) {
-                Log.i(TAG, "reload: success")
-            } else {
-                Log.e(TAG, "reload: failed")
-            }
+            // Update status.
+            postStatus(
+                if (database != null) {
+                    Status.READY
+                } else {
+                    Status.ERROR
+                }
+            )
         }
     }
 
