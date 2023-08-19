@@ -69,7 +69,7 @@ class MainViewModel(
     val textState = mutableStateOf(TextFieldValue())
     var textFieldFocusState = mutableStateOf(false)
 
-    enum class AlertType{
+    enum class AlertType {
         CLEAR_CHAT,
         HELP
     }
@@ -77,7 +77,7 @@ class MainViewModel(
     init {
         chatViewModel.status.observe(lifecycleOwner) { status ->
             when (status) {
-                ChatViewModelInterface.Status.INIT -> {
+                ChatViewModelInterface.Status.LOADING, null -> {
                     setTextToSpeechReady(false)
                     isChatViewModelLoaded.value = false
                 }
@@ -101,18 +101,20 @@ class MainViewModel(
                     updateTextFieldStringResId(R.string.processing_message)
                     _isRecordingReady.value = false
                 }
-
-                else -> {}
             }
 
-            databaseViewModel.isReady.observe(lifecycleOwner) {
+            databaseViewModel.status.observe(lifecycleOwner) {
                 when (it) {
-                    true -> {
+                    DatabaseViewModelInterface.Status.LOADING -> {
+                        // TODO: Fill in
+                    }
+
+                    DatabaseViewModelInterface.Status.READY -> {
                         isDatabaseViewModelLoaded.value = true
                         setFeatureList()
                     }
 
-                    false -> {
+                    DatabaseViewModelInterface.Status.ERROR, null -> {
                         isDatabaseViewModelLoaded.value = false
                     }
                 }
@@ -263,15 +265,7 @@ class MainViewModel(
     }
 
     /**
-     * Update the user input mode in the uiState based on the textField focus
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-     *
->>>>>>> a8aac81 (Set arViewModel to receive destination ID from chatService)
-=======
-     *
->>>>>>> 3cd9260 (Set arViewModel to receive destination ID from chatService)
+     * Update the user input mode in the uiState based on the textField focus.
      */
     fun updateInputMode() {
         _uiState.update { currentState ->
@@ -374,7 +368,7 @@ class MainViewModel(
 
     private fun generateAlert(alertType: AlertType) {
         _uiState.update { currentState ->
-            when(alertType) {
+            when (alertType) {
                 AlertType.HELP -> {
                     currentState.copy(
                         alertIsShown = true,
@@ -382,6 +376,7 @@ class MainViewModel(
                         alertIntent = UiState.help
                     )
                 }
+
                 AlertType.CLEAR_CHAT -> {
                     currentState.copy(
                         alertIsShown = true,
@@ -393,8 +388,8 @@ class MainViewModel(
         }
     }
 
-    fun alertOnClick(){
-        when(uiState.value.alertIntent) {
+    fun alertOnClick() {
+        when (uiState.value.alertIntent) {
             UiState.clear -> clearChatHistory()
 
             UiState.help -> dismissAlertDialogue()
@@ -402,7 +397,7 @@ class MainViewModel(
     }
 
     fun dismissAlertDialogue() {
-        _uiState.update {currentState ->
+        _uiState.update { currentState ->
             currentState.copy(
                 alertIsShown = false
             )
@@ -428,7 +423,7 @@ class MainViewModel(
                 messagesAreShown = pan <= 0,
             )
         }
-        if(pan >0) dismissLanguageMenu()
+        if (pan > 0) dismissLanguageMenu()
     }
 
     fun initialiseArScene(arSceneView: ArSceneView) {

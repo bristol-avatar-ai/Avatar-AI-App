@@ -63,7 +63,7 @@ class ChatViewModel(
         )
 
     // Current ChatViewModel status.
-    private val _status = MutableLiveData(Status.INIT)
+    private val _status = MutableLiveData(Status.LOADING)
     override val status: LiveData<Status> get() = _status
 
     // Message history (newest messages are stored first).
@@ -101,6 +101,7 @@ class ChatViewModel(
      */
     override fun onCleared() {
         super.onCleared()
+        _status.postValue(Status.LOADING)
         _messages.value?.clear()
         chatService.reset()
         audioRecorder.release()
@@ -113,14 +114,21 @@ class ChatViewModel(
     }
 
     /*
+    * Post the current Status to the _status LiveData.
+     */
+    private fun postStatus(status: Status) {
+        _status.postValue(status)
+        Log.i(TAG, "status: $status")
+    }
+
+    /*
      * Increments the initialisation counter and
      * checks if all components are initialised.
      */
     private fun componentInitialised() {
         initCount++
         if (initCount >= TOTAL_INIT_COUNT) {
-            _status.postValue(Status.READY)
-            Log.i(TAG, "componentInitialised: Status: READY")
+            postStatus(Status.READY)
         }
     }
 
@@ -175,8 +183,7 @@ class ChatViewModel(
      */
     override fun setLanguage(language: Language) {
         this.language = language
-        _status.value = Status.INIT
-        Log.i(TAG, "setLanguage: Status: INIT")
+        postStatus(Status.LOADING)
         initCount = 0
         setTextToSpeechLanguage()
         chatTranslator.setLanguage(language.mlKitLanguage)
@@ -274,8 +281,7 @@ class ChatViewModel(
         if (_status.value == Status.READY) {
             try {
                 audioRecorder.start()
-                _status.postValue(Status.RECORDING)
-                Log.i(TAG, "startRecording: Status: RECORDING")
+                postStatus(Status.RECORDING)
             } catch (_: Exception) {
                 errorListener.onError(ErrorType.RECORDING)
             }
@@ -298,8 +304,7 @@ class ChatViewModel(
      * Transcribes the recording into text, generates a reply, then passes it to [newUserMessage].
      */
     override fun onRecordingCompleted() {
-        _status.postValue(Status.PROCESSING)
-        Log.i(TAG, "onRecordingCompleted: Status: PROCESSING")
+        postStatus(Status.PROCESSING)
 
         viewModelScope.launch(Dispatchers.IO) {
             val message = TranscriptionApi.transcribe(recordingFile, language.ibmModel)
@@ -312,8 +317,7 @@ class ChatViewModel(
             } else {
                 errorListener.onError(ErrorType.NETWORK)
             }
-            _status.postValue(Status.READY)
-            Log.i(TAG, "onRecordingCompleted: Status: READY")
+            postStatus(Status.READY)
         }
     }
 

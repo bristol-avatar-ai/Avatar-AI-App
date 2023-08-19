@@ -23,7 +23,7 @@ private const val MIN_LEVENSHTEIN_RATIO = 0.75
 class ChatService(private val context: Context) {
 
     // List of features; initialised empty.
-    var featureList = emptyList<Feature>()
+    var featureList: List<Feature>? = null
 
     // Current user intent.
     private val _intent = MutableLiveData<Intent>()
@@ -41,6 +41,10 @@ class ChatService(private val context: Context) {
      */
     fun getResponse(message: String): String {
         Log.i(TAG, "getResponse: $message")
+        if (featureList == null) {
+            Log.w(TAG, "getResponse: featureList has not been set")
+        }
+
         return when (parseIntent(message)) {
             Intent.GREETING -> context.getString(R.string.greeting_message)
             Intent.HELP -> context.getString(R.string.help_message)
@@ -87,7 +91,7 @@ class ChatService(private val context: Context) {
     * Parses the user's message to determine the requested feature.
      */
     private fun parseFeature(message: String): Feature? {
-        featureList.forEach {
+        featureList?.forEach {
             if (message.containsPhraseFuzzy(it.name, MIN_LEVENSHTEIN_RATIO)) {
                 Log.i(TAG, "parseFeature: $it.name")
                 return it
@@ -107,9 +111,9 @@ class ChatService(private val context: Context) {
     }
 
     /**
-     * Resets the service by clearing the feature list and resetting the request.
+     * Resets the service by resetting the feature list and request.
      */
     fun reset() {
-        featureList = emptyList()
+        featureList = null
     }
 }

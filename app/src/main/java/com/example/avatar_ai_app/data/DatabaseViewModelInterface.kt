@@ -2,6 +2,7 @@ package com.example.avatar_ai_app.data
 
 import androidx.lifecycle.LiveData
 import com.example.avatar_ai_app.ar.Graph
+import com.example.avatar_ai_app.chat.ChatViewModelInterface.Status
 import com.example.avatar_ai_app.ui.MainViewModel
 import com.example.avatar_ai_cloud_storage.database.entity.Anchor
 import com.example.avatar_ai_cloud_storage.database.entity.Feature
@@ -10,13 +11,21 @@ import com.example.avatar_ai_cloud_storage.database.entity.Feature
  * [DatabaseViewModelInterface] is the interface between [MainViewModel] and the
  * Database ViewModel, which handles all database-related functionality.
  *
- * [isReady] indicates if the database has been initialised.
+ * [status] indicates if the database is ready.
  */
 interface DatabaseViewModelInterface {
+
     /**
-     * Indicates if the database has been initialised.
+     * Enum class representing the different status states of [DatabaseViewModel].
+     *
+     * @constructor Creates an instance of [Status].
      */
-    val isReady: LiveData<Boolean>
+    enum class Status { LOADING, READY, ERROR }
+
+    /**
+     * Indicates if the database is ready.
+     */
+    val status: LiveData<Status>
 
     /**
      * Reload the database with the newest version on the server.
