@@ -35,11 +35,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.TextFieldValue
@@ -48,18 +50,19 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.avatar_ai_app.ar.ArViewModel
 import com.example.avatar_ai_app.ui.components.AlertScreen
-import com.example.avatar_ai_app.ui.components.chatBox.ChatBox
 import com.example.avatar_ai_app.ui.components.EnableCameraButton
-import com.example.avatar_ai_app.ui.components.languageMenu.LanguageSelectionMenu
 import com.example.avatar_ai_app.ui.components.LoadingScreen
+import com.example.avatar_ai_app.ui.components.chatBox.ChatBox
 import com.example.avatar_ai_app.ui.components.chatBox.SendAndMicButton
 import com.example.avatar_ai_app.ui.components.chatBox.UserInput
+import com.example.avatar_ai_app.ui.components.languageMenu.LanguageSelectionMenu
 import com.example.avatar_ai_app.ui.components.topbar.TopBar
 import com.example.avatar_ai_app.ui.theme.ARAppTheme
 import io.github.sceneview.ar.ARScene
 
 private const val TAG = "MainScreen"
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun MainScreen(
     mainViewModel: MainViewModel = viewModel(),
@@ -73,6 +76,7 @@ fun MainScreen(
     val isChatLoaded by mainViewModel.isChatViewModelLoaded.collectAsState()
     val isDatabaseLoaded by mainViewModel.isDatabaseViewModelLoaded.collectAsState()
     val isLoading = !isChatLoaded || !isDatabaseLoaded
+    val keyboardController = LocalSoftwareKeyboardController.current
 
     val cameraPermissionResultLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
@@ -101,7 +105,10 @@ fun MainScreen(
         ) == PackageManager.PERMISSION_GRANTED
 
         mainViewModel.updatePermissionStatus(Manifest.permission.CAMERA, cameraPermissionStatus)
-        mainViewModel.updatePermissionStatus(Manifest.permission.RECORD_AUDIO, recordingPermissionStatus)
+        mainViewModel.updatePermissionStatus(
+            Manifest.permission.RECORD_AUDIO,
+            recordingPermissionStatus
+        )
     }
 
     Box(
@@ -118,31 +125,18 @@ fun MainScreen(
         //This code block won't run until startup is complete
         if (startupComplete.value) {
             //If camera is enabled load the ArScene, otherwise load the camera enable button
-            when (isCameraEnabled) {
-                true -> {
-                    ARScene(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .navigationBarsPadding(),
-                        planeRenderer = false,
-                        onCreate = { arSceneView ->
-                            //mainViewModel.setGraph()
-                            mainViewModel.initialiseArScene(arSceneView)
-                            //mainViewModel.addModelToScene(ArViewModel.ModelType.AVATAR)
-                        },
-                    )
-
-                }
-
-                false -> {
-                    Box(Modifier.align(Alignment.Center)) {
-                        EnableCameraButton(
-                            onClick = {
-                                cameraPermissionResultLauncher.launch(Manifest.permission.CAMERA)
-                            }
-                        )
+            if (isCameraEnabled) {
+                ARScene(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .navigationBarsPadding(),
+                    planeRenderer = false,
+                    onCreate = { arSceneView ->
+                        mainViewModel.setGraph()
+                        mainViewModel.initialiseArScene(arSceneView)
+                        mainViewModel.addModelToScene(ArViewModel.ModelType.AVATAR)
                     }
-                }
+                )
             }
         }
 
@@ -167,13 +161,23 @@ fun MainScreen(
                             dragY = dragAmount
                         },
                         onDragEnd = {
-                            mainViewModel.handleSwipe(dragY)
+                            mainViewModel.handleSwipe(pan = dragY, keyboardController = keyboardController)
                         }
                     )
                 }
                 .focusRequester(focusRequester)
                 .focusable()
-        )
+        ) {
+            if (!isCameraEnabled) {
+                Box(Modifier.align(Alignment.Center)) {
+                    EnableCameraButton(
+                        onClick = {
+                            cameraPermissionResultLauncher.launch(Manifest.permission.CAMERA)
+                        }
+                    )
+                }
+            }
+        }
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
@@ -197,18 +201,20 @@ fun MainScreen(
             BottomBar(
                 mainViewModel = mainViewModel,
                 uiState = uiState,
-                isRecordingEnabled = isRecordingEnabled
+                isRecordingEnabled = isRecordingEnabled,
+                //locale = currentLocale
             )
         }
         AnimatedVisibility(
             visible = uiState.isLanguageMenuShown,
-            enter = slideInVertically(initialOffsetY = {it}),
-            exit = slideOutVertically(targetOffsetY = {it}),
+            enter = slideInVertically(initialOffsetY = { it }),
+            exit = slideOutVertically(targetOffsetY = { it }),
             modifier = Modifier.align(Alignment.BottomCenter)
         ) {
             LanguageSelectionMenu(
                 currentLanguage = uiState.language,
-                mainViewModel = mainViewModel
+                mainViewModel = mainViewModel,
+                context = context
             )
         }
         if (isLoading) {
@@ -238,6 +244,7 @@ fun BottomBar(
     uiState: UiState,
     isRecordingEnabled: Boolean,
 ) {
+
     var textState by rememberSaveable(stateSaver = TextFieldValue.Saver) {
         mainViewModel.textState
     }

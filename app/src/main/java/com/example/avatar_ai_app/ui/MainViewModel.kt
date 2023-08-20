@@ -1,10 +1,13 @@
 package com.example.avatar_ai_app.ui
 
 import android.Manifest
+import android.content.Context
 import android.util.Log
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.platform.SoftwareKeyboardController
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModel
@@ -31,6 +34,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.util.Locale
 
 private const val TAG = "MainViewModel"
 private const val RECORDING_WAIT = 100L
@@ -324,13 +328,21 @@ class MainViewModel(
      * Sets the language for the application
      * @param language
      */
-    fun onLanguageSelectionResult(language: Language) {
+    fun onLanguageSelectionResult(context: Context, language: Language) {
         chatViewModel.setLanguage(language)
         _uiState.update { currentState ->
             currentState.copy(
                 language = language
             )
         }
+        updateLocale(context, language.locale)
+    }
+
+    private fun updateLocale(context: Context, locale: Locale) {
+        val resources = context.resources
+        val config = resources.configuration
+        config.setLocale(locale)
+        resources.updateConfiguration(config, resources.displayMetrics)
     }
 
     /**
@@ -417,13 +429,17 @@ class MainViewModel(
      * Updates the ui based on swipe inputs
      * @param pan distance moved across the Y axis
      */
-    fun handleSwipe(pan: Float) {
+    @OptIn(ExperimentalComposeUiApi::class)
+    fun handleSwipe(pan: Float, keyboardController: SoftwareKeyboardController?) {
         _uiState.update { currentState ->
             currentState.copy(
                 messagesAreShown = pan <= 0,
             )
         }
-        if (pan > 0) dismissLanguageMenu()
+        if(pan >0) {
+            dismissLanguageMenu()
+            keyboardController?.hide()
+        }
     }
 
     fun initialiseArScene(arSceneView: ArSceneView) {
