@@ -75,7 +75,8 @@ fun MainScreen(
     val isRecordingEnabled by mainViewModel.isRecordingEnabled.collectAsState()
     val isChatLoaded by mainViewModel.isChatViewModelLoaded.collectAsState()
     val isDatabaseLoaded by mainViewModel.isDatabaseViewModelLoaded.collectAsState()
-    val isLoading = !isChatLoaded || !isDatabaseLoaded
+    val isImageRecognitionLoaded by mainViewModel.isImageViewModelLoaded.collectAsState()
+    val isLoading = !isChatLoaded || !isDatabaseLoaded || !isImageRecognitionLoaded
     val keyboardController = LocalSoftwareKeyboardController.current
 
     val cameraPermissionResultLauncher = rememberLauncherForActivityResult(
@@ -132,9 +133,7 @@ fun MainScreen(
                         .navigationBarsPadding(),
                     planeRenderer = false,
                     onCreate = { arSceneView ->
-                        mainViewModel.setGraph()
                         mainViewModel.initialiseArScene(arSceneView)
-                        mainViewModel.addModelToScene(ArViewModel.ModelType.AVATAR)
                     }
                 )
             }
@@ -161,7 +160,10 @@ fun MainScreen(
                             dragY = dragAmount
                         },
                         onDragEnd = {
-                            mainViewModel.handleSwipe(pan = dragY, keyboardController = keyboardController)
+                            mainViewModel.handleSwipe(
+                                pan = dragY,
+                                keyboardController = keyboardController
+                            )
                         }
                     )
                 }
