@@ -1,4 +1,4 @@
-package com.example.avatar_ai_app.ui
+package com.example.avatar_ai_app.ui.components.topbar
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -15,9 +15,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.avatar_ai_app.R
-import com.example.avatar_ai_app.ui.components.BottomShadow
-import com.example.avatar_ai_app.ui.components.MenuButton
-import com.example.avatar_ai_app.ui.components.SettingsMenu
 import com.example.avatar_ai_app.ui.theme.ARAppTheme
 
 /**

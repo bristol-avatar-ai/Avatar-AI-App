@@ -1,5 +1,6 @@
-package com.example.avatar_ai_app.ui.components
+package com.example.avatar_ai_app.ui.components.languageMenu
 
+import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -38,7 +39,8 @@ import com.example.avatar_ai_app.ui.theme.spacing
 @Composable
 fun LanguageSelectionMenu(
     currentLanguage: Language,
-    mainViewModel: MainViewModel
+    mainViewModel: MainViewModel,
+    context: Context
 ) {
 
     val scrollState = rememberLazyListState()
@@ -78,7 +80,7 @@ fun LanguageSelectionMenu(
                                     R.drawable.radio_button_checked
                                 } else R.drawable.radio_button_unchecked,
                                 languageString = language.string,
-                                onClick = { mainViewModel.onLanguageSelectionResult(language) }
+                                onClick = { mainViewModel.onLanguageSelectionResult(context, language) }
                                 )
                         }
                     }

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!--Button text-->
+    <string name="languageButton">Langue</string>
+    <string name="clearMessagesButton">Effacer les messages</string>
+    <string name="helpButton">Aide</string>
+
+    <!--ChatBox text-->
+    <string name="send_message_hint">Demande-moi n\'importe quoi</string>
+    <string name="recording_message" tools:ignore="TypographyEllipsis">Enregistrement...</string>
+    <string name="processing_message" tools:ignore="TypographyEllipsis">Traitement...</string>
+
+    <!--Loading screen-->
+    <string name="loading_message">Chargement</string>
+
+    <!--Permissions-->
+    <string name="permission_required">Autorisation requise</string>
+    <string name="grant_permission">Donner la permission</string>
+    <string name="permission_ok">OK</string>
+    <string name="camera_permissions_declined">Il semble que vous ayez définitivement refusé l\'autorisation de l\'appareil photo. Vous pouvez accéder aux paramètres de l\'application pour l\'accorder.</string>
+    <string name="audio_permissions_declined">Il semble que vous ayez définitivement refusé l\'autorisation d\'enregistrement audio. Vous pouvez accéder aux paramètres de l\'application pour l\'accorder.</string>
+    <string name="camera_permissions_rationale">Cette application a besoin d\'accéder à votre caméra pour la navigation en réalité augmentée et la reconnaissance visuelle des points d\'intérêt.</string>
+    <string name="audio_permissions_rationale">Cette application doit enregistrer de l\'audio pour que vous puissiez poser des questions avec votre voix.</string>
+    <string name="camera_permissions_declined_screen">Les fonctionnalités AR doivent accéder à votre caméra</string>
+    <string name="grant_camera_access_button">Autoriser l\'accès à la caméra</string>
+    <!--Alert-->
+    <string name="clear_chat_message">Effacer tous les messages?</string>
+    <string name="not_implemented_message">Cette fonctionnalité n\'est pas encore implémentée</string>
+    <string name="confirm_button">Confirmer</string>
+    <string name="go_back_button">Retourner</string>
+</resources>

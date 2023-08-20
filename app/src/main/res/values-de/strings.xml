@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!--Button text-->
+    <string name="languageButton">Sprache</string>
+    <string name="clearMessagesButton">Klare Botschaften</string>
+    <string name="helpButton">Helfen</string>
+
+    <!--ChatBox text-->
+    <string name="send_message_hint">Frag mich was</string>
+    <string name="recording_message" tools:ignore="TypographyEllipsis">Aufzeichnung...</string>
+    <string name="processing_message" tools:ignore="TypographyEllipsis">Wird bearbeitet...</string>
+
+    <!--Loading screen-->
+    <string name="loading_message">Wird geladen</string>
+
+    <!--Permissions-->
+    <string name="permission_required">Erlaubnis erforderlich</string>
+    <string name="grant_permission">Erlaubnis erteilen</string>
+    <string name="permission_ok">OK</string>
+    <string name="camera_permissions_declined">Anscheinend haben Sie die Kameraerlaubnis dauerhaft verweigert. Sie können die App-Einstellungen aufrufen, um es zu gewähren.</string>
+    <string name="audio_permissions_declined">Anscheinend haben Sie die Berechtigung zur Audioaufnahme dauerhaft verweigert. Sie können die App-Einstellungen aufrufen, um es zu gewähren.</string>
+    <string name="camera_permissions_rationale">Diese App benötigt Zugriff auf Ihre Kamera für die Augmented-Reality-Navigation und die visuelle Erkennung von Sonderzielen.</string>
+    <string name="audio_permissions_rationale">Diese App muss Audio aufzeichnen, damit Sie mit Ihrer Stimme Fragen stellen können.</string>
+    <string name="camera_permissions_declined_screen">AR-Funktionen benötigen Zugriff auf Ihre Kamera</string>
+    <string name="grant_camera_access_button">Kamerazugriff gewähren</string>
+    <!--Alert-->
+    <string name="clear_chat_message">Alle Nachrichten löschen?</string>
+    <string name="not_implemented_message">Diese Funktion ist noch nicht implementiert</string>
+    <string name="confirm_button">Bestätigen</string>
+    <string name="go_back_button">Geh zurück</string>
+</resources>

@@ -1,10 +1,13 @@
 package com.example.avatar_ai_app.ui
 
 import android.Manifest
+import android.content.Context
 import android.util.Log
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.platform.SoftwareKeyboardController
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModel
@@ -21,7 +24,6 @@ import com.example.avatar_ai_app.data.DatabaseViewModel
 import com.example.avatar_ai_app.data.DatabaseViewModelInterface
 import com.example.avatar_ai_app.imagerecognition.ImageRecognitionViewModel
 import com.example.avatar_ai_app.language.Language
-import com.example.avatar_ai_app.shared.MessageType
 import io.github.sceneview.ar.ArSceneView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -31,6 +33,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.util.Locale
 
 private const val TAG = "MainViewModel"
 private const val RECORDING_WAIT = 100L
@@ -40,7 +43,7 @@ class MainViewModel(
     private val databaseViewModel: DatabaseViewModelInterface,
     private val arViewModel: ArViewModelInterface,
     private val imageViewModel: ImageRecognitionViewModel,
-    lifecycleOwner: LifecycleOwner
+    lifecycleOwner: LifecycleOwner,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(UiState())
@@ -51,6 +54,7 @@ class MainViewModel(
     private var recordingJob: Job? = null
     val isChatViewModelLoaded = MutableStateFlow(false)
     val isDatabaseViewModelLoaded = MutableStateFlow(false)
+    val isImageViewModelLoaded = MutableStateFlow(false)
 
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
 
@@ -81,7 +85,6 @@ class MainViewModel(
                     setTextToSpeechReady(false)
                     isChatViewModelLoaded.value = false
                 }
-
                 ChatViewModelInterface.Status.READY -> {
                     setTextToSpeechReady(true)
                     setRecordingState(UiState.ready)
@@ -89,13 +92,11 @@ class MainViewModel(
                     _isRecordingReady.value = true
                     isChatViewModelLoaded.value = true
                 }
-
                 ChatViewModelInterface.Status.RECORDING -> {
                     setRecordingState(UiState.recording)
                     updateTextFieldStringResId(R.string.recording_message)
                     _isRecordingReady.value = false
                 }
-
                 ChatViewModelInterface.Status.PROCESSING -> {
                     setRecordingState(UiState.processing)
                     updateTextFieldStringResId(R.string.processing_message)
@@ -106,14 +107,12 @@ class MainViewModel(
             databaseViewModel.status.observe(lifecycleOwner) {
                 when (it) {
                     DatabaseViewModelInterface.Status.LOADING -> {
-                        // TODO: Fill in
+                        isDatabaseViewModelLoaded.value = false
                     }
-
                     DatabaseViewModelInterface.Status.READY -> {
                         isDatabaseViewModelLoaded.value = true
                         setFeatureList()
                     }
-
                     DatabaseViewModelInterface.Status.ERROR, null -> {
                         isDatabaseViewModelLoaded.value = false
                     }
@@ -121,13 +120,18 @@ class MainViewModel(
             }
         }
 
-        // TODO: fill this out
         imageViewModel.status.observe(lifecycleOwner) {
             when (it) {
                 null -> {}
-                ImageRecognitionViewModel.Status.INIT -> {}
-                ImageRecognitionViewModel.Status.READY -> {}
-                ImageRecognitionViewModel.Status.ERROR -> {}
+                ImageRecognitionViewModel.Status.INIT -> {
+                    isImageViewModelLoaded.value = false
+                }
+                ImageRecognitionViewModel.Status.READY -> {
+                    isImageViewModelLoaded.value = true
+                }
+                ImageRecognitionViewModel.Status.ERROR -> {
+                    isImageViewModelLoaded.value = false
+                }
             }
         }
 
@@ -139,22 +143,20 @@ class MainViewModel(
             textState.value = TextFieldValue()
         }
 
-
-        // TODO: fill this out
         chatViewModel.intent.observe(lifecycleOwner) { intent ->
             when (intent) {
                 Intent.RECOGNITION -> processRecognitionRequest()
+                Intent.NAVIGATION -> processNavigationRequest()
                 else -> {}
-            }
-        }
-        chatViewModel.destinationID.observe(lifecycleOwner) { destinationID ->
-            if (!destinationID.isNullOrEmpty()) {
-                arViewModel.loadDirections(destinationID)
-
             }
         }
     }
 
+    private fun setFeatureList() {
+        viewModelScope.launch(Dispatchers.IO) {
+            chatViewModel.setFeatureList(databaseViewModel.getFeatures())
+        }
+    }
 
     private fun processRecognitionRequest() {
         viewModelScope.launch(Dispatchers.IO) {
@@ -167,29 +169,34 @@ class MainViewModel(
                     chatViewModel.newResponse("Sorry, I don't recognise this feature!")
                 }
             } else {
+                //TODO implement get nearest cloud anchor from ArViewModel
                 chatViewModel.newResponse("Sorry, I don't recognise this feature!")
             }
         }
     }
 
-    private fun setFeatureList() {
+    private fun processNavigationRequest() {
         viewModelScope.launch(Dispatchers.IO) {
-            chatViewModel.setFeatureList(databaseViewModel.getFeatures())
+            val destination = chatViewModel.destinationID.value
+            if (!destination.isNullOrEmpty()) {
+                arViewModel.loadDirections(destination)
+            }
         }
     }
 
-    //TODO rework this function so that it accounts for multiple messages from one sender, and empty messages
+    /**
+     * Adds newest messages to the uiState message list for display in the chatBox
+     * @param messages the list of ChatMessages
+     */
     private fun displayMessages(messages: List<ChatMessage>) {
 
-        if (messages.size < 2) return
+        val uiMessageList = uiState.value.messages
+        val diff = messages.size - uiMessageList.size
 
-        viewModelScope.launch {
-            if (messages[1].type == MessageType.USER) {
-                uiState.value.addMessage(messages[1])
-            }
-            if (messages[0].type == MessageType.RESPONSE) {
-                uiState.value.addMessage(messages[0])
-            }
+        for (i in diff - 1 downTo 0) {
+            val message = messages[i]
+            if (message.string.isNotEmpty())
+                uiState.value.addMessage(message)
         }
 
         _uiState.update { currentState ->
@@ -211,9 +218,11 @@ class MainViewModel(
         updatePermissionStatus(permission, isGranted)
     }
 
-    /*
-    * Updates the permission states stored in the live data variables
-    */
+    /**
+     * Updates the permission states stored in the live data variables
+     * @param permission the permission string being granted
+     * @param isGranted permission granted state
+     */
     fun updatePermissionStatus(permission: String, isGranted: Boolean) {
         when (permission) {
             Manifest.permission.CAMERA -> _isCameraEnabled.value = isGranted
@@ -324,13 +333,26 @@ class MainViewModel(
      * Sets the language for the application
      * @param language
      */
-    fun onLanguageSelectionResult(language: Language) {
+    fun onLanguageSelectionResult(context: Context, language: Language) {
         chatViewModel.setLanguage(language)
         _uiState.update { currentState ->
             currentState.copy(
                 language = language
             )
         }
+        updateLocale(context, language.locale)
+    }
+
+    /**
+     * Updates the locale for the given context
+     * @param context
+     * @param locale
+     */
+    private fun updateLocale(context: Context, locale: Locale) {
+        val resources = context.resources
+        val config = resources.configuration
+        config.setLocale(locale)
+        resources.updateConfiguration(config, resources.displayMetrics)
     }
 
     /**
@@ -417,13 +439,17 @@ class MainViewModel(
      * Updates the ui based on swipe inputs
      * @param pan distance moved across the Y axis
      */
-    fun handleSwipe(pan: Float) {
+    @OptIn(ExperimentalComposeUiApi::class)
+    fun handleSwipe(pan: Float, keyboardController: SoftwareKeyboardController?) {
         _uiState.update { currentState ->
             currentState.copy(
                 messagesAreShown = pan <= 0,
             )
         }
-        if (pan > 0) dismissLanguageMenu()
+        if (pan > 0) {
+            dismissLanguageMenu()
+            keyboardController?.hide()
+        }
     }
 
     fun initialiseArScene(arSceneView: ArSceneView) {
@@ -434,20 +460,11 @@ class MainViewModel(
         }
     }
 
-    fun addModelToScene(modelType: ArViewModel.ModelType) {
-        arViewModel.addModelToScene(modelType)
-    }
-
-    fun setGraph() {
-        viewModelScope.launch(Dispatchers.IO) {
-            arViewModel.setGraph(databaseViewModel.getGraph())
-        }
-    }
-
     fun settingsMenuButtonOnClick() {
         _uiState.update { currentState ->
             currentState.copy(
-                isSettingsMenuShown = true
+                isSettingsMenuShown = true,
+                isLanguageMenuShown = false
             )
         }
     }
@@ -467,7 +484,7 @@ class MainViewModelFactory(
     private val databaseViewModel: DatabaseViewModel,
     private val arViewModel: ArViewModel,
     private val imageRecognitionViewModel: ImageRecognitionViewModel,
-    private val lifecycleOwner: LifecycleOwner
+    private val lifecycleOwner: LifecycleOwner,
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(MainViewModel::class.java)) {
