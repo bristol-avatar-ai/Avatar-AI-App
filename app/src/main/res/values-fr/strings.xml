@@ -26,4 +26,6 @@
     <!--Alert-->
     <string name="clear_chat_message">Effacer tous les messages?</string>
     <string name="not_implemented_message">Cette fonctionnalité n\'est pas encore implémentée</string>
+    <string name="confirm_button">Confirmer</string>
+    <string name="go_back_button">Retourner</string>
 </resources>

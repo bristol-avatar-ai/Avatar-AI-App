@@ -24,14 +24,14 @@ fun AlertScreen(
             TextButton(
                 onClick = onConfirm
             ) {
-                Text(text = "Confirm")
+                Text(text = stringResource(id = R.string.confirm_button))
             }
         },
         dismissButton = {
             TextButton(
                 onClick = onDismiss
             ) {
-                Text(text = "Go back")
+                Text(text = stringResource(id = R.string.go_back_button))
             }
         }
     )

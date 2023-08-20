@@ -25,6 +25,8 @@
     <!--Alert-->
     <string name="clear_chat_message">Clear all messages?</string>
     <string name="not_implemented_message">This feature is not yet implemented</string>
+    <string name="confirm_button">Confirm</string>
+    <string name="go_back_button">Go back</string>
 
 
     <string name="app_name">Avatar AI App</string>

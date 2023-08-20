@@ -343,6 +343,11 @@ class MainViewModel(
         updateLocale(context, language.locale)
     }
 
+    /**
+     * Updates the locale for the given context
+     * @param context
+     * @param locale
+     */
     private fun updateLocale(context: Context, locale: Locale) {
         val resources = context.resources
         val config = resources.configuration
@@ -458,7 +463,8 @@ class MainViewModel(
     fun settingsMenuButtonOnClick() {
         _uiState.update { currentState ->
             currentState.copy(
-                isSettingsMenuShown = true
+                isSettingsMenuShown = true,
+                isLanguageMenuShown = false
             )
         }
     }

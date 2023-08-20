@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!--Button text-->
+    <string name="languageButton">语言</string>
+    <string name="clearMessagesButton">清除消息</string>
+    <string name="helpButton">帮助</string>
+
+    <!--ChatBox text-->
+    <string name="send_message_hint">有什么问题就问我</string>
+    <string name="recording_message" tools:ignore="TypographyEllipsis">记录...</string>
+    <string name="processing_message" tools:ignore="TypographyEllipsis">加工...</string>
+
+    <!--Loading screen-->
+    <string name="loading_message">加载中</string>
+
+    <!--Permissions-->
+    <string name="permission_required">需要许可</string>
+    <string name="grant_permission">授予权限</string>
+    <string name="permission_ok">好的</string>
+    <string name="camera_permissions_declined">您似乎永久拒绝了相机许可。 您可以进入应用程序设置来授予它。</string>
+    <string name="audio_permissions_declined">您似乎永久拒绝了录音许可。 您可以进入应用程序设置来授予它。</string>
+    <string name="camera_permissions_rationale">此应用程序需要访问您的相机以进行增强现实导航和兴趣点的视觉识别。</string>
+    <string name="audio_permissions_rationale">此应用程序需要录制音频，以便您可以用声音提问。</string>
+    <string name="camera_permissions_declined_screen">AR 功能需要访问您的相机</string>
+    <string name="grant_camera_access_button">授予相机访问权限</string>
+    <!--Alert-->
+    <string name="clear_chat_message">清除所有消息？</string>
+    <string name="not_implemented_message">该功能尚未实现</string>
+    <string name="confirm_button">确认</string>
+    <string name="go_back_button">返回</string>
+</resources>
