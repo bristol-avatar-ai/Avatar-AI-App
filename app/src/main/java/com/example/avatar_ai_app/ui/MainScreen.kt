@@ -48,7 +48,6 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.avatar_ai_app.ar.ArViewModel
 import com.example.avatar_ai_app.ui.components.AlertScreen
 import com.example.avatar_ai_app.ui.components.EnableCameraButton
 import com.example.avatar_ai_app.ui.components.LoadingScreen
@@ -248,7 +247,8 @@ fun BottomBar(
 ) {
 
     var textState by rememberSaveable(stateSaver = TextFieldValue.Saver) {
-        mainViewModel.textState
+        //mainViewModel.textState
+        mutableStateOf(TextFieldValue())
     }
 
     var textFieldFocusState by remember { mainViewModel.textFieldFocusState }
@@ -293,7 +293,10 @@ fun BottomBar(
                 }
             )
             SendAndMicButton(
-                onPress = { mainViewModel.sendButtonOnPress() },
+                onPress = {
+                    mainViewModel.sendButtonOnPress(textState.text)
+                    textState = TextFieldValue()
+                          },
                 onRelease = { mainViewModel.sendButtonOnRelease() },
                 permissionLauncher = audioPermissionResultLauncher,
                 icon = painterResource(mainViewModel.getMicOrSendIcon()),

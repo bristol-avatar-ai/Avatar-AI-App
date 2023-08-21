@@ -8,7 +8,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.SoftwareKeyboardController
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -42,8 +41,7 @@ class MainViewModel(
     private val chatViewModel: ChatViewModelInterface,
     private val databaseViewModel: DatabaseViewModelInterface,
     private val arViewModel: ArViewModelInterface,
-    private val imageViewModel: ImageRecognitionViewModel,
-    lifecycleOwner: LifecycleOwner,
+    private val imageViewModel: ImageRecognitionViewModel
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(UiState())
@@ -70,7 +68,7 @@ class MainViewModel(
     //Queue for storing permission strings
     val visiblePermissionDialogQueue = mutableStateListOf<String>()
     val focusRequester = FocusRequester()
-    val textState = mutableStateOf(TextFieldValue())
+    //val textState = mutableStateOf(TextFieldValue())
     var textFieldFocusState = mutableStateOf(false)
 
     enum class AlertType {
@@ -78,7 +76,13 @@ class MainViewModel(
         HELP
     }
 
-    init {
+    /**
+     * Initialises the observers for the different viewModels, so that
+     * mainViewModel can respond to their status.
+     * Called everytime the mainActivity is created.
+     * @param lifecycleOwner lifeCycle of the main activity
+     */
+    fun initialiseObservers(lifecycleOwner: LifecycleOwner) {
         chatViewModel.status.observe(lifecycleOwner) { status ->
             when (status) {
                 ChatViewModelInterface.Status.LOADING, null -> {
@@ -139,8 +143,6 @@ class MainViewModel(
             if (!it.isNullOrEmpty()) {
                 displayMessages(it)
             }
-            //clear the text field
-            textState.value = TextFieldValue()
         }
 
         chatViewModel.intent.observe(lifecycleOwner) { intent ->
@@ -189,7 +191,6 @@ class MainViewModel(
      * @param messages the list of ChatMessages
      */
     private fun displayMessages(messages: List<ChatMessage>) {
-
         val uiMessageList = uiState.value.messages
         val diff = messages.size - uiMessageList.size
 
@@ -290,11 +291,10 @@ class MainViewModel(
         }
     }
 
-    fun sendButtonOnPress() {
+    fun sendButtonOnPress(message: String) {
         when (uiState.value.inputMode) {
             UiState.text -> {
-                chatViewModel.newUserMessage(textState.value.text)
-                Log.d(TAG, "Message received: ${textState.value.text}")
+                chatViewModel.newUserMessage(message)
             }
 
             UiState.speech -> {
@@ -348,6 +348,7 @@ class MainViewModel(
      * @param context
      * @param locale
      */
+    @Suppress("DEPRECATION")
     private fun updateLocale(context: Context, locale: Locale) {
         val resources = context.resources
         val config = resources.configuration
@@ -455,6 +456,7 @@ class MainViewModel(
     fun initialiseArScene(arSceneView: ArSceneView) {
         viewModelScope.launch(Dispatchers.IO) {
             arViewModel.setGraph(databaseViewModel.getGraph())
+            //TODO arViewModel.setFeatures(databaseViewModel.getFeatures())
             arViewModel.initialiseArScene(arSceneView)
             arViewModel.addModelToScene(ArViewModel.ModelType.AVATAR)
         }
@@ -483,8 +485,7 @@ class MainViewModelFactory(
     private val chatViewModel: ChatViewModel,
     private val databaseViewModel: DatabaseViewModel,
     private val arViewModel: ArViewModel,
-    private val imageRecognitionViewModel: ImageRecognitionViewModel,
-    private val lifecycleOwner: LifecycleOwner,
+    private val imageRecognitionViewModel: ImageRecognitionViewModel
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(MainViewModel::class.java)) {
@@ -493,8 +494,7 @@ class MainViewModelFactory(
                 chatViewModel,
                 databaseViewModel,
                 arViewModel,
-                imageRecognitionViewModel,
-                lifecycleOwner
+                imageRecognitionViewModel
             ) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
