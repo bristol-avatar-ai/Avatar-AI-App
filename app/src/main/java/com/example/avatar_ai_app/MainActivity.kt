@@ -8,13 +8,9 @@ import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.app.AppCompatDelegate
-import androidx.appcompat.content.res.AppCompatResources
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
-import androidx.core.os.LocaleListCompat
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
@@ -94,11 +90,11 @@ class MainActivity : ComponentActivity(), ErrorListener {
                     chatViewModel,
                     databaseViewModel,
                     arViewModel,
-                    imageViewModel,
-                    this
+                    imageViewModel
                 )
             )[MainViewModel::class.java]
 
+        mainViewModel.initialiseObservers(this)
 
         setContent {
             ARAppTheme {
@@ -107,9 +103,7 @@ class MainActivity : ComponentActivity(), ErrorListener {
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     WindowCompat.setDecorFitsSystemWindows(window, false)
-                    MainScreen(
-                        mainViewModel
-                    )
+                    MainScreen(mainViewModel)
                     dialogQueue
                         .reversed()
                         .forEach { permission ->
@@ -136,12 +130,6 @@ class MainActivity : ComponentActivity(), ErrorListener {
                 }
             }
         }
-
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        arViewModel.onDestroy()
     }
 
     /**
