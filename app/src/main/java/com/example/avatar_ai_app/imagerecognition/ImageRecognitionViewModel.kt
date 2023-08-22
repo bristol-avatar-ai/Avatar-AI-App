@@ -1,13 +1,20 @@
 package com.example.avatar_ai_app.imagerecognition
 
 import android.app.Application
+import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.ImageFormat
+import android.graphics.Matrix
 import android.graphics.Rect
 import android.graphics.YuvImage
+import android.hardware.camera2.CameraCharacteristics
+import android.hardware.camera2.CameraManager
+import android.hardware.display.DisplayManager
 import android.media.Image
 import android.util.Log
+import android.view.Display
+import android.view.Surface
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -28,6 +35,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 import java.io.ByteArrayOutputStream
 import java.io.File
+import java.io.FileOutputStream
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 private const val TAG = "ImageRecognitionViewModel"
 
@@ -35,7 +46,7 @@ private const val TAG = "ImageRecognitionViewModel"
 private const val FILENAME = "model.tflite"
 
 private const val TIMEOUT = 10000L
-private const val DELAY = 500L
+private const val DELAY = 1000L
 private const val MIN_COUNT = 5
 
 /**
@@ -70,6 +81,7 @@ class ImageRecognitionViewModel(
     init {
         viewModelScope.launch(Dispatchers.IO) {
             reload()
+            context
         }
     }
 
@@ -113,16 +125,27 @@ class ImageRecognitionViewModel(
     }
 
     suspend fun recogniseFeature(): String? {
+        result = null
+        resultCounter = 0
+
         return try {
             withTimeout(TIMEOUT) {
                 while (resultCounter < MIN_COUNT) {
                     val lastResult = result
-                    result = classifyImage(arViewModel.arSceneView?.currentFrame)
-                    if (result != null && result == lastResult) {
-                        resultCounter++
-                    } else {
-                        resultCounter = 0
+                    val frame = arViewModel.arSceneView?.currentFrame
+
+                    val image = getCameraImage(frame)
+
+                    if (image != null)
+                    {
+                        result = classifyImage(image)
+                        if (result == lastResult) {
+                            resultCounter++
+                        } else {
+                            resultCounter = 0
+                        }
                     }
+
                     delay(DELAY)
                 }
             }
@@ -135,27 +158,87 @@ class ImageRecognitionViewModel(
     }
 
     /**
+     * Captures camera image from ArFrame
+     */
+    private fun getCameraImage(frame: ArFrame?): Image?{
+        if (frame?.camera?.trackingState == TrackingState.TRACKING)
+        {
+            return try {
+                frame.frame.acquireCameraImage()
+            }
+            catch (e: Exception)
+            {
+                Log.w(TAG, "getCameraImage: Couldn't capture frame")
+                null
+            }
+        }
+        return null
+    }
+
+    private fun getBackCameraOrientation(context: Context): Int {
+        val cameraManager = context.getSystemService(Context.CAMERA_SERVICE) as CameraManager
+        for (cameraId in cameraManager.cameraIdList) {
+            val characteristics = cameraManager.getCameraCharacteristics(cameraId)
+            val facing = characteristics.get(CameraCharacteristics.LENS_FACING)
+            if (facing == CameraCharacteristics.LENS_FACING_BACK) {
+                return characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION)!!
+            }
+        }
+        return 0
+    }
+
+    /**
      * Classify the provided bitmap image.
      *
      * @param bitmap The image that needs to be classified.
      */
-    private fun classifyImage(frame: ArFrame?): String? {
-        if (frame?.camera?.trackingState == TrackingState.TRACKING) {
-            return try {
-                val image = frame.frame.acquireCameraImage()
-                val bitmap = yuv420ToBitmap(image)
-                image.close()
-                val result = classifier.getExhibitName(bitmap)
-                Log.i(TAG, "classifyImage: result: $result")
-                result
-            } catch (e: Exception) {
-                Log.w(TAG, "classifyImage: camera image not available", e)
-                null
-            }
-        } else {
-            Log.w(TAG, "classifyImage: invalid frame")
-            return null
+    private fun classifyImage(image: Image): String? {
+        val originalBitmap = yuv420ToBitmap(image)
+        image.close()
+
+        val deviceOrientation = getDeviceRotation()
+        Log.i(TAG, "Device rotation is: " + deviceOrientation);
+        val cameraOrientation = getBackCameraOrientation(context)
+        Log.i(TAG, "Camera rotation is: " + cameraOrientation)
+        val rotationRequired = calculateRotation(cameraOrientation, deviceOrientation)
+        Log.i(TAG, "Rotation required is: " + rotationRequired)
+
+        //Rotate bitmap
+        val rotatedBitmap = rotateBitmap(originalBitmap, rotationRequired.toFloat())
+
+        val result = classifier.getExhibitName(rotatedBitmap)
+        Log.i(TAG, "classifyImage: result: $result")
+        return result
+
+    }
+
+    /**
+     * Function to rotate bitmap images
+     */
+    private fun rotateBitmap(source: Bitmap, angle: Float): Bitmap {
+        val matrix = Matrix()
+        matrix.postRotate(angle)
+        return Bitmap.createBitmap(source, 0, 0, source.width, source.height, matrix, true)
+    }
+
+    /**
+     * Function to get device rotation
+     */
+    private fun getDeviceRotation(): Int {
+        val displayManager = getApplication<Application>().getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
+        val display = displayManager.getDisplay(Display.DEFAULT_DISPLAY)
+
+        return when (display?.rotation) {
+            Surface.ROTATION_0 -> 0
+            Surface.ROTATION_90 -> 90
+            Surface.ROTATION_180 -> 180
+            Surface.ROTATION_270 -> 270
+            else -> 0
         }
+    }
+    private fun calculateRotation(cameraOrientation: Int, deviceOrientation: Int): Int {
+        val rotation = (cameraOrientation - deviceOrientation + 360) % 360
+        return rotation
     }
 
     /**
