@@ -62,19 +62,6 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
         Log.d("ArViewModel", "Initialise Done")
     }
 
-    override fun addModelToScene(modelType: ModelType) {
-        when (modelType) {
-            ModelType.AVATAR -> {
-                avatarModelNode = createModel(ModelType.AVATAR)
-                avatarModelNode.isVisible = true
-                arSceneView.addChild(avatarModelNode)
-            }
-
-            ModelType.CRYSTAL -> {
-            }
-        }
-    }
-
     private fun setIdList() {
         unresolvedIds = HashSet()
         graph.keys.forEach { id ->
@@ -89,7 +76,7 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
         when (modelType) {
             ModelType.AVATAR -> {
                 val model = avatarModel
-                modelNode = ModelNode(arSceneView.engine).apply {
+                modelNode = ModelNode(arSceneView.engine, null).apply {
                     viewModelScope.launch {
                         loadModelGlb(
                             context = context,
@@ -103,7 +90,7 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
 
             ModelType.CRYSTAL -> {
                 val model = crystalModel
-                modelNode = ModelNode(arSceneView.engine).apply {
+                modelNode = ModelNode(arSceneView.engine, null).apply {
                     viewModelScope.launch {
                         loadModelGlb(
                             context = context,
@@ -118,7 +105,6 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
                     isVisible = true
                 }
                 arSceneView.addChild(modelNode)
-//                arSceneView.selectedNode = modelNode
             }
         }
         return modelNode
@@ -133,6 +119,7 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
 
         // Iterate over all node keys
         for (anchorId in unresolvedIds) {
+
             val modelNode = createModel(ModelType.CRYSTAL)
 
             //need to check if this line is needed
@@ -150,7 +137,6 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
     }
 
     private fun resolveModel(modelNode: ModelNode, anchorId: String?) {
-        Log.d(TAG, "resolve model called $anchorId")
         if (anchorId != null) {
             modelNode.resolveCloudAnchor(anchorId) { anchor: Anchor, success: Boolean ->
                 Log.d(TAG, anchor.trackingState.toString())
@@ -159,9 +145,7 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
                     // TODO: Need to change back to false
                     Log.d(TAG, "Success")
                     Log.d(TAG, "AnchorId = $anchorId")
-                    //modelNode.isVisible = true
                     modelNode.isResolved = true
-                    //Log.d(TAG, "Cloud anchor state = ${modelNode.cloudAnchorState.name}")
 
                     unresolvedIds.remove(anchorId)
                     Log.d(TAG, "Unresolved anchors: $unresolvedIds")
@@ -190,7 +174,10 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
 
         for ((anchorId, anchorNode) in anchorMap) {
             val nodePose = anchorNode.anchor?.pose
-            if (nodePose != null && isInView(nodePose) && anchorNode.isResolved && !anchorNode.isSign) {
+            if (
+                nodePose != null && isInView(nodePose)
+                && anchorNode.isResolved && anchorNode.signName.isNullOrEmpty()
+            ) {
                 val distance = distanceFromAnchor(anchorNode)
                 if (distance < minDistance) {
                     minDistance = distance
@@ -378,38 +365,6 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
         Toast.makeText(context, "End of move avatar to next model", Toast.LENGTH_SHORT).show()
 
     }
-
-//    override fun loadDirections(destination: String) {
-//        val currentLocation = closestAnchor()
-//
-//        if (currentLocation.equals(null)) {
-//            Toast.makeText(context, "Please point me to nearest anchor", Toast.LENGTH_SHORT).show()
-//            return
-//        }
-//
-//        val (_, paths) = dijkstra(currentLocation!!)
-//        val path = paths[destination]
-//
-//        showPath(path)
-//        modelIndex = 0
-//    }
-//override fun loadDirections(destination: String) {
-//    CoroutineScope(Dispatchers.Main).launch {
-//        var currentLocation = closestAnchor()
-//
-//        while (currentLocation == null) {
-//            Toast.makeText(context, "Please point me to nearest anchor", Toast.LENGTH_SHORT).show()
-//            delay(2000) // Wait for 2 seconds before checking again
-//            currentLocation = closestAnchor()
-//        }
-//
-//        val (_, paths) = dijkstra(currentLocation)
-//        val path = paths[destination]
-//
-//        showPath(path)
-//        modelIndex = 0
-//    }
-//}
 
     override fun loadDirections(destination: String) {
         CoroutineScope(Dispatchers.IO).launch {
