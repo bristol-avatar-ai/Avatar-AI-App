@@ -136,6 +136,12 @@ class MainViewModel(
                 ImageRecognitionViewModel.Status.ERROR -> {
                     isImageViewModelLoaded.value = false
                 }
+
+                ImageRecognitionViewModel.Status.PROCESSING -> {
+                //TODO - prevent user from typing anything
+
+                }
+
             }
         }
 

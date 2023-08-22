@@ -46,7 +46,7 @@ private const val TAG = "ImageRecognitionViewModel"
 private const val FILENAME = "model.tflite"
 
 private const val TIMEOUT = 10000L
-private const val DELAY = 1000L
+private const val DELAY = 500L
 private const val MIN_COUNT = 5
 
 /**
@@ -60,7 +60,7 @@ class ImageRecognitionViewModel(
     private val errorListener: ErrorListener
 ) : AndroidViewModel(application) {
 
-    enum class Status { INIT, READY, ERROR }
+    enum class Status { INIT, READY, ERROR, PROCESSING}
 
     private val _status: MutableLiveData<Status?> = MutableLiveData(null)
     val status: LiveData<Status?> get() = _status
@@ -124,14 +124,22 @@ class ImageRecognitionViewModel(
         resultCounter = 0
     }
 
+    /**
+     * Function to recognise feature
+     * @return Nullable string
+     */
+
     suspend fun recogniseFeature(): String? {
+        updateStatus(Status.PROCESSING)
         result = null
         resultCounter = 0
 
+        val count =  hashMapOf<String?, Int>()
+
         return try {
             withTimeout(TIMEOUT) {
-                while (resultCounter < MIN_COUNT) {
-                    val lastResult = result
+                var maxValue = count.values.maxOrNull() ?: 0
+                while (maxValue < MIN_COUNT) {
                     val frame = arViewModel.arSceneView?.currentFrame
 
                     val image = getCameraImage(frame)
@@ -139,20 +147,22 @@ class ImageRecognitionViewModel(
                     if (image != null)
                     {
                         result = classifyImage(image)
-                        if (result == lastResult) {
-                            resultCounter++
-                        } else {
-                            resultCounter = 0
-                        }
+                        val value = count.getOrDefault(result, 0)
+                        count[result] = value + 1
+                        Log.i(TAG, "Count of " + result + " is " + count[result])
                     }
+
+                    maxValue = count.values.maxOrNull() ?: 0
 
                     delay(DELAY)
                 }
             }
             Log.i(TAG, "recogniseFeature: feature: $result")
-            result
+            updateStatus(Status.READY)
+            count.maxByOrNull {it.value}?.key
         } catch (e: TimeoutCancellationException) {
             Log.i(TAG, "recogniseFeature: not recognised before timeout")
+            updateStatus(Status.READY)
             null
         }
     }
