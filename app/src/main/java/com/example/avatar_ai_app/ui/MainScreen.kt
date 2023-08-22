@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
@@ -247,7 +248,6 @@ fun BottomBar(
 ) {
 
     var textState by rememberSaveable(stateSaver = TextFieldValue.Saver) {
-        //mainViewModel.textState
         mutableStateOf(TextFieldValue())
     }
 
@@ -266,44 +266,48 @@ fun BottomBar(
     val isRecordingReady by mainViewModel.isRecordingReady.collectAsState()
 
     ARAppTheme {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(color = MaterialTheme.colorScheme.surface),
-            verticalAlignment = Alignment.CenterVertically
+        Surface(
+            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
         ) {
-            Spacer(
-                Modifier.size(5.dp)
-            )
-            UserInput(
-                textFieldValue = textState,
-                onTextChanged = { textState = it },
-                placeHolderText = { Text(stringResource(uiState.textFieldStringResId)) },
-                colors = TextFieldDefaults.textFieldColors(
-                    containerColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent,
-                    focusedIndicatorColor = Color.LightGray,
-                ),
-                modifier = Modifier.weight(1f),
-                onTextFieldFocused = { focused: Boolean ->
-                    textFieldFocusState = focused
-                },
-                onFocusChanged = {
-                    mainViewModel.updateInputMode()
-                }
-            )
-            SendAndMicButton(
-                onPress = {
-                    mainViewModel.sendButtonOnPress(textState.text)
-                    textState = TextFieldValue()
-                          },
-                onRelease = { mainViewModel.sendButtonOnRelease() },
-                permissionLauncher = audioPermissionResultLauncher,
-                icon = painterResource(mainViewModel.getMicOrSendIcon()),
-                textFieldFocusState = textFieldFocusState,
-                recordingPermissionsEnabled = isRecordingEnabled,
-                isRecordingReady = isRecordingReady
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(color = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Spacer(
+                    Modifier.size(5.dp)
+                )
+                UserInput(
+                    textFieldValue = textState,
+                    onTextChanged = { textState = it },
+                    placeHolderText = { Text(stringResource(uiState.textFieldStringResId)) },
+                    colors = TextFieldDefaults.textFieldColors(
+                        containerColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                        focusedIndicatorColor = Color.LightGray,
+                    ),
+                    modifier = Modifier.weight(1f),
+                    onTextFieldFocused = { focused: Boolean ->
+                        textFieldFocusState = focused
+                    },
+                    onFocusChanged = {
+                        mainViewModel.updateInputMode()
+                    }
+                )
+                SendAndMicButton(
+                    onPress = {
+                        mainViewModel.sendButtonOnPress(textState.text)
+                        textState = TextFieldValue()
+                    },
+                    onRelease = { mainViewModel.sendButtonOnRelease() },
+                    permissionLauncher = audioPermissionResultLauncher,
+                    icon = painterResource(mainViewModel.getMicOrSendIcon()),
+                    textFieldFocusState = textFieldFocusState,
+                    recordingPermissionsEnabled = isRecordingEnabled,
+                    isRecordingReady = isRecordingReady
+                )
+            }
         }
     }
 }

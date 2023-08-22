@@ -190,8 +190,10 @@ class MainViewModel(
                 val feature = databaseViewModel.getFeature(featureName)
                 if (feature != null) {
                     chatViewModel.newResponse(feature.description)
+                    Log.i(TAG, "Feature description: ${feature.description}")
                 } else {
                     chatViewModel.newResponse("Sorry, I don't recognise this feature!")
+                    Log.i(TAG, "Feature is null")
                 }
             } else {
                 //TODO implement get nearest cloud anchor from ArViewModel
@@ -466,14 +468,24 @@ class MainViewModel(
      */
     @OptIn(ExperimentalComposeUiApi::class)
     fun handleSwipe(pan: Float, keyboardController: SoftwareKeyboardController?) {
+        if(!uiState.value.messagesAreShown && pan > 0) {
+            dismissLanguageMenu()
+            keyboardController?.hide()
+
+        } else {
+            _uiState.update { currentState ->
+                currentState.copy(
+                    messagesAreShown = pan <= 0,
+                )
+            }
+        }
+    }
+
+    private fun dismissOrShowMessages(pan: Float) {
         _uiState.update { currentState ->
             currentState.copy(
                 messagesAreShown = pan <= 0,
             )
-        }
-        if (pan > 0) {
-            dismissLanguageMenu()
-            keyboardController?.hide()
         }
     }
 

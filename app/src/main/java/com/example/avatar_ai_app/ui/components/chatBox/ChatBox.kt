@@ -48,13 +48,18 @@ fun ChatBox(
     val draggableState = rememberDraggableState(onDelta = {
         draggedHeight += with(density) { it.toDp() }
     })
-    val maxHeight = if(draggedHeight >= 200.dp) draggedHeight else 200.dp
+    val maxHeight = if (draggedHeight >= 200.dp) draggedHeight else 200.dp
 
     val interactionSource = remember { MutableInteractionSource() }
 
     val boxColor by rememberUpdatedState(
         if (interactionSource.collectIsDraggedAsState().value) MaterialTheme.colorScheme.inverseOnSurface
         else MaterialTheme.colorScheme.onSurface
+    )
+
+    val backGroundColor by rememberUpdatedState(
+        if (showMessages && messages.isNotEmpty()) MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
+        else MaterialTheme.colorScheme.surface
     )
 
     ARAppTheme {
@@ -76,7 +81,7 @@ fun ChatBox(
                     interactionSource = interactionSource,
                     reverseDirection = true,
                 )
-                .background(color = MaterialTheme.colorScheme.surface)
+                .background(backGroundColor)
                 .animateContentSize(
 
                 ),
@@ -96,7 +101,7 @@ fun ChatBox(
                         )
                 )
             }
-            if (showMessages) {
+            if (messages.isNotEmpty() && showMessages) {
                 LazyColumn(
                     modifier = Modifier
                         .heightIn(min = 0.dp, max = maxHeight)
@@ -108,8 +113,19 @@ fun ChatBox(
                 ) {
                     messages.forEach { message ->
                         when (message.type) {
-                            MessageType.USER -> item { Message(type = message.type, string = message.string) }
-                            MessageType.RESPONSE -> item { Message(type = message.type, string = message.string) }
+                            MessageType.USER -> item {
+                                Message(
+                                    type = message.type,
+                                    string = message.string
+                                )
+                            }
+
+                            MessageType.RESPONSE -> item {
+                                Message(
+                                    type = message.type,
+                                    string = message.string
+                                )
+                            }
                         }
                     }
                 }
