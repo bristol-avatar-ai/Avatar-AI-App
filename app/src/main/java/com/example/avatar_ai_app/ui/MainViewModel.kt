@@ -88,6 +88,7 @@ class MainViewModel(
                 ChatViewModelInterface.Status.LOADING, null -> {
                     setTextToSpeechReady(false)
                     isChatViewModelLoaded.value = false
+                    Log.i(TAG, "chatViewModel status: loading")
                 }
                 ChatViewModelInterface.Status.READY -> {
                     setTextToSpeechReady(true)
@@ -95,16 +96,19 @@ class MainViewModel(
                     updateTextFieldStringResId(R.string.send_message_hint)
                     _isRecordingReady.value = true
                     isChatViewModelLoaded.value = true
+                    Log.i(TAG, "chatViewModel status: ready")
                 }
                 ChatViewModelInterface.Status.RECORDING -> {
                     setRecordingState(UiState.recording)
                     updateTextFieldStringResId(R.string.recording_message)
                     _isRecordingReady.value = false
+                    Log.i(TAG, "chatViewModel status: recording")
                 }
                 ChatViewModelInterface.Status.PROCESSING -> {
                     setRecordingState(UiState.processing)
                     updateTextFieldStringResId(R.string.processing_message)
                     _isRecordingReady.value = false
+                    Log.i(TAG, "chatViewModel status: processing")
                 }
             }
 
@@ -112,13 +116,16 @@ class MainViewModel(
                 when (it) {
                     DatabaseViewModelInterface.Status.LOADING -> {
                         isDatabaseViewModelLoaded.value = false
+                        Log.i(TAG, "databaseViewModel status: loading")
                     }
                     DatabaseViewModelInterface.Status.READY -> {
                         isDatabaseViewModelLoaded.value = true
                         setFeatureList()
+                        Log.i(TAG, "databaseViewModel status: ready")
                     }
                     DatabaseViewModelInterface.Status.ERROR, null -> {
                         isDatabaseViewModelLoaded.value = false
+                        Log.i(TAG, "databaseViewModel status: error")
                     }
                 }
             }
@@ -129,12 +136,15 @@ class MainViewModel(
                 null -> {}
                 ImageRecognitionViewModel.Status.INIT -> {
                     isImageViewModelLoaded.value = false
+                    Log.i(TAG, "imageViewModel status: init")
                 }
                 ImageRecognitionViewModel.Status.READY -> {
                     isImageViewModelLoaded.value = true
+                    Log.i(TAG, "databaseViewModel status: ready")
                 }
                 ImageRecognitionViewModel.Status.ERROR -> {
                     isImageViewModelLoaded.value = false
+                    Log.i(TAG, "databaseViewModel status: error")
                 }
 
                 ImageRecognitionViewModel.Status.PROCESSING -> {
@@ -148,13 +158,20 @@ class MainViewModel(
         chatViewModel.messages.observe(lifecycleOwner) {
             if (!it.isNullOrEmpty()) {
                 displayMessages(it)
+                Log.i(TAG, "chatViewModel has messages")
             }
         }
 
         chatViewModel.intent.observe(lifecycleOwner) { intent ->
             when (intent) {
-                Intent.RECOGNITION -> processRecognitionRequest()
-                Intent.NAVIGATION -> processNavigationRequest()
+                Intent.RECOGNITION -> {
+                    processRecognitionRequest()
+                    Log.i(TAG, "chatViewModel intent: recognition")
+                }
+                Intent.NAVIGATION -> {
+                    processNavigationRequest()
+                    Log.i(TAG, "chatViewModel intent: navigation")
+                }
                 else -> {}
             }
         }
@@ -178,6 +195,7 @@ class MainViewModel(
                 }
             } else {
                 //TODO implement get nearest cloud anchor from ArViewModel
+                Log.i(TAG, "Feature not recognised")
                 chatViewModel.newResponse("Sorry, I don't recognise this feature!")
             }
         }
