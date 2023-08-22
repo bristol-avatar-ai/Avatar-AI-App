@@ -69,7 +69,7 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
         when (modelType) {
             ModelType.AVATAR -> {
                 avatarModelNode = createModel(ModelType.AVATAR)
-                avatarModelNode.isVisible = false
+                avatarModelNode.isVisible = true
                 arSceneView.addChild(avatarModelNode)
             }
 
@@ -152,16 +152,24 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
 
     private fun resolveModel(modelNode: ArModelNode, anchorId: String?) {
 
+        Log.d(TAG, "here")
+
         if (anchorId != null) {
+            Log.d(TAG, "here2")
+
             modelNode.resolveCloudAnchor(anchorId) { anchor: Anchor, success: Boolean ->
+                Log.d(TAG, "here3")
+
                 Log.d(TAG, anchor.trackingState.toString())
 
                 if (success) {
                     // TODO: Need to change back to false
-                    modelNode.isVisible = false
+                    Log.d(TAG, "Success")
+
+                    modelNode.isVisible = true
                 }
                 if(!success) {
-                    Log.d("ArViewModel", "Failure")
+                    Log.d(TAG, "Failure")
                 }
 
 
