@@ -11,7 +11,6 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.avatar_ai_app.data.avatarModel
 import com.example.avatar_ai_app.data.crystalModel
-import com.example.avatar_ai_app.ui.AvatarState
 import com.google.ar.core.Anchor
 import com.google.ar.core.Config
 import com.google.ar.core.Pose
@@ -20,12 +19,14 @@ import io.github.sceneview.ar.ArSceneView
 import io.github.sceneview.ar.node.ArModelNode
 import io.github.sceneview.ar.node.PlacementMode
 import io.github.sceneview.math.Rotation
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
-import okhttp3.internal.wait
 import kotlin.math.atan2
 import kotlin.math.sqrt
+import kotlinx.coroutines.*
+import com.google.android.material.snackbar.Snackbar
 
 private const val TAG = "ArViewModel"
 
@@ -35,6 +36,8 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
     @SuppressLint("StaticFieldLeak")
     lateinit var arSceneView: ArSceneView
     private lateinit var avatarModelNode: ArModelNode
+    private var modelIndex: Int = 0
+
 
     private val context
         get() = _application.applicationContext
@@ -107,7 +110,7 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
                 }
                 modelNode.apply {
                     placementMode = PlacementMode.INSTANT
-                    isVisible = false
+                    isVisible = true
                 }
                 arSceneView.addChild(modelNode)
                 arSceneView.selectedNode = modelNode
@@ -149,7 +152,6 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
 
     private fun resolveModel(modelNode: ArModelNode, anchorId: String?) {
 
-
         if (anchorId != null) {
             modelNode.resolveCloudAnchor(anchorId) { anchor: Anchor, success: Boolean ->
                 Log.d(TAG, anchor.trackingState.toString())
@@ -186,13 +188,6 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
                     }
                 }
             }
-
-//            if (closestAnchorId == null) {
-//                // Sleep for a short duration to avoid overwhelming the CPU
-//                Thread.sleep(500)
-//            }
-        //}
-
         return closestAnchorId
     }
 
@@ -258,59 +253,6 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
 
     private val handler = Handler(Looper.getMainLooper())
 
-//    private fun showPath(path: List<String>?) {
-//        Log.d("ArViewModel", path.toString())
-//        val pathIterator = path?.listIterator()
-//
-//        val runnableCode = object : Runnable {
-//            override fun run() {
-//                val thresholdDistance = 2
-//
-//                // If there's a next model in the path
-//                if (pathIterator?.hasNext() == true) {
-//                    val currentModelId = pathIterator.next()
-//                    val currentModel = anchorMap[currentModelId]
-//
-//                    // If there's another next model in the path after the current model
-//                    if (pathIterator.hasNext()) {
-//                        val nextModelId = pathIterator.next()
-//                        val nextModel = anchorMap[nextModelId]
-//
-//                        if (distanceFromAnchor(currentModel) < thresholdDistance) {
-//                            Toast.makeText(context, "Within threshold", Toast.LENGTH_SHORT).show()
-//
-//                            updateVisibleModel(currentModel, nextModel)
-//                            Toast.makeText(context, "Next model visible", Toast.LENGTH_SHORT).show()
-//
-//                            //moveAvatarToNewAnchor(currentModel, nextModel)
-//                        } else {
-//                            // If the threshold isn't met, move iterator back to retry the same step
-//                            if (pathIterator.hasPrevious()) {
-//                                pathIterator.previous() // move back to 'nextModelId'
-//                                if (pathIterator.hasPrevious()) {
-//                                    pathIterator.previous() // move back to 'currentModelId'
-//                                }
-//                            }
-//                        }
-//                        handler.postDelayed(this, 500)
-//                    } else {
-//                        // Last model reached
-//                        if (distanceFromAnchor(currentModel) < thresholdDistance) {
-//                            currentModel?.isVisible = false
-//                            Toast.makeText(context, "Path completed", Toast.LENGTH_LONG).show()
-//                        }
-//                    }
-//                }
-//            }
-//        }
-//
-//        anchorMap[path?.elementAtOrNull(0)]?.isVisible = true
-//        //moveAvatarToFirstAnchor(anchorMap[path?.elementAtOrNull(1)], anchorMap[path?.elementAtOrNull(0)])
-//        handler.post(runnableCode)
-//    }
-
-    private var modelIndex = 0
-
     private fun showPath(path: List<String>?) {
         val runnableCode = object : Runnable {
             override fun run() {
@@ -330,6 +272,7 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
                 }
             }
         }
+
         (anchorMap[path!![0]] as ArModelNode).isVisible = true
         handler.post(runnableCode)
     }
@@ -406,17 +349,65 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
 
     }
 
+//    override fun loadDirections(destination: String) {
+//        val currentLocation = closestAnchor()
+//
+//        if (currentLocation.equals(null)) {
+//            Toast.makeText(context, "Please point me to nearest anchor", Toast.LENGTH_SHORT).show()
+//            return
+//        }
+//
+//        val (_, paths) = dijkstra(currentLocation!!)
+//        val path = paths[destination]
+//
+//        showPath(path)
+//        modelIndex = 0
+//    }
+//override fun loadDirections(destination: String) {
+//    CoroutineScope(Dispatchers.Main).launch {
+//        var currentLocation = closestAnchor()
+//
+//        while (currentLocation == null) {
+//            Toast.makeText(context, "Please point me to nearest anchor", Toast.LENGTH_SHORT).show()
+//            delay(2000) // Wait for 2 seconds before checking again
+//            currentLocation = closestAnchor()
+//        }
+//
+//        val (_, paths) = dijkstra(currentLocation)
+//        val path = paths[destination]
+//
+//        showPath(path)
+//        modelIndex = 0
+//    }
+//}
+
     override fun loadDirections(destination: String) {
-        val currentLocation = closestAnchor()
+        CoroutineScope(Dispatchers.Main).launch {
+            var currentLocation = closestAnchor()
+            var snackbar: Snackbar? = null
 
-        if (currentLocation.equals(null)) {
-            Toast.makeText(context, "Please point me to nearest anchor", Toast.LENGTH_SHORT).show()
-            return
+            while (currentLocation == null) {
+                if (snackbar?.isShown == false || snackbar == null) {
+                    snackbar = Snackbar.make(
+                        arSceneView, // Replace with the view you want the Snackbar to be attached to
+                        "Please point me to nearest anchor",
+                        Snackbar.LENGTH_INDEFINITE
+                    )
+                    snackbar.show()
+                }
+
+                delay(2000) // Wait for 2 seconds before checking again
+                currentLocation = closestAnchor()
+            }
+
+            snackbar?.dismiss()
+
+            val (_, paths) = dijkstra(currentLocation)
+            val path = paths[destination]
+
+            showPath(path)
+            modelIndex = 0
         }
-
-        val (_, paths) = dijkstra(currentLocation!!)
-        val path = paths[destination]
-        showPath(path)
     }
 
     private fun dijkstra(src: String): Pair<Map<String, Int>, Map<String, List<String>>> {
