@@ -15,10 +15,15 @@ import com.google.android.material.snackbar.Snackbar
 import com.google.ar.core.Anchor
 import com.google.ar.core.Config
 import com.google.ar.core.Pose
+import com.google.ar.sceneform.math.Quaternion
 import com.google.ar.sceneform.math.Vector3
+import dev.romainguy.kotlin.math.Float3
 import io.github.sceneview.ar.ArSceneView
 import io.github.sceneview.ar.node.PlacementMode
+import io.github.sceneview.math.toVector3
 import kotlinx.coroutines.*
+import kotlin.math.asin
+import kotlin.math.atan2
 import kotlin.math.sqrt
 
 private const val TAG = "ArViewModel"
@@ -119,7 +124,8 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
                 Log.d(TAG, anchor.trackingState.toString())
 
                 if (success) {
-                    Log.d(TAG, "Anchor resolved - Id: ${modelNode.signName}")
+                    Log.d(TAG, "Anchor resolved $anchorId")
+                    Toast.makeText(context, "RESOLVED $anchorId", Toast.LENGTH_SHORT).show()
                     modelNode.isResolved = true
                     if(modelNode.signName?.contains("SIGN") == true){
                         modelNode.isVisible = true
@@ -135,11 +141,17 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
         }
     }
 
-    private fun setSignOrientation(modelNode: ModelNode){
+    // WORKING SIGN ORIENTATION
+//    if (directionModelNode != null) {
+//        signModelNode.lookAt(directionModelNode)
+//    }
 
-    }
+    // lab sign: anchorMap["ua-1b6c775e278f0d7c7ef2c083ed9222f8"]
 
     override fun loadDirections(destination: String) {
+
+        anchorMap["ua-1b6c775e278f0d7c7ef2c083ed9222f8"]?.lookAt(arSceneView.cameraNode)
+
         CoroutineScope(Dispatchers.IO).launch {
             var currentLocation = closestAnchor()
             var snackbar: Snackbar? = null
