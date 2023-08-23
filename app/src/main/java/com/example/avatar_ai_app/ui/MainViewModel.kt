@@ -96,20 +96,17 @@ class MainViewModel(
                 }
                 ChatViewModelInterface.Status.READY -> {
                     setTextToSpeechReady(true)
-                    setRecordingState(UiState.ready)
                     updateTextFieldStringResId(R.string.send_message_hint)
                     _isRecordingReady.value = true
                     isChatViewModelLoaded.value = true
                     Log.i(TAG, "chatViewModel status: ready")
                 }
                 ChatViewModelInterface.Status.RECORDING -> {
-                    setRecordingState(UiState.recording)
                     updateTextFieldStringResId(R.string.recording_message)
                     _isRecordingReady.value = false
                     Log.i(TAG, "chatViewModel status: recording")
                 }
                 ChatViewModelInterface.Status.PROCESSING -> {
-                    setRecordingState(UiState.processing)
                     updateTextFieldStringResId(R.string.processing_message)
                     _isRecordingReady.value = false
                     Log.i(TAG, "chatViewModel status: processing")
@@ -184,12 +181,20 @@ class MainViewModel(
         }
     }
 
+    /**
+     * Gets the feature list from the databaseViewModel and passes it to the chatViewModel
+     */
     private fun setFeatureList() {
         viewModelScope.launch(Dispatchers.IO) {
             chatViewModel.setFeatureList(databaseViewModel.getFeatures())
         }
     }
 
+    /**
+     * Handles the processing of recognition requests. If a feature is recognised,
+     * it's description is displayed. Otherwise the description of the nearest cloud anchor
+     * is displayed.
+     */
     private fun processRecognitionRequest() {
         viewModelScope.launch(Dispatchers.IO) {
             val featureName = imageViewModel.recogniseFeature()
@@ -210,6 +215,9 @@ class MainViewModel(
         }
     }
 
+    /**
+     * Processes a navigation request to the destination from the chatViewModel
+     */
     private fun processNavigationRequest() {
         viewModelScope.launch(Dispatchers.IO) {
             val destination = chatViewModel.destinationID.value
@@ -283,6 +291,10 @@ class MainViewModel(
         }
     }
 
+    /**
+     * Updates the uiState to display a message in the textField
+     * @param resId an integer value for the desired string resource to be displayed
+     */
     private fun updateTextFieldStringResId(resId: Int) {
         _uiState.update { currentState ->
             currentState.copy(
@@ -291,18 +303,13 @@ class MainViewModel(
         }
     }
 
+    /**
+     * 
+     */
     private fun setTextToSpeechReady(ready: Boolean) {
         _uiState.update {
             it.copy(
                 isTextToSpeechReady = ready
-            )
-        }
-    }
-
-    private fun setRecordingState(state: Int) {
-        _uiState.update {
-            it.copy(
-                recordingState = state
             )
         }
     }
@@ -331,7 +338,7 @@ class MainViewModel(
             }
 
             UiState.speech -> {
-                if (uiState.value.recordingState == UiState.ready) {
+                if (_isRecordingReady.value) {
                     startTime = System.currentTimeMillis()
                     recordingJob = viewModelScope.launch(Dispatchers.IO) {
                         delay(RECORDING_WAIT)
@@ -412,16 +419,26 @@ class MainViewModel(
         }
     }
 
+    /**
+     * Generates alert to ensure user wants to delete messages
+     */
     fun clearChatButtonOnClick() {
         generateAlert(AlertType.CLEAR_CHAT)
         dismissSettingsMenu()
     }
 
+    /**
+     * Generates alert to provide the user with help documentation
+     */
     fun helpButtonOnClick() {
         generateAlert(AlertType.HELP)
         dismissSettingsMenu()
     }
 
+    /**
+     * Generates an alert popup
+     * @param alertType Enum to set the type of alert to generate
+     */
     private fun generateAlert(alertType: AlertType) {
         _uiState.update { currentState ->
             when (alertType) {
@@ -444,6 +461,9 @@ class MainViewModel(
         }
     }
 
+    /**
+     * Carries out a function depending on the alert type
+     */
     fun alertOnClick() {
         when (uiState.value.alertIntent) {
             UiState.clear -> clearChatHistory()
@@ -452,6 +472,9 @@ class MainViewModel(
         }
     }
 
+    /**
+     * Dismisses the alert
+     */
     fun dismissAlertDialogue() {
         _uiState.update { currentState ->
             currentState.copy(
@@ -489,23 +512,20 @@ class MainViewModel(
         }
     }
 
-    private fun dismissOrShowMessages(pan: Float) {
-        _uiState.update { currentState ->
-            currentState.copy(
-                messagesAreShown = pan <= 0,
-            )
-        }
-    }
-
+    /**
+     * Sets the graph in the arViewModel and initialises the arScene
+     * @param arSceneView an ArSceneView to be initialised
+     */
     fun initialiseArScene(arSceneView: ArSceneView) {
         viewModelScope.launch(Dispatchers.IO) {
             arViewModel.setGraph(databaseViewModel.getGraph())
-            //TODO arViewModel.setFeatures(databaseViewModel.getFeatures())
             arViewModel.initialiseArScene(arSceneView)
-            arViewModel.addModelToScene(ArViewModel.ModelType.AVATAR)
         }
     }
 
+    /**
+     * Updates the uiState to show the settings menu
+     */
     fun settingsMenuButtonOnClick() {
         _uiState.update { currentState ->
             currentState.copy(
@@ -515,6 +535,9 @@ class MainViewModel(
         }
     }
 
+    /**
+     * Updates the uiState to hide the settings menu
+     */
     fun dismissSettingsMenu() {
         _uiState.update { currentState ->
             currentState.copy(
