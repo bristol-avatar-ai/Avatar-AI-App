@@ -6,6 +6,7 @@ import android.opengl.Matrix
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import android.widget.Toast
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.avatar_ai_app.data.crystalModel
@@ -88,7 +89,7 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
     private fun createSignModel(anchorName: String): ModelNode {
         val modelNode: ModelNode
         val model = signModel
-        modelNode = ModelNode(arSceneView.engine, null).apply {
+        modelNode = ModelNode(arSceneView.engine, anchorName).apply {
             viewModelScope.launch {
                 loadModelGlb(
                     context = context,
@@ -118,7 +119,7 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
                 Log.d(TAG, anchor.trackingState.toString())
 
                 if (success) {
-                    Log.d(TAG, "Anchor resolved - Id: $anchorId")
+                    Log.d(TAG, "Anchor resolved - Id: ${modelNode.signName}")
                     modelNode.isResolved = true
                     if(modelNode.signName?.contains("SIGN") == true){
                         modelNode.isVisible = true
@@ -132,6 +133,10 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
         } else {
             Log.d(TAG, "Null anchor Id")
         }
+    }
+
+    private fun setSignOrientation(modelNode: ModelNode){
+
     }
 
     override fun loadDirections(destination: String) {
