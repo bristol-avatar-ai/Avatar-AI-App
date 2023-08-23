@@ -26,8 +26,8 @@ fun Message(
 ) {
     ARAppTheme {
         val contentColor: Color = when (type) {
-            MessageType.USER -> MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
-            MessageType.RESPONSE -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+            MessageType.USER -> MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.7f)
+            MessageType.RESPONSE -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f)
         }
         Row(
             modifier = Modifier

@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
@@ -33,6 +34,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -92,7 +94,6 @@ fun MainScreen(
     //This value will only update after the initial loading is complete
     //Subsequent reloads of the ChatService will not affect this value
     val startupComplete = remember { mutableStateOf(false) }
-
 
     SideEffect {
         val cameraPermissionStatus = ContextCompat.checkSelfPermission(
@@ -196,10 +197,6 @@ fun MainScreen(
                 helpButtonOnClick = { mainViewModel.helpButtonOnClick() }
             )
             Spacer(Modifier.weight(1f))
-            ChatBox(
-                messages = uiState.messages,
-                showMessages = uiState.messagesAreShown
-            )
             BottomBar(
                 mainViewModel = mainViewModel,
                 uiState = uiState,
@@ -265,14 +262,26 @@ fun BottomBar(
 
     val isRecordingReady by mainViewModel.isRecordingReady.collectAsState()
 
+//    val backGroundColor by rememberUpdatedState(
+//        if (textFieldFocusState) MaterialTheme.colorScheme.surface.copy(alpha = 0.7f)
+//        else MaterialTheme.colorScheme.surface
+//    )
+    val backGroundColor: Color by animateColorAsState(
+        if (textFieldFocusState) MaterialTheme.colorScheme.surface.copy(alpha = 0.7f)
+        else MaterialTheme.colorScheme.surface, label = ""
+    )
+
     ARAppTheme {
-        Surface(
-            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
-        ) {
+        Column {
+            ChatBox(
+                messages = uiState.messages,
+                showMessages = uiState.messagesAreShown,
+                focusState = textFieldFocusState
+            )
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(color = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)),
+                    .background(color = backGroundColor),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Spacer(
@@ -309,6 +318,7 @@ fun BottomBar(
                 )
             }
         }
+        //}
     }
 }
 

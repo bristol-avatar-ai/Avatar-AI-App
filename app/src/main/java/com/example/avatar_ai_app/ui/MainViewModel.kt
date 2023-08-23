@@ -470,6 +470,7 @@ class MainViewModel(
     fun handleSwipe(pan: Float, keyboardController: SoftwareKeyboardController?) {
         if(!uiState.value.messagesAreShown && pan > 0) {
             dismissLanguageMenu()
+            focusRequester.requestFocus()
             keyboardController?.hide()
 
         } else {

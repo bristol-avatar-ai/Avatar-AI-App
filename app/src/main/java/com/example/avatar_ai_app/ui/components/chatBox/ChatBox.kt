@@ -1,5 +1,6 @@
 package com.example.avatar_ai_app.ui.components.chatBox
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.Orientation
@@ -41,6 +42,7 @@ import com.example.avatar_ai_app.ui.theme.spacing
 fun ChatBox(
     messages: List<ChatMessage>,
     showMessages: Boolean,
+    focusState: Boolean
 ) {
     val density = LocalDensity.current
     val scrollState = rememberLazyListState()
@@ -57,9 +59,9 @@ fun ChatBox(
         else MaterialTheme.colorScheme.onSurface
     )
 
-    val backGroundColor by rememberUpdatedState(
-        if (showMessages && messages.isNotEmpty()) MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
-        else MaterialTheme.colorScheme.surface
+    val backGroundColor by animateColorAsState(
+        if (focusState || (showMessages && messages.isNotEmpty())) MaterialTheme.colorScheme.surface.copy(alpha = 0.7f)
+        else MaterialTheme.colorScheme.surface, label = ""
     )
 
     ARAppTheme {
