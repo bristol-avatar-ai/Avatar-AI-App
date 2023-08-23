@@ -6,11 +6,10 @@ import android.opengl.Matrix
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
-import android.widget.Toast
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.avatar_ai_app.data.avatarModel
 import com.example.avatar_ai_app.data.crystalModel
+import com.example.avatar_ai_app.data.signModel
 import com.google.android.material.snackbar.Snackbar
 import com.google.ar.core.Anchor
 import com.google.ar.core.Config
@@ -18,35 +17,24 @@ import com.google.ar.core.Pose
 import com.google.ar.sceneform.math.Vector3
 import io.github.sceneview.ar.ArSceneView
 import io.github.sceneview.ar.node.PlacementMode
-import io.github.sceneview.math.Rotation
 import kotlinx.coroutines.*
-import kotlin.math.atan2
 import kotlin.math.sqrt
 
 private const val TAG = "ArViewModel"
 
 class ArViewModel(application: Application) : AndroidViewModel(application), ArViewModelInterface {
+
     private val _application = application
     private lateinit var graph: Graph
-    private lateinit var unresolvedIds: HashSet<String>
 
     @SuppressLint("StaticFieldLeak")
     lateinit var arSceneView: ArSceneView
-    private lateinit var avatarModelNode: ModelNode
-    private var modelIndex: Int = 0
-
 
     private val context
         get() = _application.applicationContext
 
-    enum class ModelType {
-        AVATAR,
-        CRYSTAL
-    }
-
     override fun setGraph(graph: Graph) {
         this.graph = graph
-        Log.d("ArViewModel", "graph keys = ${graph.keys}")
     }
 
     override fun initialiseArScene(arSceneView: ArSceneView) {
@@ -54,87 +42,77 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
             arSceneView.lightEstimationMode = Config.LightEstimationMode.ENVIRONMENTAL_HDR
             arSceneView.cloudAnchorEnabled = true
             delay(1000L)
-            setIdList()
-            resolveAllAnchors(arSceneView)
+            resolveAllAnchors()
         }
         this.arSceneView = arSceneView
 
-        Log.d("ArViewModel", "Initialise Done")
+        Log.d("ArViewModel", "Initialise AR Scene Complete")
     }
 
-    private fun setIdList() {
-        unresolvedIds = HashSet()
-        graph.keys.forEach { id ->
-            unresolvedIds.add(id)
+    private fun resolveAllAnchors() {
+        graph.forEach { anchorId, anchorProperties ->
+            val modelNode: ModelNode = if(anchorProperties.name.contains("SIGN")) {
+                createSignModel(anchorProperties.name)
+            } else {
+                createCrystalModel()
+            }
+
+            resolveModel(modelNode, anchorId)
+            resolvedModelNodes.add(modelNode)
+            anchorMap[anchorId] = modelNode
         }
-        Log.d(TAG, "Number of anchors = ${unresolvedIds.size}")
     }
 
-    private fun createModel(modelType: ModelType): ModelNode {
+    private fun createCrystalModel(): ModelNode {
         val modelNode: ModelNode
 
-        when (modelType) {
-            ModelType.AVATAR -> {
-                val model = avatarModel
-                modelNode = ModelNode(arSceneView.engine, null).apply {
-                    viewModelScope.launch {
-                        loadModelGlb(
-                            context = context,
-                            glbFileLocation = model.fileLocation,
-                            scaleToUnits = model.scale,
-                            centerOrigin = model.position
-                        )
-                    }
-                }
-            }
-
-            ModelType.CRYSTAL -> {
-                val model = crystalModel
-                modelNode = ModelNode(arSceneView.engine, null).apply {
-                    viewModelScope.launch {
-                        loadModelGlb(
-                            context = context,
-                            glbFileLocation = model.fileLocation,
-                            scaleToUnits = model.scale,
-                            centerOrigin = model.position
-                        )
-                    }
-                }
-                modelNode.apply {
-                    placementMode = PlacementMode.INSTANT
-                    isVisible = true
-                }
-                arSceneView.addChild(modelNode)
+        val model = crystalModel
+        modelNode = ModelNode(arSceneView.engine, null).apply {
+            viewModelScope.launch {
+                loadModelGlb(
+                    context = context,
+                    glbFileLocation = model.fileLocation,
+                    scaleToUnits = model.scale,
+                    centerOrigin = model.position
+                )
             }
         }
+        modelNode.apply {
+            placementMode = PlacementMode.INSTANT
+            isVisible = false
+        }
+
+        arSceneView.addChild(modelNode)
+        return modelNode
+    }
+
+    private fun createSignModel(anchorName: String): ModelNode {
+        val modelNode: ModelNode
+        val model = signModel
+        modelNode = ModelNode(arSceneView.engine, null).apply {
+            viewModelScope.launch {
+                loadModelGlb(
+                    context = context,
+                    glbFileLocation = "models/${anchorName.substring(7)}.glb",
+                    scaleToUnits = model.scale,
+                    centerOrigin = model.position
+                )
+            }
+        }
+        modelNode.apply {
+            placementMode = PlacementMode.INSTANT
+            isVisible = false
+        }
+        arSceneView.addChild(modelNode)
+
+        Log.d(TAG, "File Location: " + "models/${anchorName.substring(7)}.glb")
+
+
         return modelNode
     }
 
     private val resolvedModelNodes = mutableListOf<ModelNode>()
     private val anchorMap: MutableMap<String, ModelNode> = mutableMapOf()
-
-    private fun resolveAllAnchors(arSceneView: ArSceneView) {
-        Log.d(TAG, "resolve all anchors called")
-        val nodeKeys = graph.keys.toList()
-
-        // Iterate over all node keys
-        for (anchorId in unresolvedIds) {
-
-            val modelNode = createModel(ModelType.CRYSTAL)
-
-            //need to check if this line is needed
-//            arSceneView.addChild(modelNode)
-            resolveModel(modelNode, anchorId)
-            resolvedModelNodes.add(modelNode)
-        }
-
-        // Map anchors to model nodes
-        resolvedModelNodes.forEachIndexed { index, modelNode ->
-            nodeKeys[index].let { key ->
-                anchorMap[key] = modelNode
-            }
-        }
-    }
 
     private fun resolveModel(modelNode: ModelNode, anchorId: String?) {
         if (anchorId != null) {
@@ -142,24 +120,45 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
                 Log.d(TAG, anchor.trackingState.toString())
 
                 if (success) {
-                    // TODO: Need to change back to false
-                    Log.d(TAG, "Success")
-                    Log.d(TAG, "AnchorId = $anchorId")
+                    Log.d(TAG, "Anchor resolved - Id: $anchorId")
                     modelNode.isResolved = true
-
-                    unresolvedIds.remove(anchorId)
-                    Log.d(TAG, "Unresolved anchors: $unresolvedIds")
-                    Log.d(TAG, "Unresolved anchors remaining: ${unresolvedIds.size}")
+                    if(modelNode.signName?.contains("SIGN") == true){
+                        modelNode.isVisible = true
+                    }
                 }
                 if (!success) {
-                    Log.d(TAG, "Failure")
+                    Log.d(TAG, "Anchor failed to resolve, trying again - Id: $anchorId")
                     resolveModel(modelNode, anchorId)
                 }
-
-
             }
         } else {
-            Log.d(TAG, "Null anchor")
+            Log.d(TAG, "Null anchor Id")
+        }
+    }
+
+    override fun loadDirections(destination: String) {
+        CoroutineScope(Dispatchers.IO).launch {
+            var currentLocation = closestAnchor()
+            var snackbar: Snackbar? = null
+
+            while (currentLocation == null) {
+                if (snackbar?.isShown == false || snackbar == null) {
+                    snackbar = Snackbar.make(arSceneView, "Please move your device around to scan the surroundings",
+                        Snackbar.LENGTH_INDEFINITE
+                    )
+                    snackbar.show()
+                }
+
+                delay(2000) // Wait for 2 seconds before checking again
+                currentLocation = closestAnchor()
+            }
+
+            snackbar?.dismiss()
+
+            val (_, paths) = dijkstra(currentLocation)
+            val path = paths[destination]
+
+            showPath(path)
         }
     }
 
@@ -168,8 +167,6 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
         var closestAnchorId: String? = null
 
         // This will run until an anchor is found in view and returned
-        //while (closestAnchorId == null) {
-        // TODO: DISPLAY A MESSAGE ASKING THE USER TO PAN AROUND?
         var minDistance = Float.MAX_VALUE
 
         for ((anchorId, anchorNode) in anchorMap) {
@@ -187,6 +184,84 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
         }
         return closestAnchorId
     }
+
+    private fun dijkstra(src: String): Pair<Map<String, Int>, Map<String, List<String>>> {
+        val sptSet = mutableSetOf<String>()
+        val dist = mutableMapOf<String, Int>().withDefault { Int.MAX_VALUE }
+        val prev = mutableMapOf<String, String>()
+        val paths = mutableMapOf<String, List<String>>()
+
+        dist[src] = 0
+        paths[src] = listOf(src)
+
+        for (count in 0 until graph.size) {
+            val unvisitedNode =
+                dist.filter { !sptSet.contains(it.key) }.minByOrNull { it.value }?.key
+            unvisitedNode?.let {
+                sptSet.add(unvisitedNode)
+                graph[unvisitedNode]?.edges?.forEach { edge ->
+                    if (!sptSet.contains(edge.destination) && dist.getValue(unvisitedNode) != Int.MAX_VALUE) {
+                        val newDist = dist.getValue(unvisitedNode) + edge.distance
+                        if (newDist < dist.getValue(edge.destination)) {
+                            dist[edge.destination] = newDist
+                            prev[edge.destination] = unvisitedNode
+                            paths[edge.destination] =
+                                paths.getValue(unvisitedNode) + edge.destination
+                        }
+                    }
+                }
+            }
+        }
+        return Pair(dist, paths)
+    }
+
+    private val handler = Handler(Looper.getMainLooper())
+
+    private fun showPath(path: List<String>?) {
+        var modelIndex = 0
+        var withinThreshold = false
+
+        val runnableCode = object : Runnable {
+            override fun run() {
+                val thresholdDistance = 3
+
+                // Current model
+                val model = anchorMap[path!![modelIndex]]
+
+                // Next model (if exists)
+                val nextModel = if (modelIndex < path.size - 1) anchorMap[path[modelIndex + 1]] else null
+
+                // If not already within threshold, check the distance
+                if (!withinThreshold && distanceFromAnchor(model) < thresholdDistance) {
+                    withinThreshold = true
+                }
+
+                // If we're within the threshold
+                if (withinThreshold) {
+                    // If it's the last anchor, hide it
+                    if (modelIndex == path.size - 1) {
+                        model?.isVisible = false
+                    } else {
+                        // If the next model is resolved, update visibility and move to next model
+                        if (nextModel != null && nextModel.isResolved) {
+                            updateVisibleModel(model, nextModel)
+                            modelIndex++
+                            withinThreshold = false // Reset the flag since we moved to the next anchor
+                        }
+                    }
+                }
+
+                // Continue the loop until the end of the path
+                if (modelIndex < path.size - 1 || withinThreshold) {
+                    handler.postDelayed(this, 500)
+                }
+            }
+        }
+
+        (anchorMap[path!![0]] as ModelNode).isVisible = true
+        handler.post(runnableCode)
+    }
+
 
 
     private fun distanceFromAnchor(anchorNode: ModelNode?): Float {
@@ -211,10 +286,6 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
     /*
      * Transforms a 3D pose in AR space to 2D screen coordinates.
      * This is useful for overlaying 2D UI elements over 3D AR content.
-     *
-     * arSceneView - The current AR Scene View.
-     * pose - The 3D position in AR space to be transformed.
-     * returns Vector3 containing the x, y screen coordinates, and z depth.
      */
     private fun getScreenCoordinates(pose: Pose): Vector3? {
         val camera = arSceneView.currentFrame?.camera ?: return null
@@ -248,181 +319,9 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
         return Vector3(screenX, screenY, ndcCoord[2] / w)
     }
 
-    private val handler = Handler(Looper.getMainLooper())
-
-    private fun showPath(path: List<String>?) {
-        Log.d(TAG, "Path = $path")
-        val runnableCode = object : Runnable {
-            override fun run() {
-
-                val thresholdDistance = 3
-
-                val model = anchorMap[path!![modelIndex]]
-                val nextModel = anchorMap[path[modelIndex + 1]]
-
-                //if (distanceFromAnchor(model) < thresholdDistance) {
-                if (nextModel?.isResolved == true) {
-                    if (modelIndex < path.size - 1) {
-                        Toast.makeText(
-                            context,
-                            "Current anchor ${path[modelIndex + 1]}",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                        updateVisibleModel(
-                            model, nextModel
-                        )
-                        modelIndex++
-                    }
-                }
-                // }
-                if (modelIndex < path.size - 1) {
-                    handler.postDelayed(this, 500)
-                }
-            }
-        }
-
-        (anchorMap[path!![0]] as ModelNode).isVisible = true
-        handler.post(runnableCode)
-    }
-
-
     private fun updateVisibleModel(oldModel: ModelNode?, newModel: ModelNode?) {
         oldModel?.isVisible = false
         newModel?.isVisible = true
-    }
-
-
-    private fun moveAvatarToFirstAnchor(nextModel: ModelNode?, newModel: ModelNode?) {
-        avatarModelNode.isVisible = true
-
-        newModel?.let { newModelPosition ->
-            avatarModelNode.worldPosition = newModelPosition.worldPosition
-            avatarModelNode.worldScale = newModelPosition.worldScale
-
-            nextModel?.let { nextModelPosition ->
-                val directionVector = Vector3(
-                    nextModelPosition.worldPosition.x - newModelPosition.worldPosition.x,
-                    nextModelPosition.worldPosition.y - nextModelPosition.worldPosition.y,
-                    0f // Ignore z coordinate
-                )
-
-                if (!directionVector.equals(0)) {
-                    val normalizedDirection = directionVector.normalized()
-                    val angle = Math.toDegrees(
-                        atan2(
-                            normalizedDirection.y.toDouble(),
-                            normalizedDirection.x.toDouble()
-                        )
-                    ).toFloat()
-
-                    // Get the new model's rotation as Euler angles
-                    val newModelEulerRotation = newModelPosition.worldRotation
-
-                    // Set the avatar's rotation
-                    avatarModelNode.worldRotation =
-                        Rotation(newModelEulerRotation.x, newModelEulerRotation.y, angle)
-                }
-            } ?: run {
-                avatarModelNode.worldRotation = newModelPosition.worldRotation
-            }
-        }
-        Toast.makeText(context, "Avatar at first anchor", Toast.LENGTH_SHORT).show()
-    }
-
-
-    private fun moveAvatarToNewAnchor(oldModel: ModelNode?, newModel: ModelNode?) {
-        // Ensure the avatarModelNode is visible
-        avatarModelNode.isVisible = true
-
-        // Move the avatar to the position of the newModel
-        newModel?.let { newModelPosition ->
-            avatarModelNode.worldPosition = newModelPosition.worldPosition
-            avatarModelNode.worldScale = newModelPosition.worldScale
-
-            // If there's an oldModel, calculate direction to oldModel in the x-y plane
-            oldModel?.let { oldModelPosition ->
-                val directionVector = Vector3(
-                    oldModelPosition.worldPosition.x - newModelPosition.worldPosition.x,
-                    oldModelPosition.worldPosition.y - newModelPosition.worldPosition.y,
-                    0f // Ignore z coordinate
-                ).normalized()
-
-                // Get the angle from the direction vector in degrees
-                val angle = Math.toDegrees(
-                    atan2(
-                        directionVector.y.toDouble(),
-                        directionVector.x.toDouble()
-                    )
-                ).toFloat()
-
-                // Convert the angle to Euler angles for yaw (rotation around Z)
-                val eulerZRotation = Rotation(0f, 0f, angle)
-
-                // Apply the Euler angles to the world rotation
-                avatarModelNode.worldRotation = eulerZRotation
-            }
-        }
-        Toast.makeText(context, "End of move avatar to next model", Toast.LENGTH_SHORT).show()
-
-    }
-
-    override fun loadDirections(destination: String) {
-        CoroutineScope(Dispatchers.IO).launch {
-            var currentLocation = closestAnchor()
-            var snackbar: Snackbar? = null
-
-            while (currentLocation == null) {
-                if (snackbar?.isShown == false || snackbar == null) {
-                    snackbar = Snackbar.make(
-                        arSceneView, // Replace with the view you want the Snackbar to be attached to
-                        "Please point me to nearest anchor",
-                        Snackbar.LENGTH_INDEFINITE
-                    )
-                    snackbar.show()
-                }
-
-                delay(2000) // Wait for 2 seconds before checking again
-                currentLocation = closestAnchor()
-            }
-
-            snackbar?.dismiss()
-
-            val (_, paths) = dijkstra(currentLocation)
-            val path = paths[destination]
-
-            showPath(path)
-            modelIndex = 0
-        }
-    }
-
-    private fun dijkstra(src: String): Pair<Map<String, Int>, Map<String, List<String>>> {
-        val sptSet = mutableSetOf<String>()
-        val dist = mutableMapOf<String, Int>().withDefault { Int.MAX_VALUE }
-        val prev = mutableMapOf<String, String>()
-        val paths = mutableMapOf<String, List<String>>()
-
-        dist[src] = 0
-        paths[src] = listOf(src)
-
-        for (count in 0 until graph.size) {
-            val unvisitedNode =
-                dist.filter { !sptSet.contains(it.key) }.minByOrNull { it.value }?.key
-            unvisitedNode?.let {
-                sptSet.add(unvisitedNode)
-                graph[unvisitedNode]?.edges?.forEach() { edge ->
-                    if (!sptSet.contains(edge.destination) && dist.getValue(unvisitedNode) != Int.MAX_VALUE) {
-                        val newDist = dist.getValue(unvisitedNode) + edge.distance
-                        if (newDist < dist.getValue(edge.destination)) {
-                            dist[edge.destination] = newDist
-                            prev[edge.destination] = unvisitedNode
-                            paths[edge.destination] =
-                                paths.getValue(unvisitedNode) + edge.destination
-                        }
-                    }
-                }
-            }
-        }
-        return Pair(dist, paths)
     }
 
     fun onDestroy() {
@@ -430,5 +329,3 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
         arSceneView.destroy()
     }
 }
-
-
