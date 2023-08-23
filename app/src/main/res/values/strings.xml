@@ -8,6 +8,7 @@
     <string name="send_message_hint">Ask me anything</string>
     <string name="recording_message" tools:ignore="TypographyEllipsis">Recording...</string>
     <string name="processing_message" tools:ignore="TypographyEllipsis">Processing...</string>
+    <string name="scanning_message" tools:ignore="TypographyEllipsis">Scanning...</string>
 
     <!--Loading screen-->
     <string name="loading_message">Loading</string>

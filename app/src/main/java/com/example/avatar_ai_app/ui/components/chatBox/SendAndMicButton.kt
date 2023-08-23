@@ -1,10 +1,8 @@
 package com.example.avatar_ai_app.ui.components.chatBox
 
 import android.Manifest
-import android.util.Log
 import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.GestureCancellationException
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -34,7 +32,7 @@ fun SendAndMicButton(
     description: String = "",
     textFieldFocusState: Boolean,
     recordingPermissionsEnabled: Boolean,
-    isRecordingReady: Boolean
+    isSendEnabled: Boolean
 ) {
     val pressed = remember { mutableStateOf(false) }
 
@@ -50,7 +48,7 @@ fun SendAndMicButton(
 
     val permissionsState by rememberUpdatedState(newValue = recordingPermissionsEnabled)
 
-    val buttonEnabledState by rememberUpdatedState(newValue = isRecordingReady)
+    val buttonEnabledState by rememberUpdatedState(newValue = isSendEnabled)
 
     Box(
         modifier = Modifier

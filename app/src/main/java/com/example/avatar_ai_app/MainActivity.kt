@@ -8,7 +8,9 @@ import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.core.view.WindowCompat
@@ -99,9 +101,7 @@ class MainActivity : ComponentActivity(), ErrorListener {
         setContent {
             ARAppTheme {
                 val dialogQueue = mainViewModel.visiblePermissionDialogQueue
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                ) {
+                Surface(modifier = Modifier.fillMaxSize()) {
                     WindowCompat.setDecorFitsSystemWindows(window, false)
                     MainScreen(mainViewModel)
                     dialogQueue

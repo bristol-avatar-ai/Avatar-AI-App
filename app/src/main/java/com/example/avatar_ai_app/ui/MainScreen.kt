@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
@@ -91,7 +92,6 @@ fun MainScreen(
     //This value will only update after the initial loading is complete
     //Subsequent reloads of the ChatService will not affect this value
     val startupComplete = remember { mutableStateOf(false) }
-
 
     SideEffect {
         val cameraPermissionStatus = ContextCompat.checkSelfPermission(
@@ -195,10 +195,6 @@ fun MainScreen(
                 helpButtonOnClick = { mainViewModel.helpButtonOnClick() }
             )
             Spacer(Modifier.weight(1f))
-            ChatBox(
-                messages = uiState.messages,
-                showMessages = uiState.messagesAreShown
-            )
             BottomBar(
                 mainViewModel = mainViewModel,
                 uiState = uiState,
@@ -247,7 +243,6 @@ fun BottomBar(
 ) {
 
     var textState by rememberSaveable(stateSaver = TextFieldValue.Saver) {
-        //mainViewModel.textState
         mutableStateOf(TextFieldValue())
     }
 
@@ -264,46 +259,62 @@ fun BottomBar(
     )
 
     val isRecordingReady by mainViewModel.isRecordingReady.collectAsState()
+    val isRecognitionReady by mainViewModel.isRecognitionReady.collectAsState()
+
+    val isSendEnabled = isRecordingReady && isRecognitionReady
+
+    val backGroundColor: Color by animateColorAsState(
+        if (textFieldFocusState) MaterialTheme.colorScheme.surface.copy(alpha = 0.7f)
+        else MaterialTheme.colorScheme.surface, label = ""
+    )
 
     ARAppTheme {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(color = MaterialTheme.colorScheme.surface),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Spacer(
-                Modifier.size(5.dp)
+        Column {
+            ChatBox(
+                messages = uiState.messages,
+                showMessages = uiState.messagesAreShown,
+                focusState = textFieldFocusState
             )
-            UserInput(
-                textFieldValue = textState,
-                onTextChanged = { textState = it },
-                placeHolderText = { Text(stringResource(uiState.textFieldStringResId)) },
-                colors = TextFieldDefaults.textFieldColors(
-                    containerColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent,
-                    focusedIndicatorColor = Color.LightGray,
-                ),
-                modifier = Modifier.weight(1f),
-                onTextFieldFocused = { focused: Boolean ->
-                    textFieldFocusState = focused
-                },
-                onFocusChanged = {
-                    mainViewModel.updateInputMode()
-                }
-            )
-            SendAndMicButton(
-                onPress = {
-                    mainViewModel.sendButtonOnPress(textState.text)
-                    textState = TextFieldValue()
-                          },
-                onRelease = { mainViewModel.sendButtonOnRelease() },
-                permissionLauncher = audioPermissionResultLauncher,
-                icon = painterResource(mainViewModel.getMicOrSendIcon()),
-                textFieldFocusState = textFieldFocusState,
-                recordingPermissionsEnabled = isRecordingEnabled,
-                isRecordingReady = isRecordingReady
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(color = backGroundColor),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Spacer(
+                    Modifier.size(5.dp)
+                )
+                UserInput(
+                    textFieldValue = textState,
+                    onTextChanged = { textState = it },
+                    placeHolderText = { Text(stringResource(uiState.textFieldStringResId)) },
+                    colors = TextFieldDefaults.textFieldColors(
+                        containerColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                        focusedIndicatorColor = Color.LightGray,
+                    ),
+                    modifier = Modifier.weight(1f),
+                    onTextFieldFocused = { focused: Boolean ->
+                        textFieldFocusState = focused
+                    },
+                    onFocusChanged = {
+                        mainViewModel.updateInputMode()
+                    },
+                    readOnly = !isSendEnabled
+                )
+                SendAndMicButton(
+                    onPress = {
+                        mainViewModel.sendButtonOnPress(textState.text)
+                        textState = TextFieldValue()
+                    },
+                    onRelease = { mainViewModel.sendButtonOnRelease() },
+                    permissionLauncher = audioPermissionResultLauncher,
+                    icon = painterResource(mainViewModel.getMicOrSendIcon()),
+                    textFieldFocusState = textFieldFocusState,
+                    recordingPermissionsEnabled = isRecordingEnabled,
+                    isSendEnabled = isSendEnabled
+                )
+            }
         }
     }
 }

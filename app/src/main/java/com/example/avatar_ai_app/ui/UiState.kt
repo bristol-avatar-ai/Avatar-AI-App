@@ -12,11 +12,6 @@ data class UiState(
     val inputMode: Int = speech,
     val textFieldStringResId: Int = R.string.send_message_hint,
 
-    //Recording
-    val recordingState: Int = ready,
-    val responsePresent: Boolean = false,
-    val responseValue: String = "",
-
     //Text input
     val isTextToSpeechReady: Boolean = false,
 
@@ -29,7 +24,6 @@ data class UiState(
     val alertResId: Int = R.string.empty_string,
     val alertIntent: Int = help,
 
-
     //Messages
     val messages: MutableList<ChatMessage> = mutableStateListOf(),
     val messagesAreShown: Boolean = false,
@@ -39,9 +33,6 @@ data class UiState(
 
 ) {
     companion object {
-        const val ready = 0
-        const val recording = 1
-        const val processing = 2
         const val text = 0
         const val speech = 1
         const val help = 0

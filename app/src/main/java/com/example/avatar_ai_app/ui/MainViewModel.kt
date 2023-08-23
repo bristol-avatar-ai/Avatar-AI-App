@@ -47,7 +47,8 @@ class MainViewModel(
     private val _uiState = MutableStateFlow(UiState())
     private val _isCameraEnabled = MutableStateFlow(false)
     private val _isRecordingEnabled = MutableStateFlow(false)
-    private val _isRecordingReady = MutableStateFlow(true)
+    private val _isRecordingReady = MutableStateFlow(false)
+    private val _isRecognitionReady = MutableStateFlow(false)
     private var startTime = System.currentTimeMillis()
     private var recordingJob: Job? = null
     val isChatViewModelLoaded = MutableStateFlow(false)
@@ -64,6 +65,9 @@ class MainViewModel(
 
     val isRecordingReady: StateFlow<Boolean>
         get() = _isRecordingReady
+
+    val isRecognitionReady: StateFlow<Boolean>
+        get() = _isRecognitionReady
 
     //Queue for storing permission strings
     val visiblePermissionDialogQueue = mutableStateListOf<String>()
@@ -88,23 +92,24 @@ class MainViewModel(
                 ChatViewModelInterface.Status.LOADING, null -> {
                     setTextToSpeechReady(false)
                     isChatViewModelLoaded.value = false
+                    Log.i(TAG, "chatViewModel status: loading")
                 }
                 ChatViewModelInterface.Status.READY -> {
                     setTextToSpeechReady(true)
-                    setRecordingState(UiState.ready)
                     updateTextFieldStringResId(R.string.send_message_hint)
                     _isRecordingReady.value = true
                     isChatViewModelLoaded.value = true
+                    Log.i(TAG, "chatViewModel status: ready")
                 }
                 ChatViewModelInterface.Status.RECORDING -> {
-                    setRecordingState(UiState.recording)
                     updateTextFieldStringResId(R.string.recording_message)
                     _isRecordingReady.value = false
+                    Log.i(TAG, "chatViewModel status: recording")
                 }
                 ChatViewModelInterface.Status.PROCESSING -> {
-                    setRecordingState(UiState.processing)
                     updateTextFieldStringResId(R.string.processing_message)
                     _isRecordingReady.value = false
+                    Log.i(TAG, "chatViewModel status: processing")
                 }
             }
 
@@ -112,13 +117,16 @@ class MainViewModel(
                 when (it) {
                     DatabaseViewModelInterface.Status.LOADING -> {
                         isDatabaseViewModelLoaded.value = false
+                        Log.i(TAG, "databaseViewModel status: loading")
                     }
                     DatabaseViewModelInterface.Status.READY -> {
                         isDatabaseViewModelLoaded.value = true
                         setFeatureList()
+                        Log.i(TAG, "databaseViewModel status: ready")
                     }
                     DatabaseViewModelInterface.Status.ERROR, null -> {
                         isDatabaseViewModelLoaded.value = false
+                        Log.i(TAG, "databaseViewModel status: error")
                     }
                 }
             }
@@ -129,17 +137,23 @@ class MainViewModel(
                 null -> {}
                 ImageRecognitionViewModel.Status.INIT -> {
                     isImageViewModelLoaded.value = false
+                    Log.i(TAG, "imageViewModel status: init")
                 }
                 ImageRecognitionViewModel.Status.READY -> {
+                    updateTextFieldStringResId(R.string.send_message_hint)
                     isImageViewModelLoaded.value = true
+                    _isRecognitionReady.value = true
+                    Log.i(TAG, "databaseViewModel status: ready")
                 }
                 ImageRecognitionViewModel.Status.ERROR -> {
                     isImageViewModelLoaded.value = false
+                    _isRecognitionReady.value = false
+                    Log.i(TAG, "databaseViewModel status: error")
                 }
 
                 ImageRecognitionViewModel.Status.PROCESSING -> {
-                //TODO - prevent user from typing anything
-
+                    updateTextFieldStringResId(R.string.scanning_message)
+                    _isRecognitionReady.value = false
                 }
 
             }
@@ -148,24 +162,39 @@ class MainViewModel(
         chatViewModel.messages.observe(lifecycleOwner) {
             if (!it.isNullOrEmpty()) {
                 displayMessages(it)
+                Log.i(TAG, "chatViewModel has messages")
             }
         }
 
         chatViewModel.intent.observe(lifecycleOwner) { intent ->
             when (intent) {
-                Intent.RECOGNITION -> processRecognitionRequest()
-                Intent.NAVIGATION -> processNavigationRequest()
+                Intent.RECOGNITION -> {
+                    processRecognitionRequest()
+                    Log.i(TAG, "chatViewModel intent: recognition")
+                }
+                Intent.NAVIGATION -> {
+                    processNavigationRequest()
+                    Log.i(TAG, "chatViewModel intent: navigation")
+                }
                 else -> {}
             }
         }
     }
 
+    /**
+     * Gets the feature list from the databaseViewModel and passes it to the chatViewModel
+     */
     private fun setFeatureList() {
         viewModelScope.launch(Dispatchers.IO) {
             chatViewModel.setFeatureList(databaseViewModel.getFeatures())
         }
     }
 
+    /**
+     * Handles the processing of recognition requests. If a feature is recognised,
+     * it's description is displayed. Otherwise the description of the nearest cloud anchor
+     * is displayed.
+     */
     private fun processRecognitionRequest() {
         viewModelScope.launch(Dispatchers.IO) {
             val featureName = imageViewModel.recogniseFeature()
@@ -173,16 +202,22 @@ class MainViewModel(
                 val feature = databaseViewModel.getFeature(featureName)
                 if (feature != null) {
                     chatViewModel.newResponse(feature.description)
+                    Log.i(TAG, "Feature description: ${feature.description}")
                 } else {
                     chatViewModel.newResponse("Sorry, I don't recognise this feature!")
+                    Log.i(TAG, "Feature is null")
                 }
             } else {
                 //TODO implement get nearest cloud anchor from ArViewModel
+                Log.i(TAG, "Feature not recognised")
                 chatViewModel.newResponse("Sorry, I don't recognise this feature!")
             }
         }
     }
 
+    /**
+     * Processes a navigation request to the destination from the chatViewModel
+     */
     private fun processNavigationRequest() {
         viewModelScope.launch(Dispatchers.IO) {
             val destination = chatViewModel.destinationID.value
@@ -256,6 +291,10 @@ class MainViewModel(
         }
     }
 
+    /**
+     * Updates the uiState to display a message in the textField
+     * @param resId an integer value for the desired string resource to be displayed
+     */
     private fun updateTextFieldStringResId(resId: Int) {
         _uiState.update { currentState ->
             currentState.copy(
@@ -264,18 +303,13 @@ class MainViewModel(
         }
     }
 
+    /**
+     * 
+     */
     private fun setTextToSpeechReady(ready: Boolean) {
         _uiState.update {
             it.copy(
                 isTextToSpeechReady = ready
-            )
-        }
-    }
-
-    private fun setRecordingState(state: Int) {
-        _uiState.update {
-            it.copy(
-                recordingState = state
             )
         }
     }
@@ -304,7 +338,7 @@ class MainViewModel(
             }
 
             UiState.speech -> {
-                if (uiState.value.recordingState == UiState.ready) {
+                if (_isRecordingReady.value) {
                     startTime = System.currentTimeMillis()
                     recordingJob = viewModelScope.launch(Dispatchers.IO) {
                         delay(RECORDING_WAIT)
@@ -385,16 +419,26 @@ class MainViewModel(
         }
     }
 
+    /**
+     * Generates alert to ensure user wants to delete messages
+     */
     fun clearChatButtonOnClick() {
         generateAlert(AlertType.CLEAR_CHAT)
         dismissSettingsMenu()
     }
 
+    /**
+     * Generates alert to provide the user with help documentation
+     */
     fun helpButtonOnClick() {
         generateAlert(AlertType.HELP)
         dismissSettingsMenu()
     }
 
+    /**
+     * Generates an alert popup
+     * @param alertType Enum to set the type of alert to generate
+     */
     private fun generateAlert(alertType: AlertType) {
         _uiState.update { currentState ->
             when (alertType) {
@@ -417,6 +461,9 @@ class MainViewModel(
         }
     }
 
+    /**
+     * Carries out a function depending on the alert type
+     */
     fun alertOnClick() {
         when (uiState.value.alertIntent) {
             UiState.clear -> clearChatHistory()
@@ -425,6 +472,9 @@ class MainViewModel(
         }
     }
 
+    /**
+     * Dismisses the alert
+     */
     fun dismissAlertDialogue() {
         _uiState.update { currentState ->
             currentState.copy(
@@ -448,26 +498,34 @@ class MainViewModel(
      */
     @OptIn(ExperimentalComposeUiApi::class)
     fun handleSwipe(pan: Float, keyboardController: SoftwareKeyboardController?) {
-        _uiState.update { currentState ->
-            currentState.copy(
-                messagesAreShown = pan <= 0,
-            )
-        }
-        if (pan > 0) {
+        if(!uiState.value.messagesAreShown && pan > 0) {
             dismissLanguageMenu()
+            focusRequester.requestFocus()
             keyboardController?.hide()
+
+        } else {
+            _uiState.update { currentState ->
+                currentState.copy(
+                    messagesAreShown = pan <= 0,
+                )
+            }
         }
     }
 
+    /**
+     * Sets the graph in the arViewModel and initialises the arScene
+     * @param arSceneView an ArSceneView to be initialised
+     */
     fun initialiseArScene(arSceneView: ArSceneView) {
         viewModelScope.launch(Dispatchers.IO) {
             arViewModel.setGraph(databaseViewModel.getGraph())
-            //TODO arViewModel.setFeatures(databaseViewModel.getFeatures())
             arViewModel.initialiseArScene(arSceneView)
-            arViewModel.addModelToScene(ArViewModel.ModelType.AVATAR)
         }
     }
 
+    /**
+     * Updates the uiState to show the settings menu
+     */
     fun settingsMenuButtonOnClick() {
         _uiState.update { currentState ->
             currentState.copy(
@@ -477,6 +535,9 @@ class MainViewModel(
         }
     }
 
+    /**
+     * Updates the uiState to hide the settings menu
+     */
     fun dismissSettingsMenu() {
         _uiState.update { currentState ->
             currentState.copy(

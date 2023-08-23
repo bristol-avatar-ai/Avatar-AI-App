@@ -1,5 +1,6 @@
 package com.example.avatar_ai_app.ui.components.chatBox
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.Orientation
@@ -41,6 +42,7 @@ import com.example.avatar_ai_app.ui.theme.spacing
 fun ChatBox(
     messages: List<ChatMessage>,
     showMessages: Boolean,
+    focusState: Boolean
 ) {
     val density = LocalDensity.current
     val scrollState = rememberLazyListState()
@@ -48,13 +50,18 @@ fun ChatBox(
     val draggableState = rememberDraggableState(onDelta = {
         draggedHeight += with(density) { it.toDp() }
     })
-    val maxHeight = if(draggedHeight >= 200.dp) draggedHeight else 200.dp
+    val maxHeight = if (draggedHeight >= 200.dp) draggedHeight else 200.dp
 
     val interactionSource = remember { MutableInteractionSource() }
 
     val boxColor by rememberUpdatedState(
         if (interactionSource.collectIsDraggedAsState().value) MaterialTheme.colorScheme.inverseOnSurface
         else MaterialTheme.colorScheme.onSurface
+    )
+
+    val backGroundColor by animateColorAsState(
+        if (focusState || (showMessages && messages.isNotEmpty())) MaterialTheme.colorScheme.surface.copy(alpha = 0.7f)
+        else MaterialTheme.colorScheme.surface, label = ""
     )
 
     ARAppTheme {
@@ -76,7 +83,7 @@ fun ChatBox(
                     interactionSource = interactionSource,
                     reverseDirection = true,
                 )
-                .background(color = MaterialTheme.colorScheme.surface)
+                .background(backGroundColor)
                 .animateContentSize(
 
                 ),
@@ -96,7 +103,7 @@ fun ChatBox(
                         )
                 )
             }
-            if (showMessages) {
+            if (messages.isNotEmpty() && showMessages) {
                 LazyColumn(
                     modifier = Modifier
                         .heightIn(min = 0.dp, max = maxHeight)
@@ -108,8 +115,19 @@ fun ChatBox(
                 ) {
                     messages.forEach { message ->
                         when (message.type) {
-                            MessageType.USER -> item { Message(type = message.type, string = message.string) }
-                            MessageType.RESPONSE -> item { Message(type = message.type, string = message.string) }
+                            MessageType.USER -> item {
+                                Message(
+                                    type = message.type,
+                                    string = message.string
+                                )
+                            }
+
+                            MessageType.RESPONSE -> item {
+                                Message(
+                                    type = message.type,
+                                    string = message.string
+                                )
+                            }
                         }
                     }
                 }

@@ -11,6 +11,7 @@
     <string name="processing_message" tools:ignore="TypographyEllipsis">Wird bearbeitet...</string>
 
     <!--Loading screen-->
+    <string name="scanning_message">Scannen...</string>
     <string name="loading_message">Wird geladen</string>
 
     <!--Permissions-->
