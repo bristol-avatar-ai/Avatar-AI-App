@@ -58,7 +58,6 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
             }
 
             resolveModel(modelNode, anchorId)
-            resolvedModelNodes.add(modelNode)
             anchorMap[anchorId] = modelNode
         }
     }
@@ -111,7 +110,6 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
         return modelNode
     }
 
-    private val resolvedModelNodes = mutableListOf<ModelNode>()
     private val anchorMap: MutableMap<String, ModelNode> = mutableMapOf()
 
     private fun resolveModel(modelNode: ModelNode, anchorId: String?) {
@@ -159,6 +157,14 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
             val path = paths[destination]
 
             showPath(path)
+        }
+    }
+
+    private fun resetPath(){
+        for ((_, anchorNode) in anchorMap){
+            if(anchorNode.signName.isNullOrEmpty()){
+                anchorNode.isVisible=false
+            }
         }
     }
 
@@ -218,6 +224,7 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
     private val handler = Handler(Looper.getMainLooper())
 
     private fun showPath(path: List<String>?) {
+        resetPath()
         var modelIndex = 0
         var withinThreshold = false
 
@@ -236,7 +243,6 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
                     withinThreshold = true
                 }
 
-                // If we're within the threshold
                 if (withinThreshold) {
                     // If it's the last anchor, hide it
                     if (modelIndex == path.size - 1) {
@@ -261,8 +267,6 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
         (anchorMap[path!![0]] as ModelNode).isVisible = true
         handler.post(runnableCode)
     }
-
-
 
     private fun distanceFromAnchor(anchorNode: ModelNode?): Float {
         val cameraPose = arSceneView.currentFrame?.camera?.pose
