@@ -11,6 +11,7 @@
     <string name="processing_message" tools:ignore="TypographyEllipsis">Traitement...</string>
 
     <!--Loading screen-->
+    <string name="scanning_message">Balayage...</string>
     <string name="loading_message">Chargement</string>
 
     <!--Permissions-->

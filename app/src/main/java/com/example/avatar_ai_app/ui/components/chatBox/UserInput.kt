@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
@@ -24,9 +25,12 @@ fun UserInput(
     colors: TextFieldColors,
     modifier: Modifier,
     onTextFieldFocused: (Boolean) -> Unit,
-    onFocusChanged: () -> Unit
+    onFocusChanged: () -> Unit,
+    readOnly: Boolean
 ) {
     var previousFocusState by remember { mutableStateOf(false) }
+    val isReadyOnly by rememberUpdatedState(newValue = readOnly)
+
     TextField(
         value = textFieldValue,
         onValueChange = { onTextChanged(it) },
@@ -37,6 +41,7 @@ fun UserInput(
             autoCorrect = true,
             imeAction = ImeAction.Default
         ),
+        readOnly = isReadyOnly,
         modifier = modifier.onFocusChanged { state ->
             if (previousFocusState != state.isFocused) {
                 onTextFieldFocused(state.isFocused)

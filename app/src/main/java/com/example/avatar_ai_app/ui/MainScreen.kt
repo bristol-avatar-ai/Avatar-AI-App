@@ -24,7 +24,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
@@ -34,7 +33,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -261,11 +259,10 @@ fun BottomBar(
     )
 
     val isRecordingReady by mainViewModel.isRecordingReady.collectAsState()
+    val isRecognitionReady by mainViewModel.isRecognitionReady.collectAsState()
 
-//    val backGroundColor by rememberUpdatedState(
-//        if (textFieldFocusState) MaterialTheme.colorScheme.surface.copy(alpha = 0.7f)
-//        else MaterialTheme.colorScheme.surface
-//    )
+    val isSendEnabled = isRecordingReady && isRecognitionReady
+
     val backGroundColor: Color by animateColorAsState(
         if (textFieldFocusState) MaterialTheme.colorScheme.surface.copy(alpha = 0.7f)
         else MaterialTheme.colorScheme.surface, label = ""
@@ -302,7 +299,8 @@ fun BottomBar(
                     },
                     onFocusChanged = {
                         mainViewModel.updateInputMode()
-                    }
+                    },
+                    readOnly = !isSendEnabled
                 )
                 SendAndMicButton(
                     onPress = {
@@ -314,11 +312,10 @@ fun BottomBar(
                     icon = painterResource(mainViewModel.getMicOrSendIcon()),
                     textFieldFocusState = textFieldFocusState,
                     recordingPermissionsEnabled = isRecordingEnabled,
-                    isRecordingReady = isRecordingReady
+                    isSendEnabled = isSendEnabled
                 )
             }
         }
-        //}
     }
 }
 

@@ -11,6 +11,7 @@
     <string name="processing_message" tools:ignore="TypographyEllipsis">加工...</string>
 
     <!--Loading screen-->
+    <string name="scanning_message">扫描...</string>
     <string name="loading_message">加载中</string>
 
     <!--Permissions-->

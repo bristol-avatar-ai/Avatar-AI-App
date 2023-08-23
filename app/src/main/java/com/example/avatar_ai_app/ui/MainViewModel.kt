@@ -47,7 +47,8 @@ class MainViewModel(
     private val _uiState = MutableStateFlow(UiState())
     private val _isCameraEnabled = MutableStateFlow(false)
     private val _isRecordingEnabled = MutableStateFlow(false)
-    private val _isRecordingReady = MutableStateFlow(true)
+    private val _isRecordingReady = MutableStateFlow(false)
+    private val _isRecognitionReady = MutableStateFlow(false)
     private var startTime = System.currentTimeMillis()
     private var recordingJob: Job? = null
     val isChatViewModelLoaded = MutableStateFlow(false)
@@ -64,6 +65,9 @@ class MainViewModel(
 
     val isRecordingReady: StateFlow<Boolean>
         get() = _isRecordingReady
+
+    val isRecognitionReady: StateFlow<Boolean>
+        get() = _isRecognitionReady
 
     //Queue for storing permission strings
     val visiblePermissionDialogQueue = mutableStateListOf<String>()
@@ -139,17 +143,20 @@ class MainViewModel(
                     Log.i(TAG, "imageViewModel status: init")
                 }
                 ImageRecognitionViewModel.Status.READY -> {
+                    updateTextFieldStringResId(R.string.send_message_hint)
                     isImageViewModelLoaded.value = true
+                    _isRecognitionReady.value = true
                     Log.i(TAG, "databaseViewModel status: ready")
                 }
                 ImageRecognitionViewModel.Status.ERROR -> {
                     isImageViewModelLoaded.value = false
+                    _isRecognitionReady.value = false
                     Log.i(TAG, "databaseViewModel status: error")
                 }
 
                 ImageRecognitionViewModel.Status.PROCESSING -> {
-                //TODO - prevent user from typing anything
-
+                    updateTextFieldStringResId(R.string.scanning_message)
+                    _isRecognitionReady.value = false
                 }
 
             }
