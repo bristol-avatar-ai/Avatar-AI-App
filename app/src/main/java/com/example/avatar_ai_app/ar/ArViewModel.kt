@@ -47,11 +47,13 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
         this.arSceneView = arSceneView
 
         Log.d("ArViewModel", "Initialise AR Scene Complete")
+
+        monitorModelsInView() // Start monitoring here
     }
 
     private fun resolveAllAnchors() {
         graph.forEach { anchorId, anchorProperties ->
-            val modelNode: ModelNode = if(anchorProperties.name.contains("SIGN")) {
+            val modelNode: ModelNode = if (anchorProperties.name.contains("SIGN")) {
                 createSignModel(anchorProperties.name)
             } else {
                 createCrystalModel(anchorProperties.name)
@@ -61,6 +63,36 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
             anchorMap[anchorId] = modelNode
         }
     }
+
+    private fun monitorModelsInView() {
+        viewModelScope.launch(Dispatchers.Default) {
+            while (isActive) {
+                delay(500) // Check every half second (or adjust as per your need)
+
+                // Check if both models (sign and orientation) are in view
+                anchorMap.forEach { (_, signModelNode) ->
+                    if (signModelNode.isSign && signModelNode.isResolved) {
+                        anchorMap.forEach { (_, orientationModelNode) ->
+                            if (orientationModelNode.isOrientation && orientationModelNode.isResolved) {
+                                if (sameFeature(signModelNode, orientationModelNode)
+                                    && isInView(signModelNode)
+                                    && isInView(orientationModelNode)
+                                    && distanceFromAnchor(signModelNode)<5) {
+
+                                    // Move to Main thread to update UI
+                                    withContext(Dispatchers.Main) {
+                                        signModelNode.lookAt(orientationModelNode)
+                                        signModelNode.isVisible = true
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
 
     private fun createCrystalModel(anchorName: String): ModelNode {
         val modelNode: ModelNode
@@ -81,7 +113,7 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
             isVisible = false
         }
 
-        if(anchorName.contains("ORIENTATION")){
+        if (anchorName.contains("ORIENTATION")) {
             modelNode.isOrientation = true
         }
 
@@ -109,8 +141,6 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
         }
         arSceneView.addChild(modelNode)
 
-        Log.d(TAG, "File Location: " + "models/${anchorName.substring(7)}.glb")
-
         modelNode.isSign = true
 
         return modelNode
@@ -126,8 +156,6 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
                 if (success) {
                     Log.d(TAG, "Anchor resolved $anchorId")
                     modelNode.isResolved = true
-                    if(modelNode.isSign){checkForOrientation(modelNode) }
-                    if(modelNode.isOrientation){checkForSign(modelNode) }
                 }
                 if (!success) {
                     Log.d(TAG, "Anchor failed to resolve, trying again - Id: $anchorId")
@@ -139,34 +167,10 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
         }
     }
 
-    // Checks whether the corresponding orientation model has been resolved, and if it has sets the rotation
-    private fun checkForOrientation(signModelNode: ModelNode){
-        anchorMap.forEach { (_, modelNode) ->
-            if(modelNode.isOrientation && modelNode.isResolved){
-                if(sameFeature(signModelNode, modelNode)){
-                    signModelNode.lookAt(modelNode)
-                    signModelNode.isVisible = true
-                }
-            }
-        }
-    }
-
-    // Checks whether the corresponding sign has been resolved, and if it has sets the rotation
-    private fun checkForSign(orientationModelNode: ModelNode){
-        anchorMap.forEach { (_, modelNode) ->
-            if(modelNode.isSign && modelNode.isResolved){
-                if(sameFeature(modelNode, orientationModelNode)){
-                    modelNode.lookAt(orientationModelNode)
-                    modelNode.isVisible = true
-                }
-            }
-        }
-    }
-
     // Function to check whether a sign and orientation model are for the same feature
     private fun sameFeature(signModelNode: ModelNode, orientationModelNode: ModelNode): Boolean {
         val featureName = signModelNode.modelName!!.substring(7)
-        if(orientationModelNode.modelName!!.contains(featureName)){
+        if (orientationModelNode.modelName!!.contains(featureName)) {
             return true
         }
         return false
@@ -180,7 +184,8 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
 
             while (currentLocation == null) {
                 if (snackbar?.isShown == false || snackbar == null) {
-                    snackbar = Snackbar.make(arSceneView, "Please move your device around to scan the surroundings",
+                    snackbar = Snackbar.make(
+                        arSceneView, "Please move your device around to scan the surroundings",
                         Snackbar.LENGTH_INDEFINITE
                     )
                     snackbar.show()
@@ -195,14 +200,10 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
             val (_, paths) = dijkstra(currentLocation)
             val path = paths[destination]
 
-            showPath(path)
-        }
-    }
-
-    private fun resetPath(){
-        for ((_, anchorNode) in anchorMap){
-            if(!anchorNode.isSign){
-                anchorNode.isVisible=false
+            if(path != null) {
+                showPath(path)
+            } else {
+                Log.w(TAG, "Invalid Anchor ID.")
             }
         }
     }
@@ -217,7 +218,7 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
         for ((anchorId, anchorNode) in anchorMap) {
             val nodePose = anchorNode.anchor?.pose
             if (
-                nodePose != null && isInView(nodePose)
+                nodePose != null && isInView(anchorNode)
                 && anchorNode.isResolved && !anchorNode.isSign
             ) {
                 val distance = distanceFromAnchor(anchorNode)
@@ -260,51 +261,55 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
         return Pair(dist, paths)
     }
 
-    private val handler = Handler(Looper.getMainLooper())
+    private var pathfindingJob: Job? = null
 
-    private fun showPath(path: List<String>?) {
+    private fun showPath(path: List<String>) {
         resetPath()
         var modelIndex = 0
         var withinThreshold = false
 
-        val runnableCode = object : Runnable {
-            override fun run() {
+        pathfindingJob = viewModelScope.launch(Dispatchers.IO) {
+            (anchorMap[path[0]] as ModelNode).isVisible = true
+
+            while(modelIndex < path.size - 1 || withinThreshold) {
                 val thresholdDistance = 3
 
                 // Current model
-                val model = anchorMap[path!![modelIndex]]
+                val model = anchorMap[path[modelIndex]]
 
                 // Next model (if exists)
-                val nextModel = if (modelIndex < path.size - 1) anchorMap[path[modelIndex + 1]] else null
+                val nextModel =
+                    if (modelIndex < path.size - 2) anchorMap[path[modelIndex + 1]] else null
 
                 // If not already within threshold, check the distance
                 if (!withinThreshold && distanceFromAnchor(model) < thresholdDistance) {
                     withinThreshold = true
                 }
 
+                if(distanceFromAnchor(model) < 2){
+                    model?.isVisible = false
+                }
+
                 if (withinThreshold) {
-                    // If it's the last anchor, hide it
-                    if (modelIndex == path.size - 1) {
-                        model?.isVisible = false
-                    } else {
-                        // If the next model is resolved, update visibility and move to next model
-                        if (nextModel != null && nextModel.isResolved) {
-                            updateVisibleModel(model, nextModel)
-                            modelIndex++
-                            withinThreshold = false // Reset the flag since we moved to the next anchor
-                        }
+                    // If the next model is resolved, update visibility and move to next model
+                    if (nextModel != null && nextModel.isResolved) {
+                        updateVisibleModel(model, nextModel)
+                        modelIndex++
+                        withinThreshold = false // Reset the flag since we moved to the next anchor
                     }
                 }
-
-                // Continue the loop until the end of the path
-                if (modelIndex < path.size - 1 || withinThreshold) {
-                    handler.postDelayed(this, 500)
-                }
+                delay(500)
             }
         }
+    }
 
-        (anchorMap[path!![0]] as ModelNode).isVisible = true
-        handler.post(runnableCode)
+    private fun resetPath() {
+        pathfindingJob?.cancel()
+        for ((_, anchorNode) in anchorMap) {
+            if (!anchorNode.isSign) {
+                anchorNode.isVisible = false
+            }
+        }
     }
 
     private fun distanceFromAnchor(anchorNode: ModelNode?): Float {
@@ -312,7 +317,7 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
 
         val nodePose = anchorNode?.anchor?.pose
 
-        if (nodePose != null && isInView(nodePose)) {
+        if (nodePose != null && isInView(anchorNode)) {
             val dx = cameraPose?.tx()?.minus(nodePose.tx())
             val dy = cameraPose?.ty()?.minus(nodePose.ty())
             val dz = cameraPose?.tz()?.minus(nodePose.tz())
@@ -321,8 +326,9 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
         return Float.MAX_VALUE
     }
 
-    private fun isInView(pose: Pose): Boolean {
-        val screenCoord = getScreenCoordinates(pose) ?: return false
+    private fun isInView(anchorNode: ModelNode): Boolean {
+        val pose = anchorNode?.anchor?.pose
+        val screenCoord = getScreenCoordinates(pose!!) ?: return false
         return screenCoord.x >= 0 && screenCoord.y >= 0 && screenCoord.x <= arSceneView.width && screenCoord.y <= arSceneView.height
     }
 
