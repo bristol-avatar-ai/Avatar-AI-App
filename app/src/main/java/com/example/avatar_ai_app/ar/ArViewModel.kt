@@ -15,15 +15,10 @@ import com.google.android.material.snackbar.Snackbar
 import com.google.ar.core.Anchor
 import com.google.ar.core.Config
 import com.google.ar.core.Pose
-import com.google.ar.sceneform.math.Quaternion
 import com.google.ar.sceneform.math.Vector3
-import dev.romainguy.kotlin.math.Float3
 import io.github.sceneview.ar.ArSceneView
 import io.github.sceneview.ar.node.PlacementMode
-import io.github.sceneview.math.toVector3
 import kotlinx.coroutines.*
-import kotlin.math.asin
-import kotlin.math.atan2
 import kotlin.math.sqrt
 
 private const val TAG = "ArViewModel"
@@ -60,7 +55,7 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
             val modelNode: ModelNode = if(anchorProperties.name.contains("SIGN")) {
                 createSignModel(anchorProperties.name)
             } else {
-                createCrystalModel()
+                createCrystalModel(anchorProperties.name)
             }
 
             resolveModel(modelNode, anchorId)
@@ -68,11 +63,11 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
         }
     }
 
-    private fun createCrystalModel(): ModelNode {
+    private fun createCrystalModel(anchorName: String): ModelNode {
         val modelNode: ModelNode
 
         val model = crystalModel
-        modelNode = ModelNode(arSceneView.engine, null).apply {
+        modelNode = ModelNode(arSceneView.engine, anchorName).apply {
             viewModelScope.launch {
                 loadModelGlb(
                     context = context,
@@ -87,7 +82,12 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
             isVisible = false
         }
 
+        if(anchorName.contains("ORIENTATION")){
+            modelNode.isOrientation = true
+        }
+
         arSceneView.addChild(modelNode)
+
         return modelNode
     }
 
@@ -112,6 +112,7 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
 
         Log.d(TAG, "File Location: " + "models/${anchorName.substring(7)}.glb")
 
+        modelNode.isSign = true
 
         return modelNode
     }
@@ -127,7 +128,7 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
                     Log.d(TAG, "Anchor resolved $anchorId")
                     Toast.makeText(context, "RESOLVED $anchorId", Toast.LENGTH_SHORT).show()
                     modelNode.isResolved = true
-                    if(modelNode.signName?.contains("SIGN") == true){
+                    if(modelNode.isSign){
                         modelNode.isVisible = true
                     }
                 }
@@ -179,7 +180,7 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
 
     private fun resetPath(){
         for ((_, anchorNode) in anchorMap){
-            if(anchorNode.signName.isNullOrEmpty()){
+            if(!anchorNode.isSign){
                 anchorNode.isVisible=false
             }
         }
@@ -196,7 +197,7 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
             val nodePose = anchorNode.anchor?.pose
             if (
                 nodePose != null && isInView(nodePose)
-                && anchorNode.isResolved && anchorNode.signName.isNullOrEmpty()
+                && anchorNode.isResolved && !anchorNode.isSign
             ) {
                 val distance = distanceFromAnchor(anchorNode)
                 if (distance < minDistance) {
