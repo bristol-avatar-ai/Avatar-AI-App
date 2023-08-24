@@ -109,6 +109,7 @@ class MainViewModel(
                 ChatViewModelInterface.Status.PROCESSING -> {
                     updateTextFieldStringResId(R.string.processing_message)
                     _isRecordingReady.value = false
+                    textFieldFocusState.value = false
                     Log.i(TAG, "chatViewModel status: processing")
                 }
             }
@@ -143,17 +144,18 @@ class MainViewModel(
                     updateTextFieldStringResId(R.string.send_message_hint)
                     isImageViewModelLoaded.value = true
                     _isRecognitionReady.value = true
-                    Log.i(TAG, "databaseViewModel status: ready")
+                    Log.i(TAG, "imageViewModel status: ready")
                 }
                 ImageRecognitionViewModel.Status.ERROR -> {
                     isImageViewModelLoaded.value = false
                     _isRecognitionReady.value = false
-                    Log.i(TAG, "databaseViewModel status: error")
+                    Log.i(TAG, "imageViewModel status: error")
                 }
 
                 ImageRecognitionViewModel.Status.PROCESSING -> {
                     updateTextFieldStringResId(R.string.scanning_message)
                     _isRecognitionReady.value = false
+                    Log.i(TAG, "imageViewModel status: processing")
                 }
 
             }
