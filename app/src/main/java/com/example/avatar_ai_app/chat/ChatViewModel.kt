@@ -245,12 +245,11 @@ class ChatViewModel(
     override fun newUserMessage(message: String) {
         Log.i(TAG, "newUserMessage: message: $message")
         viewModelScope.launch(Dispatchers.IO) {
-            addMessage(ChatMessage(message, MessageType.USER))
-
             val englishMessage = chatTranslator.translateInput(message)
             if (englishMessage == null) {
                 errorListener.onError(ErrorType.NETWORK)
             } else {
+                addMessage(ChatMessage(englishMessage, MessageType.USER))
                 val englishResponse = chatService.getResponse(englishMessage)
                 val response = translateOutput(englishResponse)
 
@@ -329,8 +328,9 @@ class ChatViewModel(
     override fun newResponse(response: String) {
         Log.i(TAG, "newResponse: $response")
         viewModelScope.launch(Dispatchers.IO) {
-            readMessage(response)
-            addMessage(ChatMessage(response, MessageType.RESPONSE))
+            val translatedResponse = translateOutput(response)
+            readMessage(translatedResponse)
+            addMessage(ChatMessage(translatedResponse, MessageType.RESPONSE))
         }
     }
 
