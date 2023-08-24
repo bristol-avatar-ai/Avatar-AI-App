@@ -89,7 +89,7 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
     }
 
     /**
-     * Creates a crystal model based on the given anchor name, initializes its properties,
+     * Creates a crystal model based on the given anchor name, initialises its properties,
      * and adds it to the AR scene. If the anchor name contains "ORIENTATION", the model
      * will be marked as an orientation model.
      */
@@ -97,7 +97,7 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
         // Load crystal model properties
         val model = crystalModel
 
-        // Create and initialize model node based on anchor name
+        // Create and initialise model node based on anchor name
         val modelNode = ModelNode(arSceneView.engine, anchorName).apply {
             // Load the associated model asynchronously
             viewModelScope.launch {
@@ -405,7 +405,7 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
 
         val worldToScreenMatrix = computeWorldToScreenMatrix(camera)
 
-        // Transform the anchor's position to normalized device coordinates (NDC)
+        // Transform the anchor's position to normalised device coordinates (NDC)
         val ndcCoord = transformToNDC(pose, worldToScreenMatrix)
 
         // Convert NDC to actual screen coordinates
