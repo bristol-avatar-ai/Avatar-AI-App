@@ -299,8 +299,7 @@ fun BottomBar(
                     },
                     onFocusChanged = {
                         mainViewModel.updateInputMode()
-                    },
-                    readOnly = !isSendEnabled
+                    }
                 )
                 SendAndMicButton(
                     onPress = {

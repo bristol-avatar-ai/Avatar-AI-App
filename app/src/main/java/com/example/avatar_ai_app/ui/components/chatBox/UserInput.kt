@@ -25,11 +25,9 @@ fun UserInput(
     colors: TextFieldColors,
     modifier: Modifier,
     onTextFieldFocused: (Boolean) -> Unit,
-    onFocusChanged: () -> Unit,
-    readOnly: Boolean
+    onFocusChanged: () -> Unit
 ) {
     var previousFocusState by remember { mutableStateOf(false) }
-    val isReadyOnly by rememberUpdatedState(newValue = readOnly)
 
     TextField(
         value = textFieldValue,
@@ -41,7 +39,6 @@ fun UserInput(
             autoCorrect = true,
             imeAction = ImeAction.Default
         ),
-        readOnly = isReadyOnly,
         modifier = modifier.onFocusChanged { state ->
             if (previousFocusState != state.isFocused) {
                 onTextFieldFocused(state.isFocused)
