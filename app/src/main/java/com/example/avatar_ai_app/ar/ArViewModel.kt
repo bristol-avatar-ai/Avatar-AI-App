@@ -3,8 +3,6 @@ package com.example.avatar_ai_app.ar
 import android.annotation.SuppressLint
 import android.app.Application
 import android.opengl.Matrix
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -12,6 +10,7 @@ import com.example.avatar_ai_app.data.crystalModel
 import com.example.avatar_ai_app.data.signModel
 import com.google.android.material.snackbar.Snackbar
 import com.google.ar.core.Anchor
+import com.google.ar.core.Camera
 import com.google.ar.core.Config
 import com.google.ar.core.Pose
 import com.google.ar.sceneform.math.Vector3
@@ -24,81 +23,83 @@ private const val TAG = "ArViewModel"
 
 class ArViewModel(application: Application) : AndroidViewModel(application), ArViewModelInterface {
 
+    // Class Variables
     private val _application = application
     private lateinit var graph: Graph
-
     @SuppressLint("StaticFieldLeak")
     lateinit var arSceneView: ArSceneView
+    private val context get() = _application.applicationContext
+    private val anchorMap: MutableMap<String, ModelNode> = mutableMapOf()
+    private var pathfindingJob: Job? = null
 
-    private val context
-        get() = _application.applicationContext
+    fun onDestroy() {
+        arSceneView.arSession?.destroy()
+        arSceneView.destroy()
+    }
 
     override fun setGraph(graph: Graph) {
         this.graph = graph
     }
 
+    /**
+     * Initialises the given AR scene view with specific settings.
+     * Sets light estimation mode, enables cloud anchors, resolves all anchors,
+     * and starts monitoring the models in the view.
+     */
     override fun initialiseArScene(arSceneView: ArSceneView) {
+        // Set up the AR scene view with environmental HDR light estimation and enable cloud anchors
         viewModelScope.launch {
-            arSceneView.lightEstimationMode = Config.LightEstimationMode.ENVIRONMENTAL_HDR
-            arSceneView.cloudAnchorEnabled = true
+            arSceneView.apply {
+                lightEstimationMode = Config.LightEstimationMode.ENVIRONMENTAL_HDR
+                cloudAnchorEnabled = true
+            }
             delay(1000L)
             resolveAllAnchors()
         }
+
+        // Assign the passed AR scene view to the class property
         this.arSceneView = arSceneView
 
         Log.d("ArViewModel", "Initialise AR Scene Complete")
 
-        monitorModelsInView() // Start monitoring here
+        // Start monitoring models in the view
+        monitorModelsInView()
     }
 
+    /**
+     * Iterates over all anchors in the graph. For each anchor, it determines the type of
+     * model (sign or crystal) based on its name, resolves the anchor for the model,
+     * and adds the model node to the anchor map.
+     */
     private fun resolveAllAnchors() {
         graph.forEach { anchorId, anchorProperties ->
-            val modelNode: ModelNode = if (anchorProperties.name.contains("SIGN")) {
+            // Determine which type of model to create based on the anchor name
+            val modelNode = if (anchorProperties.name.contains("SIGN")) {
                 createSignModel(anchorProperties.name)
             } else {
                 createCrystalModel(anchorProperties.name)
             }
 
+            // Resolve the anchor for the created model node
             resolveModel(modelNode, anchorId)
+
+            // Add the model node to the anchor map
             anchorMap[anchorId] = modelNode
         }
     }
 
-    private fun monitorModelsInView() {
-        viewModelScope.launch(Dispatchers.Default) {
-            while (isActive) {
-                delay(500) // Check every half second (or adjust as per your need)
-
-                // Check if both models (sign and orientation) are in view
-                anchorMap.forEach { (_, signModelNode) ->
-                    if (signModelNode.isSign && signModelNode.isResolved) {
-                        anchorMap.forEach { (_, orientationModelNode) ->
-                            if (orientationModelNode.isOrientation && orientationModelNode.isResolved) {
-                                if (sameFeature(signModelNode, orientationModelNode)
-                                    && isInView(signModelNode)
-                                    && isInView(orientationModelNode)
-                                    && distanceFromAnchor(signModelNode)<5) {
-
-                                    // Move to Main thread to update UI
-                                    withContext(Dispatchers.Main) {
-                                        signModelNode.lookAt(orientationModelNode)
-                                        signModelNode.isVisible = true
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-
+    /**
+     * Creates a crystal model based on the given anchor name, initializes its properties,
+     * and adds it to the AR scene. If the anchor name contains "ORIENTATION", the model
+     * will be marked as an orientation model.
+     */
     private fun createCrystalModel(anchorName: String): ModelNode {
-        val modelNode: ModelNode
-
+        // Load crystal model properties
         val model = crystalModel
-        modelNode = ModelNode(arSceneView.engine, anchorName).apply {
+
+        // Create and initialize model node based on anchor name
+        val modelNode = ModelNode(arSceneView.engine, anchorName).apply {
+            // Load the associated model asynchronously
             viewModelScope.launch {
                 loadModelGlb(
                     context = context,
@@ -107,25 +108,34 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
                     centerOrigin = model.position
                 )
             }
-        }
-        modelNode.apply {
+
+            // Set model properties
             placementMode = PlacementMode.INSTANT
             isVisible = false
+
+            // Mark as an orientation model if anchor name contains "ORIENTATION"
+            if (anchorName.contains("ORIENTATION")) {
+                isOrientation = true
+            }
         }
 
-        if (anchorName.contains("ORIENTATION")) {
-            modelNode.isOrientation = true
-        }
-
+        // Add model to AR scene
         arSceneView.addChild(modelNode)
 
         return modelNode
     }
 
+    /**
+     * Creates a sign model based on the given anchor name, initialises it,
+     * sets its properties, and adds it to the AR scene.
+     */
     private fun createSignModel(anchorName: String): ModelNode {
-        val modelNode: ModelNode
+        // Load sign model properties
         val model = signModel
-        modelNode = ModelNode(arSceneView.engine, anchorName).apply {
+
+        // Create and initialise model node based on anchor name
+        val modelNode = ModelNode(arSceneView.engine, anchorName).apply {
+            // Load the associated model asynchronously
             viewModelScope.launch {
                 loadModelGlb(
                     context = context,
@@ -134,69 +144,60 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
                     centerOrigin = model.position
                 )
             }
-        }
-        modelNode.apply {
+
+            // Set model properties
             placementMode = PlacementMode.INSTANT
             isVisible = false
+            isSign = true
         }
-        arSceneView.addChild(modelNode)
 
-        modelNode.isSign = true
+        // Add model to AR scene
+        arSceneView.addChild(modelNode)
 
         return modelNode
     }
 
-    private val anchorMap: MutableMap<String, ModelNode> = mutableMapOf()
 
+    /**
+     * Attempts to resolve the provided model node using a cloud anchor ID.
+     * If resolution fails, it recursively tries again.
+     */
     private fun resolveModel(modelNode: ModelNode, anchorId: String?) {
-        if (anchorId != null) {
-            modelNode.resolveCloudAnchor(anchorId) { anchor: Anchor, success: Boolean ->
-                Log.d(TAG, anchor.trackingState.toString())
+        if (anchorId == null) {
+            Log.d(TAG, "Null anchor Id")
+            return
+        }
 
-                if (success) {
-                    Log.d(TAG, "Anchor resolved $anchorId")
+        modelNode.resolveCloudAnchor(anchorId) { anchor: Anchor, success: Boolean ->
+            Log.d(TAG, "Anchor tracking state: ${anchor.trackingState}")
+
+            when {
+                success -> {
+                    Log.d(TAG, "Successfully resolved anchor: $anchorId")
                     modelNode.isResolved = true
                 }
-                if (!success) {
-                    Log.d(TAG, "Anchor failed to resolve, trying again - Id: $anchorId")
+                else -> {
+                    Log.w(TAG, "Failed to resolve anchor (Id: $anchorId). Retrying...")
                     resolveModel(modelNode, anchorId)
                 }
             }
-        } else {
-            Log.d(TAG, "Null anchor Id")
         }
     }
 
-    // Function to check whether a sign and orientation model are for the same feature
+    /**
+     * Checks whether a sign and orientation model are for the same feature.
+     */
     private fun sameFeature(signModelNode: ModelNode, orientationModelNode: ModelNode): Boolean {
-        val featureName = signModelNode.modelName!!.substring(7)
-        if (orientationModelNode.modelName!!.contains(featureName)) {
-            return true
-        }
-        return false
+        val featureName = signModelNode.modelName?.substring(7)
+        return orientationModelNode.modelName?.contains(featureName ?: "") == true
     }
 
+    /**
+     * Loads and displays the shortest path to the given destination.
+     */
     override fun loadDirections(destination: String) {
-
         CoroutineScope(Dispatchers.IO).launch {
-            var currentLocation = closestAnchor()
-            var snackbar: Snackbar? = null
-
-            while (currentLocation == null) {
-                if (snackbar?.isShown == false || snackbar == null) {
-                    snackbar = Snackbar.make(
-                        arSceneView, "Please move your device around to scan the surroundings",
-                        Snackbar.LENGTH_INDEFINITE
-                    )
-                    snackbar.show()
-                }
-
-                delay(2000) // Wait for 2 seconds before checking again
-                currentLocation = closestAnchor()
-            }
-
-            snackbar?.dismiss()
-
+            val currentLocation = detectCurrentLocation()
             val (_, paths) = dijkstra(currentLocation)
             val path = paths[destination]
 
@@ -208,7 +209,41 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
         }
     }
 
-    // This function will return the Id of the nearest cloud anchor
+    /**
+     * Detects the current location by finding the closest anchor.
+     * If no anchor is detected immediately, prompts the user to scan the surroundings.
+     */
+    private suspend fun detectCurrentLocation(): String {
+        var currentLocation = closestAnchor()
+        var snackbar: Snackbar? = null
+
+        while (currentLocation == null) {
+            snackbar = showSnackbarIfNeeded(snackbar)
+            delay(2000) // Wait for 2 seconds before checking again
+            currentLocation = closestAnchor()
+        }
+
+        snackbar?.dismiss()
+        return currentLocation
+    }
+
+    /**
+     * Displays a snackbar prompting the user to scan surroundings, if not already shown.
+     */
+    private fun showSnackbarIfNeeded(snackbar: Snackbar?): Snackbar {
+        return if (snackbar?.isShown == false || snackbar == null) {
+            Snackbar.make(
+                arSceneView, "Please move your device around to scan the surroundings",
+                Snackbar.LENGTH_INDEFINITE
+            ).apply { show() }
+        } else {
+            snackbar
+        }
+    }
+
+    /**
+     * Finds and returns the ID of the closest cloud anchor that is both in view and resolved, but not a sign.
+     */
     private fun closestAnchor(): String? {
         var closestAnchorId: String? = null
 
@@ -231,6 +266,10 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
         return closestAnchorId
     }
 
+    /**
+    * Calculates the shortest paths and distances from the given source node to all other nodes
+     * in the graph using Dijkstra's algorithm.
+    */
     private fun dijkstra(src: String): Pair<Map<String, Int>, Map<String, List<String>>> {
         val sptSet = mutableSetOf<String>()
         val dist = mutableMapOf<String, Int>().withDefault { Int.MAX_VALUE }
@@ -244,25 +283,32 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
             val unvisitedNode =
                 dist.filter { !sptSet.contains(it.key) }.minByOrNull { it.value }?.key
             unvisitedNode?.let {
-                sptSet.add(unvisitedNode)
-                graph[unvisitedNode]?.edges?.forEach { edge ->
-                    if (!sptSet.contains(edge.destination) && dist.getValue(unvisitedNode) != Int.MAX_VALUE) {
-                        val newDist = dist.getValue(unvisitedNode) + edge.distance
-                        if (newDist < dist.getValue(edge.destination)) {
-                            dist[edge.destination] = newDist
-                            prev[edge.destination] = unvisitedNode
-                            paths[edge.destination] =
-                                paths.getValue(unvisitedNode) + edge.destination
-                        }
-                    }
-                }
+                updateDistancesAndPaths(it, dist, prev, paths, sptSet)
             }
         }
         return Pair(dist, paths)
     }
 
-    private var pathfindingJob: Job? = null
+    /**
+     * Updates the distances and paths for the neighboring nodes of a given node.
+     */
+    private fun updateDistancesAndPaths(node: String, dist: MutableMap<String, Int>, prev: MutableMap<String, String>, paths: MutableMap<String, List<String>>, sptSet: MutableSet<String>) {
+        sptSet.add(node)
+        graph[node]?.edges?.forEach { edge ->
+            if (!sptSet.contains(edge.destination) && dist.getValue(node) != Int.MAX_VALUE) {
+                val newDist = dist.getValue(node) + edge.distance
+                if (newDist < dist.getValue(edge.destination)) {
+                    dist[edge.destination] = newDist
+                    prev[edge.destination] = node
+                    paths[edge.destination] = paths.getValue(node) + edge.destination
+                }
+            }
+        }
+    }
 
+    /**
+    * Shows the path defined by the list of model keys.
+    */
     private fun showPath(path: List<String>) {
         resetPath()
         var modelIndex = 0
@@ -278,17 +324,12 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
                 val model = anchorMap[path[modelIndex]]
 
                 // Next model (if exists)
-                val nextModel =
-                    if (modelIndex < path.size - 2) anchorMap[path[modelIndex + 1]] else null
+                val nextModel = if (modelIndex < path.size - 2) anchorMap[path[modelIndex + 1]] else null
 
                 // If not already within threshold, check the distance
-                if (!withinThreshold && distanceFromAnchor(model) < thresholdDistance) {
-                    withinThreshold = true
-                }
+                if (!withinThreshold && distanceFromAnchor(model) < thresholdDistance) { withinThreshold = true }
 
-                if(distanceFromAnchor(model) < 2){
-                    model?.isVisible = false
-                }
+                if(distanceFromAnchor(model) < 2){ model?.isVisible = false }
 
                 if (withinThreshold) {
                     // If the next model is resolved, update visibility and move to next model
@@ -303,6 +344,9 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
         }
     }
 
+    /**
+     * Resets the AR path by canceling any ongoing pathfinding job and hiding all non-sign nodes.
+     */
     private fun resetPath() {
         pathfindingJob?.cancel()
         for ((_, anchorNode) in anchorMap) {
@@ -312,69 +356,161 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
         }
     }
 
+    /**
+     * Computes the distance between the camera and the provided anchor node.
+     */
     private fun distanceFromAnchor(anchorNode: ModelNode?): Float {
         val cameraPose = arSceneView.currentFrame?.camera?.pose
-
         val nodePose = anchorNode?.anchor?.pose
 
-        if (nodePose != null && isInView(anchorNode)) {
-            val dx = cameraPose?.tx()?.minus(nodePose.tx())
-            val dy = cameraPose?.ty()?.minus(nodePose.ty())
-            val dz = cameraPose?.tz()?.minus(nodePose.tz())
-            return sqrt((dx!! * dx + dy!! * dy + dz!! * dz).toDouble()).toFloat()
+        if (cameraPose != null && nodePose != null && isInView(anchorNode)) {
+            return computeDistanceBetweenPoses(cameraPose, nodePose)
         }
         return Float.MAX_VALUE
     }
 
-    private fun isInView(anchorNode: ModelNode): Boolean {
-        val pose = anchorNode?.anchor?.pose
-        val screenCoord = getScreenCoordinates(pose!!) ?: return false
-        return screenCoord.x >= 0 && screenCoord.y >= 0 && screenCoord.x <= arSceneView.width && screenCoord.y <= arSceneView.height
+    /**
+     * Computes the Euclidean distance between two poses.
+     */
+    private fun computeDistanceBetweenPoses(pose1: Pose, pose2: Pose): Float {
+        val dx = pose1.tx() - pose2.tx()
+        val dy = pose1.ty() - pose2.ty()
+        val dz = pose1.tz() - pose2.tz()
+        return sqrt((dx * dx + dy * dy + dz * dz).toDouble()).toFloat()
     }
 
-    /*
+
+    /**
+     * Checks if the given anchor node's model is within the boundaries of the AR scene view.
+     */
+    private fun isInView(anchorNode: ModelNode): Boolean {
+        val pose = anchorNode.anchor?.pose ?: return false
+        val screenCoord = getScreenCoordinates(pose) ?: return false
+        return isWithinScreenBounds(screenCoord)
+    }
+
+    /**
+     * Checks if the given screen coordinates lie within the screen boundaries.
+     */
+    private fun isWithinScreenBounds(screenCoord: Vector3): Boolean {
+        return screenCoord.x >= 0 && screenCoord.y >= 0 &&
+                screenCoord.x <= arSceneView.width && screenCoord.y <= arSceneView.height
+    }
+
+    /**
      * Transforms a 3D pose in AR space to 2D screen coordinates.
-     * This is useful for overlaying 2D UI elements over 3D AR content.
      */
     private fun getScreenCoordinates(pose: Pose): Vector3? {
         val camera = arSceneView.currentFrame?.camera ?: return null
 
+        val worldToScreenMatrix = computeWorldToScreenMatrix(camera)
+
+        // Transform the anchor's position to normalized device coordinates (NDC)
+        val ndcCoord = transformToNDC(pose, worldToScreenMatrix)
+
+        // Convert NDC to actual screen coordinates
+        return convertNDCtoScreenCoordinates(ndcCoord)
+    }
+
+    /**
+     * Computes the transformation matrix from world to screen space using a given camera.
+     */
+    private fun computeWorldToScreenMatrix(camera: Camera): FloatArray {
         val projectionMatrix = FloatArray(16)
         camera.getProjectionMatrix(projectionMatrix, 0, 0.1f, 100f)
 
         val viewMatrix = FloatArray(16)
         camera.getViewMatrix(viewMatrix, 0)
 
-        // Compute the transformation from world to screen space
         val worldToScreenMatrix = FloatArray(16)
         Matrix.multiplyMM(worldToScreenMatrix, 0, projectionMatrix, 0, viewMatrix, 0)
 
-        // Transform anchor's position to normalized device coordinates (NDC)
+        return worldToScreenMatrix
+    }
+
+    /**
+     * Transforms a 3D pose to normalised device coordinates (NDC) using a given transformation matrix.
+     */
+    private fun transformToNDC(pose: Pose, matrix: FloatArray): FloatArray {
         val ndcCoord = FloatArray(4)
         Matrix.multiplyMV(
             ndcCoord,
             0,
-            worldToScreenMatrix,
+            matrix,
             0,
             floatArrayOf(pose.tx(), pose.ty(), pose.tz(), 1f),
             0
         )
-
-        // Convert NDC to actual screen coordinates
-        val w = ndcCoord[3]
-        val screenX = ((ndcCoord[0] / w + 1.0f) / 2.0f) * arSceneView.width
-        val screenY = ((1.0f - ndcCoord[1] / w) / 2.0f) * arSceneView.height
-
-        return Vector3(screenX, screenY, ndcCoord[2] / w)
+        return ndcCoord
     }
+
+    /**
+     * Converts normalised device coordinates (NDC) to actual screen coordinates.
+     */
+    private fun convertNDCtoScreenCoordinates(ndc: FloatArray): Vector3 {
+        val w = ndc[3]
+        val screenX = ((ndc[0] / w + 1.0f) / 2.0f) * arSceneView.width
+        val screenY = ((1.0f - ndc[1] / w) / 2.0f) * arSceneView.height
+
+        return Vector3(screenX, screenY, ndc[2] / w)
+    }
+
 
     private fun updateVisibleModel(oldModel: ModelNode?, newModel: ModelNode?) {
         oldModel?.isVisible = false
         newModel?.isVisible = true
     }
 
-    fun onDestroy() {
-        arSceneView.arSession?.destroy()
-        arSceneView.destroy()
+    private fun monitorModelsInView() {
+        viewModelScope.launch(Dispatchers.Default) {
+            while (isActive) {
+                delay(500) // Check every half second (or adjust as per your need)
+                processAnchorsInView()
+            }
+        }
     }
+
+    /**
+     * Iterates through each combination of signModelNode and orientationModelNode.
+     * For each valid pair, it checks their status and relationships, and then performs
+     * necessary UI updates on the main thread.
+     */
+    private suspend fun processAnchorsInView() {
+        anchorMap.forEach { (_, signModelNode) ->
+            if (isValidNode(signModelNode, true)) {
+                anchorMap.forEach { (_, orientationModelNode) ->
+                    if (isValidNode(orientationModelNode, false) && shouldProcess(signModelNode, orientationModelNode)) {
+                        updateUI(signModelNode, orientationModelNode)
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Validates the given modelNode based on its 'isSign' status and resolution.
+     */
+    private fun isValidNode(modelNode: ModelNode, shouldBeSign: Boolean) =
+        modelNode.isSign == shouldBeSign && modelNode.isResolved
+
+    /**
+     * Determines if two given nodes should be processed together.
+     */
+    private fun shouldProcess(signModelNode: ModelNode, orientationModelNode: ModelNode) =
+        sameFeature(signModelNode, orientationModelNode) &&
+                isInView(signModelNode) &&
+                isInView(orientationModelNode) &&
+                distanceFromAnchor(signModelNode) < 5
+
+    /**
+     * Performs UI operations on the main thread.
+     * It makes the signModelNode look at the orientationModelNode and makes the signModelNode visible.
+     */
+    private suspend fun updateUI(signModelNode: ModelNode, orientationModelNode: ModelNode) {
+        withContext(Dispatchers.Main) {
+            signModelNode.lookAt(orientationModelNode)
+            signModelNode.isVisible = true
+        }
+    }
+
 }
