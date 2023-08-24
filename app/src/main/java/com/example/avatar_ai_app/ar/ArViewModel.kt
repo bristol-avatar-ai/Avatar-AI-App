@@ -126,11 +126,9 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
 
                 if (success) {
                     Log.d(TAG, "Anchor resolved $anchorId")
-                    Toast.makeText(context, "RESOLVED $anchorId", Toast.LENGTH_SHORT).show()
                     modelNode.isResolved = true
-                    if(modelNode.isSign){
-                        modelNode.isVisible = true
-                    }
+                    if(modelNode.isSign){checkForOrientation(modelNode) }
+                    if(modelNode.isOrientation){checkForSign(modelNode) }
                 }
                 if (!success) {
                     Log.d(TAG, "Anchor failed to resolve, trying again - Id: $anchorId")
@@ -142,16 +140,40 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
         }
     }
 
-    // WORKING SIGN ORIENTATION
-//    if (directionModelNode != null) {
-//        signModelNode.lookAt(directionModelNode)
-//    }
+    // Checks whether the corresponding orientation model has been resolved, and if it has sets the rotation
+    private fun checkForOrientation(signModelNode: ModelNode){
+        anchorMap.forEach { (_, modelNode) ->
+            if(modelNode.isOrientation && modelNode.isResolved){
+                if(sameFeature(signModelNode, modelNode)){
+                    signModelNode.lookAt(modelNode)
+                    signModelNode.isVisible = true
+                }
+            }
+        }
+    }
 
-    // lab sign: anchorMap["ua-1b6c775e278f0d7c7ef2c083ed9222f8"]
+    // Checks whether the corresponding sign has been resolved, and if it has sets the rotation
+    private fun checkForSign(orientationModelNode: ModelNode){
+        anchorMap.forEach { (_, modelNode) ->
+            if(modelNode.isSign && modelNode.isResolved){
+                if(sameFeature(modelNode, orientationModelNode)){
+                    modelNode.lookAt(orientationModelNode)
+                    modelNode.isVisible = true
+                }
+            }
+        }
+    }
+
+    // Function to check whether a sign and orientation model are for the same feature
+    private fun sameFeature(signModelNode: ModelNode, orientationModelNode: ModelNode): Boolean {
+        val featureName = signModelNode.modelName!!.substring(7)
+        if(orientationModelNode.modelName!!.contains(featureName)){
+            return true
+        }
+        return false
+    }
 
     override fun loadDirections(destination: String) {
-
-        anchorMap["ua-1b6c775e278f0d7c7ef2c083ed9222f8"]?.lookAt(arSceneView.cameraNode)
 
         CoroutineScope(Dispatchers.IO).launch {
             var currentLocation = closestAnchor()
