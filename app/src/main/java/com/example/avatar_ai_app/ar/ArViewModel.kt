@@ -6,7 +6,6 @@ import android.opengl.Matrix
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
-import android.widget.Toast
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.avatar_ai_app.data.crystalModel
