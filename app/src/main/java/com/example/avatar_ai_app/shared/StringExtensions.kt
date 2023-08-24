@@ -5,14 +5,17 @@ import com.example.avatar_ai_app.shared.StringExtensionsConstants.phraseParserPa
 import com.example.avatar_ai_app.shared.StringExtensionsConstants.wordSeparatorRegex
 import org.apache.commons.text.similarity.LevenshteinDistance
 
+private const val TAG = "StringExtensions"
+
 private object StringExtensionsConstants {
-    const val phraseParserPattern = "(^|\\s)%s(\\s|\$)"
+    const val nonWordPattern = "[\\s,.\\-!?;:()\\[\\]\"'…]"
+    const val phraseParserPattern = "(^|$nonWordPattern)%s($nonWordPattern|\$)"
 
     // LevenshteinDistance instance for fuzzy comparison.
     val levenshteinDistance = LevenshteinDistance()
 
     // Regex pattern for splitting a string into words.
-    val wordSeparatorRegex = Regex("\\s+")
+    val wordSeparatorRegex = Regex("$nonWordPattern+")
 }
 
 /**
@@ -35,9 +38,23 @@ fun String.containsPhrase(phrase: String): Boolean {
  *
  * @param phrase The phrase to search for.
  * @param minLevenshteinRatio The minimum acceptable Levenshtein distance ratio for a word match.
- * @return True if a fuzzy match is found,¬ false otherwise.
+ * @return True if a fuzzy match is found, false otherwise.
  */
 fun String.containsPhraseFuzzy(phrase: String, minLevenshteinRatio: Double): Boolean {
+    // Handle edge cases.
+    if (phrase.isEmpty()) {
+        return true
+    } else if (this.isEmpty()) {
+        return false
+    }
+    return this.containsFuzzyMatch(phrase, minLevenshteinRatio)
+}
+
+/*
+* Checks if the current string contains the given phrase with a fuzzy matching approach.
+* Applies the provided minimum Levenshtein distance ratio to individual word matches.
+ */
+private fun String.containsFuzzyMatch(phrase: String, minLevenshteinRatio: Double): Boolean {
     val messageWords = this.split(wordSeparatorRegex)
     val phraseWords = phrase.split(wordSeparatorRegex)
     val phraseWordsSize = phraseWords.size
