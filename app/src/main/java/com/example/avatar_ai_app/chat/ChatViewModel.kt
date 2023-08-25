@@ -244,12 +244,13 @@ class ChatViewModel(
      */
     override fun newUserMessage(message: String) {
         Log.i(TAG, "newUserMessage: message: $message")
+        addMessage(ChatMessage(message, MessageType.USER))
+
         viewModelScope.launch(Dispatchers.IO) {
             val englishMessage = chatTranslator.translateInput(message)
             if (englishMessage == null) {
                 errorListener.onError(ErrorType.NETWORK)
             } else {
-                addMessage(ChatMessage(englishMessage, MessageType.USER))
                 val englishResponse = chatService.getResponse(englishMessage)
                 val response = translateOutput(englishResponse)
 

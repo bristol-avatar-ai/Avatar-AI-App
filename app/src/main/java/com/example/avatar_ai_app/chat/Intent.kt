@@ -75,6 +75,8 @@ enum class Intent(val triggerPhrases: List<String>) {
             "recognize",
             "what is this",
             "what's this",
+            "what is that",
+            "what's that",
             "what am I looking at",
             "what do you see",
             "what's in front",
