@@ -8,8 +8,8 @@ data class Model(
     val position: Position,
 )
 
-val avatarModel: Model = Model(
-    fileLocation = "models/robot_playground.glb",
+val signModel: Model = Model(
+    fileLocation = "",
     scale = 0.8f,
     position = Position(y = -1.0f)
 )

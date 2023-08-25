@@ -3,6 +3,7 @@ package com.example.avatar_ai_app.ui
 import android.Manifest
 import android.content.Context
 import android.util.Log
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -72,6 +73,7 @@ class MainViewModel(
     //Queue for storing permission strings
     val visiblePermissionDialogQueue = mutableStateListOf<String>()
     val focusRequester = FocusRequester()
+
     //val textState = mutableStateOf(TextFieldValue())
     var textFieldFocusState = mutableStateOf(false)
 
@@ -94,6 +96,7 @@ class MainViewModel(
                     isChatViewModelLoaded.value = false
                     Log.i(TAG, "chatViewModel status: loading")
                 }
+
                 ChatViewModelInterface.Status.READY -> {
                     setTextToSpeechReady(true)
                     updateTextFieldStringResId(R.string.send_message_hint)
@@ -101,11 +104,13 @@ class MainViewModel(
                     isChatViewModelLoaded.value = true
                     Log.i(TAG, "chatViewModel status: ready")
                 }
+
                 ChatViewModelInterface.Status.RECORDING -> {
                     updateTextFieldStringResId(R.string.recording_message)
                     _isRecordingReady.value = false
                     Log.i(TAG, "chatViewModel status: recording")
                 }
+
                 ChatViewModelInterface.Status.PROCESSING -> {
                     updateTextFieldStringResId(R.string.processing_message)
                     _isRecordingReady.value = false
@@ -120,11 +125,13 @@ class MainViewModel(
                         isDatabaseViewModelLoaded.value = false
                         Log.i(TAG, "databaseViewModel status: loading")
                     }
+
                     DatabaseViewModelInterface.Status.READY -> {
                         isDatabaseViewModelLoaded.value = true
                         setFeatureList()
                         Log.i(TAG, "databaseViewModel status: ready")
                     }
+
                     DatabaseViewModelInterface.Status.ERROR, null -> {
                         isDatabaseViewModelLoaded.value = false
                         Log.i(TAG, "databaseViewModel status: error")
@@ -140,12 +147,14 @@ class MainViewModel(
                     isImageViewModelLoaded.value = false
                     Log.i(TAG, "imageViewModel status: init")
                 }
+
                 ImageRecognitionViewModel.Status.READY -> {
                     updateTextFieldStringResId(R.string.send_message_hint)
                     isImageViewModelLoaded.value = true
                     _isRecognitionReady.value = true
                     Log.i(TAG, "imageViewModel status: ready")
                 }
+
                 ImageRecognitionViewModel.Status.ERROR -> {
                     isImageViewModelLoaded.value = false
                     _isRecognitionReady.value = false
@@ -174,10 +183,12 @@ class MainViewModel(
                     processRecognitionRequest()
                     Log.i(TAG, "chatViewModel intent: recognition")
                 }
+
                 Intent.NAVIGATION -> {
                     processNavigationRequest()
                     Log.i(TAG, "chatViewModel intent: navigation")
                 }
+
                 else -> {}
             }
         }
@@ -306,7 +317,7 @@ class MainViewModel(
     }
 
     /**
-     * 
+     *
      */
     private fun setTextToSpeechReady(ready: Boolean) {
         _uiState.update {
@@ -500,7 +511,7 @@ class MainViewModel(
      */
     @OptIn(ExperimentalComposeUiApi::class)
     fun handleSwipe(pan: Float, keyboardController: SoftwareKeyboardController?) {
-        if(!uiState.value.messagesAreShown && pan > 0) {
+        if (!uiState.value.messagesAreShown && pan > 0) {
             dismissLanguageMenu()
             focusRequester.requestFocus()
             keyboardController?.hide()

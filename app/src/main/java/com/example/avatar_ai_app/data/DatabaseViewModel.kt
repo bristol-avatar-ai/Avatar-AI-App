@@ -6,7 +6,9 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
+import com.example.avatar_ai_app.ar.Edge
 import com.example.avatar_ai_app.ar.Graph
+import com.example.avatar_ai_app.ar.Properties
 import com.example.avatar_ai_app.data.DatabaseViewModelInterface.Status
 import com.example.avatar_ai_cloud_storage.database.AppDatabase
 import com.example.avatar_ai_cloud_storage.database.entity.Anchor
@@ -122,15 +124,15 @@ class DatabaseViewModel(application: Application) : AndroidViewModel(application
     override suspend fun getGraph(): Graph {
         val graph = Graph()
 
-        // Add anchors to graph.
+        // Add anchor IDs and names to graph.
         anchorDao?.getAnchors()?.forEach {
-            graph[it.id] = mutableListOf()
+            graph[it.id] = Properties(it.name, mutableListOf())
         }
 
         // Add paths to graph.
         pathDao?.getPaths()?.forEach {
-            graph[it.anchor1]?.add(Pair(it.anchor2, it.distance))
-            graph[it.anchor2]?.add(Pair(it.anchor1, it.distance))
+            graph[it.anchor1]?.edges?.add(Edge(it.anchor2, it.distance))
+            graph[it.anchor2]?.edges?.add(Edge(it.anchor1, it.distance))
         }
         return graph
     }

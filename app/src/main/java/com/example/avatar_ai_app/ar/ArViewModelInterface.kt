@@ -7,7 +7,7 @@ interface ArViewModelInterface {
 
     fun initialiseArScene(arSceneView: ArSceneView)
 
-    fun addModelToScene(modelType: ArViewModel.ModelType)
+    //fun addModelToScene(modelType: ArViewModel.ModelType)
 
     fun loadDirections(destination: String)
 }
