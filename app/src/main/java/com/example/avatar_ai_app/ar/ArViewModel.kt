@@ -500,7 +500,7 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
         sameFeature(signModelNode, orientationModelNode) &&
                 isInView(signModelNode) &&
                 isInView(orientationModelNode) &&
-                distanceFromAnchor(signModelNode) < 5
+                distanceFromAnchor(signModelNode) < 7
 
     /**
      * Performs UI operations on the main thread.
