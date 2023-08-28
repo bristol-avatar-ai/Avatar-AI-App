@@ -33,9 +33,18 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
     private var pathfindingJob: Job? = null
 
     fun onDestroy() {
-        arSceneView.arSession?.destroy()
-        arSceneView.destroy()
+
+        pathfindingJob?.cancel()
+
+        anchorMap.clear()
+
+        arSceneView.children.forEach { node ->
+            arSceneView.removeChild(node)
+        }
+
+        Log.d("ArViewModel", "onDestroy() complete")
     }
+
 
     override fun setGraph(graph: Graph) {
         this.graph = graph
@@ -513,4 +522,29 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
         }
     }
 
+    private fun closestSign(): String? {
+        var closestAnchorId: String? = null
+
+        // This will run until an anchor is found in view and returned
+        var minDistance = Float.MAX_VALUE
+
+        for ((anchorId, anchorNode) in anchorMap) {
+            val nodePose = anchorNode.anchor?.pose
+            if (
+                nodePose != null && isInView(anchorNode)
+                && anchorNode.isResolved && anchorNode.isSign
+            ) {
+                val distance = distanceFromAnchor(anchorNode)
+                if (distance < minDistance) {
+                    minDistance = distance
+                    closestAnchorId = anchorId
+                }
+            }
+        }
+        return closestAnchorId
+    }
+
 }
+
+//        arSceneView.arSession?.destroy()
+//        arSceneView.destroy()
