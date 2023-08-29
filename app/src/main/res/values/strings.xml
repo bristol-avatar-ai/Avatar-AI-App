@@ -35,7 +35,7 @@
 
     <!--Chat Response Messages-->
     <string name="greeting_message">Hello!</string>
-    <string name="help_message">Feel free to ask me anything! I can recognise locations and provide information about them. You can also ask me for directions or a tour!</string>
+    <string name="help_message">Feel free to ask me anything! I can recognise locations and provide information about them. You can also ask me for directions!</string>
     <string name="navigation_message">Please follow the onscreen directions towards your destination!</string>
     <string name="invalid_feature_message">Sorry, I don\'t recognise that location!</string>
     <string name="recognition_message">Let me have a quick look!</string>

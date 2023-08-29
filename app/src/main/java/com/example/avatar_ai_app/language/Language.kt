@@ -19,8 +19,12 @@ enum class Language(
     val locale: Locale,
     val mlKitLanguage: String
 ) {
-    ENGLISH("English", "en-GB_Telephony", Locale.UK, TranslateLanguage.ENGLISH),
+    ARABIC("Arábica", "ar-MS_Telephony", Locale("ar"), TranslateLanguage.ARABIC),
+    CHINESE("中文", "zh-CN_Telephony", Locale.CHINA, TranslateLanguage.CHINESE),
+    ENGLISH("English", "en-GB_Multimedia", Locale.UK, TranslateLanguage.ENGLISH),
     FRENCH("Français", "fr-FR_Telephony", Locale.FRANCE, TranslateLanguage.FRENCH),
     GERMAN("Deutsch", "de-DE_Telephony", Locale.GERMANY, TranslateLanguage.GERMAN),
-    CHINESE("中文", "zh-CN_Telephony", Locale.CHINA, TranslateLanguage.CHINESE)
+    HINDI("हिंदी", "hi-IN_Telephony", Locale("hi"), TranslateLanguage.HINDI),
+    PORTUGUESE("Português", "pt-BR_Multimedia", Locale("pt"), TranslateLanguage.PORTUGUESE),
+    SPANISH("Español", "es-ES_Multimedia", Locale("es"), TranslateLanguage.SPANISH)
 }
