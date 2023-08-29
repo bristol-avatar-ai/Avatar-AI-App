@@ -545,6 +545,3 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
     }
 
 }
-
-//        arSceneView.arSession?.destroy()
-//        arSceneView.destroy()
