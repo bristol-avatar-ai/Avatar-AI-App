@@ -221,10 +221,20 @@ class MainViewModel(
                     Log.i(TAG, "Feature is null")
                 }
             } else {
-                //TODO implement get nearest cloud anchor from ArViewModel
-                Log.i(TAG, "Feature not recognised")
-                chatViewModel.newResponse("Sorry, I don't recognise this feature!")
+                getClosestSign()
+                Log.i(TAG, "getClosestSign called")
+
             }
+        }
+    }
+
+    private fun getClosestSign() {
+        val closestSign = arViewModel.closestSign()
+        if(closestSign.isNullOrEmpty()) {
+            chatViewModel.newResponse("Sorry, I don't recognise this feature!")
+            Log.i(TAG, "Closest sign is null")
+        } else {
+
         }
     }
 

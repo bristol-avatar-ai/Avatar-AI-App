@@ -522,21 +522,24 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
     }
 
     override fun closestSign(): String? {
+        val startTime = System.currentTimeMillis()
         var closestAnchorId: String? = null
 
         // This will run until an anchor is found in view and returned
         var minDistance = Float.MAX_VALUE
 
-        for ((anchorId, anchorNode) in anchorMap) {
-            val nodePose = anchorNode.anchor?.pose
-            if (
-                nodePose != null && isInView(anchorNode)
-                && anchorNode.isResolved && anchorNode.isSign
-            ) {
-                val distance = distanceFromAnchor(anchorNode)
-                if (distance < minDistance) {
-                    minDistance = distance
-                    closestAnchorId = anchorId
+        while (System.currentTimeMillis() - startTime < 1000) {
+            for ((anchorId, anchorNode) in anchorMap) {
+                val nodePose = anchorNode.anchor?.pose
+                if (
+                    nodePose != null && isInView(anchorNode)
+                    && anchorNode.isResolved && anchorNode.isSign
+                ) {
+                    val distance = distanceFromAnchor(anchorNode)
+                    if (distance < minDistance) {
+                        minDistance = distance
+                        closestAnchorId = anchorId
+                    }
                 }
             }
         }
