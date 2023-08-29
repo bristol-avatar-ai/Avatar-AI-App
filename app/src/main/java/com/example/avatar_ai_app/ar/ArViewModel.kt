@@ -526,7 +526,7 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
         var closestAnchorId: String? = null
 
         // This will run until an anchor is found in view and returned
-        var minDistance = Float.MAX_VALUE
+        var minDistance = 3f
 
         while (System.currentTimeMillis() - startTime < 1000) {
             for ((anchorId, anchorNode) in anchorMap) {
