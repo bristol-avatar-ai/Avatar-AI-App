@@ -33,7 +33,6 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
     private var pathfindingJob: Job? = null
 
     fun onDestroy() {
-
         pathfindingJob?.cancel()
 
         anchorMap.clear()
@@ -522,7 +521,7 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
         }
     }
 
-    private fun closestSign(): String? {
+    override fun closestSign(): String? {
         var closestAnchorId: String? = null
 
         // This will run until an anchor is found in view and returned
