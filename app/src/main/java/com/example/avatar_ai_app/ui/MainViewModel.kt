@@ -210,34 +210,51 @@ class MainViewModel(
      */
     private fun processRecognitionRequest() {
         viewModelScope.launch(Dispatchers.IO) {
-            val featureName = imageViewModel.recogniseFeature()
-            if (featureName != null) {
-                val feature = databaseViewModel.getFeature(featureName)
-                if (feature != null) {
-                    chatViewModel.newResponse(feature.description)
-                    Log.i(TAG, "Feature description: ${feature.description}")
-                } else {
-                    chatViewModel.newResponse("Sorry, I don't recognise this feature!")
-                    Log.i(TAG, "Feature is null")
-                }
-            } else {
-                getClosestSign()
-                Log.i(TAG, "getClosestSign called")
+            var featureName = imageViewModel.recogniseFeature()
 
+            if (featureName == null) {
+                featureName = arViewModel.closestSign()
+                Log.i(TAG, "ImageViewModel did not recognise feature")
+            }
+
+            if (featureName != null) {
+                outputDescription(featureName)
+            } else {
+                chatViewModel.newResponse("Sorry, I don't recognise this feature!")
             }
         }
     }
 
-    private fun getClosestSign() {
-        val closestSign = arViewModel.closestSign()
-        if(closestSign.isNullOrEmpty()) {
-            chatViewModel.newResponse("Sorry, I don't recognise this feature!")
-            Log.i(TAG, "Closest sign is null")
-        } else {
-
+    private fun outputDescription(featureName: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val feature = databaseViewModel.getFeature(featureName)
+            if (feature != null) {
+                chatViewModel.newResponse(feature.description)
+                Log.i(TAG, "Feature description: ${feature.description}")
+            } else {
+                chatViewModel.newResponse("Sorry, I don't recognise this feature!")
+                Log.i(TAG, "Feature is null")
+            }
         }
     }
 
+//    private fun getClosestSign() {
+//        viewModelScope.launch(Dispatchers.IO) {
+//            val closestSign = arViewModel.closestSign()
+//            if (closestSign != null) {
+//                val feature = databaseViewModel.getFeature(closestSign)
+//                if(feature != null) {
+//                    chatViewModel.newResponse(feature.description)
+//                }
+//            } else {
+//                chatViewModel.newResponse()
+//            }
+//        }
+//
+//
+//    }
+//    chatViewModel.newResponse("Sorry, I don't recognise this feature!")
+//    Log.i(TAG, "Closest sign is null")
     /**
      * Processes a navigation request to the destination from the chatViewModel
      */
