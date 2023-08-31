@@ -23,6 +23,7 @@ import com.example.avatar_ai_app.data.DatabaseViewModel
 import com.example.avatar_ai_app.data.DatabaseViewModelInterface
 import com.example.avatar_ai_app.imagerecognition.ImageRecognitionViewModel
 import com.example.avatar_ai_app.language.Language
+import com.example.avatar_ai_cloud_storage.database.entity.Feature
 import io.github.sceneview.ar.ArSceneView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -210,54 +211,26 @@ class MainViewModel(
     private fun processRecognitionRequest() {
         viewModelScope.launch(Dispatchers.IO) {
             var featureName = imageViewModel.recogniseFeature()
-
-            if (featureName == null) {
-                featureName = arViewModel.closestSign()
-                Log.i(TAG, "ImageViewModel did not recognise feature")
-            }
+            val feature: Feature?
 
             if (featureName != null) {
-                outputDescription(featureName)
+                feature = databaseViewModel.getFeature(featureName)
             } else {
-                chatViewModel.newResponse("Sorry, I don't recognise this feature!")
+                featureName = arViewModel.closestSign()
+                feature = featureName?.let { databaseViewModel.getPrimaryFeature(it) }
+                Log.i(TAG, "ImageViewModel did not recognise feature")
             }
-        }
-    }
-
-    /**
-     * Outputs the description for a feature if the feature is present in the database.
-     * @param featureName
-     */
-    private fun outputDescription(featureName: String) {
-        viewModelScope.launch(Dispatchers.IO) {
-            val feature = databaseViewModel.getFeature(featureName)
             if (feature != null) {
                 chatViewModel.newResponse(feature.description)
                 Log.i(TAG, "Feature description: ${feature.description}")
             } else {
-                chatViewModel.newResponse("Sorry, I don't recognise this feature!")
-                Log.i(TAG, "Feature is null")
+                chatViewModel.newResponse("Sorry I don't recognise that feature!")
+                Log.i(TAG, "Feature not found in database")
             }
         }
     }
 
-//    private fun getClosestSign() {
-//        viewModelScope.launch(Dispatchers.IO) {
-//            val closestSign = arViewModel.closestSign()
-//            if (closestSign != null) {
-//                val feature = databaseViewModel.getFeature(closestSign)
-//                if(feature != null) {
-//                    chatViewModel.newResponse(feature.description)
-//                }
-//            } else {
-//                chatViewModel.newResponse()
-//            }
-//        }
-//
-//
-//    }
-//    chatViewModel.newResponse("Sorry, I don't recognise this feature!")
-//    Log.i(TAG, "Closest sign is null")
+
     /**
      * Processes a navigation request to the destination from the chatViewModel
      */
