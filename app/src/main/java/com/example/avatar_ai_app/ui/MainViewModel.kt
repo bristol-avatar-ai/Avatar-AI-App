@@ -3,7 +3,6 @@ package com.example.avatar_ai_app.ui
 import android.Manifest
 import android.content.Context
 import android.util.Log
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -24,6 +23,7 @@ import com.example.avatar_ai_app.data.DatabaseViewModel
 import com.example.avatar_ai_app.data.DatabaseViewModelInterface
 import com.example.avatar_ai_app.imagerecognition.ImageRecognitionViewModel
 import com.example.avatar_ai_app.language.Language
+import com.example.avatar_ai_cloud_storage.database.entity.Feature
 import io.github.sceneview.ar.ArSceneView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -210,23 +210,26 @@ class MainViewModel(
      */
     private fun processRecognitionRequest() {
         viewModelScope.launch(Dispatchers.IO) {
-            val featureName = imageViewModel.recogniseFeature()
+            var featureName = imageViewModel.recogniseFeature()
+            val feature: Feature?
+
             if (featureName != null) {
-                val feature = databaseViewModel.getFeature(featureName)
-                if (feature != null) {
-                    chatViewModel.newResponse(feature.description)
-                    Log.i(TAG, "Feature description: ${feature.description}")
-                } else {
-                    chatViewModel.newResponse("Sorry, I don't recognise this feature!")
-                    Log.i(TAG, "Feature is null")
-                }
+                feature = databaseViewModel.getFeature(featureName)
             } else {
-                //TODO implement get nearest cloud anchor from ArViewModel
-                Log.i(TAG, "Feature not recognised")
-                chatViewModel.newResponse("Sorry, I don't recognise this feature!")
+                featureName = arViewModel.closestSign()
+                feature = featureName?.let { databaseViewModel.getPrimaryFeature(it) }
+                Log.i(TAG, "ImageViewModel did not recognise feature")
+            }
+            if (feature != null) {
+                chatViewModel.newResponse(feature.description)
+                Log.i(TAG, "Feature description: ${feature.description}")
+            } else {
+                chatViewModel.newResponse("Sorry I don't recognise that feature!")
+                Log.i(TAG, "Feature not found in database")
             }
         }
     }
+
 
     /**
      * Processes a navigation request to the destination from the chatViewModel
