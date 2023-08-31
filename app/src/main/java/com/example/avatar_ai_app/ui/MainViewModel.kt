@@ -224,6 +224,10 @@ class MainViewModel(
         }
     }
 
+    /**
+     * Outputs the description for a feature if the feature is present in the database.
+     * @param featureName
+     */
     private fun outputDescription(featureName: String) {
         viewModelScope.launch(Dispatchers.IO) {
             val feature = databaseViewModel.getFeature(featureName)
