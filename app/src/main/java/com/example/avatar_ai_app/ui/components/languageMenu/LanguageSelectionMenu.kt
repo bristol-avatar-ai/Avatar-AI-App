@@ -82,8 +82,13 @@ fun LanguageSelectionMenu(
                                     R.drawable.radio_button_checked
                                 } else R.drawable.radio_button_unchecked,
                                 languageString = language.string,
-                                onClick = { mainViewModel.onLanguageSelectionResult(context, language) }
-                                )
+                                onClick = {
+                                    mainViewModel.onLanguageSelectionResult(
+                                        context,
+                                        language
+                                    )
+                                }
+                            )
                         }
                     }
                 }
@@ -105,30 +110,32 @@ fun LanguageMenuItem(
         if (pressed.value) MaterialTheme.colorScheme.inverseOnSurface
         else MaterialTheme.colorScheme.onSurface
     )
-
-    Row(modifier = Modifier.pointerInput(Unit){
-        detectTapGestures(
-            onPress = {
-                try {
-                    onClick()
-                    pressed.value = true
-                    awaitRelease()
-                } finally {
-                    pressed.value = false
+    Row {
+        Row(modifier = Modifier.pointerInput(Unit) {
+            detectTapGestures(
+                onPress = {
+                    try {
+                        onClick()
+                        pressed.value = true
+                        awaitRelease()
+                    } finally {
+                        pressed.value = false
+                    }
                 }
-            }
-        )
-    }) {
-        Icon(
-            painter = painterResource(id = iconResId),
-            contentDescription = null,
-            tint = iconAndTextColor
-        )
-        Spacer(Modifier.size(MaterialTheme.spacing.small))
-        Text(
-            text = languageString,
-            color = iconAndTextColor
-        )
+            )
+        }) {
+            Icon(
+                painter = painterResource(id = iconResId),
+                contentDescription = null,
+                tint = iconAndTextColor
+            )
+            Spacer(Modifier.size(MaterialTheme.spacing.small))
+            Text(
+                text = languageString,
+                color = iconAndTextColor
+            )
+        }
+        Spacer(Modifier.weight(1f))
     }
 }
 
