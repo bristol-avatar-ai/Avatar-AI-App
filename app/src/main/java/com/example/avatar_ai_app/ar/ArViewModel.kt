@@ -37,10 +37,11 @@ class ArViewModel(application: Application) : AndroidViewModel(application), ArV
 
         anchorMap.clear()
 
-        arSceneView.children.forEach { node ->
-            arSceneView.removeChild(node)
+        if(this::arSceneView.isInitialized) {
+            arSceneView.children.forEach { node ->
+                arSceneView.removeChild(node)
+            }
         }
-
         Log.d("ArViewModel", "onDestroy() complete")
     }
 
