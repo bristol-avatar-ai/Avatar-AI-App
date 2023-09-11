@@ -27,7 +27,7 @@ import com.example.avatar_ai_app.ui.theme.spacing
 fun SendAndMicButton(
     onPress: () -> Unit,
     onRelease: () -> Unit,
-    permissionLauncher: ManagedActivityResultLauncher<String, Boolean>,
+    permissionLauncher: ManagedActivityResultLauncher<String, Boolean>?,
     icon: Painter,
     description: String = "",
     textFieldFocusState: Boolean,
@@ -62,7 +62,7 @@ fun SendAndMicButton(
                                 if (permissionsState || isTextInputMode) {
                                     onPress()
                                 } else {
-                                    permissionLauncher.launch(
+                                    permissionLauncher?.launch(
                                         Manifest.permission.RECORD_AUDIO
                                     )
                                 }
